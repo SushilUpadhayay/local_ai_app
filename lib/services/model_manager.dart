@@ -1,0 +1,182 @@
+import 'dart:io';
+import '../models/model_item.dart';
+import '../repositories/model_repository.dart';
+import '../services/model_catalog_service.dart';
+
+class ModelManager {
+  final ModelRepository _repository = ModelRepository();
+  final ModelCatalogService _catalogService = ModelCatalogService();
+
+  List<ModelItem> _models = [];
+  List<ModelItem> get models => _models;
+
+  String? _activeModelId;
+  String? get activeModelId => _activeModelId;
+
+  ModelItem? get activeModel {
+    if (_activeModelId == null) return null;
+    try {
+      return _models.firstWhere((m) => m.id == _activeModelId && m.status == 'installed');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // Initialize directory paths and load metadata
+  Future<void> init() async {
+    await _repository.init();
+    await loadMetadata();
+  }
+
+  // Get local path where a model file should be stored
+  String getLocalPathForModel(String id) {
+    return _repository.getLocalPathForModel(id);
+  }
+
+  // Load metadata from repository
+  Future<void> loadMetadata() async {
+    final loadedModels = await _repository.loadModels();
+    _activeModelId = await _repository.loadActiveModelId();
+
+    if (loadedModels != null && loadedModels.isNotEmpty) {
+      _models = loadedModels;
+      await _verifyAndHealFiles();
+    } else {
+      await _loadDefaultRegistry();
+    }
+  }
+
+  // Save metadata to repository
+  Future<void> saveMetadata() async {
+    await _repository.saveModels(_models);
+    await _repository.saveActiveModelId(_activeModelId);
+  }
+
+  // Default models list from ModelCatalogService
+  Future<void> _loadDefaultRegistry() async {
+    _activeModelId = null;
+    _models = await _catalogService.getAvailableModels();
+    await saveMetadata();
+  }
+
+  // Verifies that installed models physically exist on the file system.
+  // Performs dynamic self-healing if a user manually deleted files, or if file download was interrupted.
+  Future<void> _verifyAndHealFiles() async {
+    bool dirty = false;
+    for (int i = 0; i < _models.length; i++) {
+      final model = _models[i];
+      final expectedPath = getLocalPathForModel(model.id);
+      final fileExists = await File(expectedPath).exists();
+
+      if (model.status == 'installed') {
+        if (!fileExists) {
+          // File was deleted manually, heal state
+          _models[i] = model.copyWith(
+            status: 'available',
+            localPath: null,
+            active: false,
+            downloadProgress: 0.0,
+          );
+          if (_activeModelId == model.id) {
+            _activeModelId = null;
+          }
+          dirty = true;
+        } else {
+          // Keep local path sync
+          if (model.localPath != expectedPath) {
+            _models[i] = model.copyWith(localPath: expectedPath);
+            dirty = true;
+          }
+        }
+      } else {
+        // If file exists but marked as available/downloading, mark it as installed
+        if (fileExists && model.status != 'downloading') {
+          _models[i] = model.copyWith(
+            status: 'installed',
+            localPath: expectedPath,
+            downloadProgress: 1.0,
+          );
+          dirty = true;
+        }
+      }
+    }
+
+    // Ensure active state matches the activeModelId
+    for (int i = 0; i < _models.length; i++) {
+      final model = _models[i];
+      final shouldBeActive = model.id == _activeModelId && model.status == 'installed';
+      if (model.active != shouldBeActive) {
+        _models[i] = model.copyWith(active: shouldBeActive);
+        dirty = true;
+      }
+    }
+
+    if (dirty) {
+      await saveMetadata();
+    }
+  }
+
+  // Switch/Set active model
+  Future<void> setActiveModel(String? id) async {
+    if (id == null) {
+      _activeModelId = null;
+      for (int i = 0; i < _models.length; i++) {
+        _models[i] = _models[i].copyWith(active: false);
+      }
+    } else {
+      // Verify model is installed
+      try {
+        _models.firstWhere((m) => m.id == id && m.status == 'installed');
+        _activeModelId = id;
+        for (int i = 0; i < _models.length; i++) {
+          _models[i] = _models[i].copyWith(active: _models[i].id == id);
+        }
+      } catch (_) {
+        // Model not found or not installed, keep current or do nothing
+        return;
+      }
+    }
+    await saveMetadata();
+  }
+
+  // Delete model file and update state
+  Future<void> deleteModel(String id) async {
+    final expectedPath = getLocalPathForModel(id);
+    final file = File(expectedPath);
+    if (await file.exists()) {
+      await file.delete();
+    }
+
+    for (int i = 0; i < _models.length; i++) {
+      if (_models[i].id == id) {
+        _models[i] = _models[i].copyWith(
+          status: 'available',
+          localPath: null,
+          active: false,
+          downloadProgress: 0.0,
+        );
+      }
+    }
+
+    if (_activeModelId == id) {
+      _activeModelId = null;
+    }
+
+    await saveMetadata();
+  }
+
+  // Helper to determine recommendation based on device RAM (in GB)
+  String getRecommendationStatus(ModelItem model, int deviceRamGb) {
+    if (model.id == 'qwen-0.5b') {
+      return 'recommended';
+    } else if (model.id == 'qwen-1.5b') {
+      if (deviceRamGb >= 6) return 'recommended';
+      return 'slow';
+    } else if (model.id == 'gemma-2b') {
+      if (deviceRamGb >= 8) return 'recommended';
+      if (deviceRamGb >= 6) return 'slow';
+      return 'not_recommended';
+    }
+    return 'recommended';
+  }
+}

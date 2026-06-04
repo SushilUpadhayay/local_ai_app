@@ -2,10 +2,19 @@ import 'package:flutter/material.dart';
 import '../models/app_state.dart';
 import '../models/model_item.dart';
 
-class ModelsScreen extends StatelessWidget {
+class ModelsScreen extends StatefulWidget {
   final AppState appState;
 
   const ModelsScreen({super.key, required this.appState});
+
+  @override
+  State<ModelsScreen> createState() => _ModelsScreenState();
+}
+
+class _ModelsScreenState extends State<ModelsScreen> {
+  int _selectedTabIndex = 0; // 0 for LLM Models, 1 for Speech Models (Whisper)
+
+  AppState get appState => widget.appState;
 
   String _getRecommendationStatus(ModelItem model, int deviceRam) {
     return appState.modelManager.getRecommendationStatus(model, deviceRam);
@@ -33,34 +42,104 @@ class ModelsScreen extends StatelessWidget {
     final storageGb = appState.freeStorageGb;
     final allModels = appState.models;
 
-    final installedModels = allModels
+    // Segregate by family
+    final llmModels = allModels
+        .where((m) => m.modelFamily != 'Whisper')
+        .toList();
+    final speechModels = allModels
+        .where((m) => m.modelFamily == 'Whisper')
+        .toList();
+
+    final currentModels = _selectedTabIndex == 0 ? llmModels : speechModels;
+
+    final installedModels = currentModels
         .where((m) => m.status == 'installed')
         .toList();
-    final downloadingModels = allModels
+    final downloadingModels = currentModels
         .where((m) => m.status == 'downloading')
         .toList();
-    final availableModels = allModels
+    final availableModels = currentModels
         .where((m) => m.status == 'available')
         .toList();
-    final recommendedModels = availableModels
-        .where((m) => _getRecommendationStatus(m, ram) == 'recommended')
-        .toList();
-    final otherAvailableModels = availableModels
-        .where((m) => _getRecommendationStatus(m, ram) != 'recommended')
-        .toList();
+    final recommendedModels = _selectedTabIndex == 0
+        ? availableModels
+              .where((m) => _getRecommendationStatus(m, ram) == 'recommended')
+              .toList()
+        : [];
+    final otherAvailableModels = _selectedTabIndex == 0
+        ? availableModels
+              .where((m) => _getRecommendationStatus(m, ram) != 'recommended')
+              .toList()
+        : availableModels;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Download Error Banner
+          if (appState.downloadErrorMessage.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withAlpha(20),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFFEF4444).withAlpha(60),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.error_outline_rounded,
+                    color: Color(0xFFEF4444),
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Download failed: ${appState.downloadErrorMessage}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFFFCA5A5),
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: Color(0xFF94A3B8),
+                      size: 14,
+                    ),
+                    onPressed: () => appState.clearDownloadError(),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    splashRadius: 14,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
           // Device Diagnostics
           _buildDiagnosticsPanel(context, ram, storageGb),
           const SizedBox(height: 20),
 
-          // Active Model Banner
-          _buildActiveModelBanner(context),
-          const SizedBox(height: 24),
+          // --- Segmented Tab Bar ---
+          _buildSegmentedTabBar(),
+          const SizedBox(height: 20),
+
+          // Active Model Banner (LLM tab) or Active Whisper Banner (Speech tab)
+          if (_selectedTabIndex == 0) ...[
+            _buildActiveModelBanner(context),
+            const SizedBox(height: 24),
+          ] else ...[
+            _buildActiveWhisperModelBanner(context),
+            const SizedBox(height: 24),
+          ],
 
           // Downloading
           if (downloadingModels.isNotEmpty) ...[
@@ -96,7 +175,7 @@ class ModelsScreen extends StatelessWidget {
             const SizedBox(height: 16),
           ],
 
-          // Recommended
+          // Recommended (LLM only)
           if (recommendedModels.isNotEmpty) ...[
             _buildSectionHeader(
               'RECOMMENDED FOR YOUR DEVICE',
@@ -116,7 +195,9 @@ class ModelsScreen extends StatelessWidget {
           // Other Available
           if (otherAvailableModels.isNotEmpty) ...[
             _buildSectionHeader(
-              'AVAILABLE FOR DOWNLOAD',
+              _selectedTabIndex == 0
+                  ? 'AVAILABLE FOR DOWNLOAD'
+                  : 'SPEECH MODELS — AVAILABLE',
               Icons.cloud_download_outlined,
               const Color(0xFF94A3B8),
             ),
@@ -131,6 +212,69 @@ class ModelsScreen extends StatelessWidget {
 
           const SizedBox(height: 24),
         ],
+      ),
+    );
+  }
+
+  // Segmented tab bar: LLM Models vs Speech Models
+  Widget _buildSegmentedTabBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B0F19),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF1E293B)),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          _buildTabItem(0, Icons.smart_toy_rounded, 'LLM Models'),
+          _buildTabItem(1, Icons.mic_rounded, 'Speech Models'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabItem(int index, IconData icon, String label) {
+    final isActive = _selectedTabIndex == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedTabIndex = index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isActive ? const Color(0xFF6366F1) : Colors.transparent,
+            borderRadius: BorderRadius.circular(9),
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF6366F1).withAlpha(60),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 14,
+                color: isActive ? Colors.white : const Color(0xFF64748B),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: isActive ? Colors.white : const Color(0xFF64748B),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -478,6 +622,159 @@ class ModelsScreen extends StatelessWidget {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActiveWhisperModelBanner(BuildContext context) {
+    final activeWhisper = appState.modelManager.activeWhisperModel;
+    if (activeWhisper == null) {
+      return _buildNoWhisperModelBanner();
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0F172A), Color(0xFF111827)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: const Color(0xFF94A3B8).withAlpha(30)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF94A3B8).withAlpha(20),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'ACTIVE SPEECH MODEL',
+                  style: TextStyle(
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Icon(Icons.mic_rounded, color: const Color(0xFF94A3B8), size: 14),
+              const SizedBox(width: 5),
+              const Text(
+                'Ready',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Color(0xFF10B981),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            activeWhisper.fullName,
+            style: const TextStyle(
+              fontFamily: 'Outfit',
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              _buildActiveMeta(
+                Icons.memory_rounded,
+                activeWhisper.ram.replaceAll('Needs ', ''),
+              ),
+              const SizedBox(width: 10),
+              _buildActiveMeta(Icons.storage_rounded, activeWhisper.size),
+              const SizedBox(width: 10),
+              _buildActiveMeta(
+                Icons.layers_rounded,
+                activeWhisper.quantization,
+              ),
+              const SizedBox(width: 10),
+              _buildActiveMeta(
+                Icons.language_rounded,
+                activeWhisper.modelFamily,
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Align(
+            alignment: Alignment.centerRight,
+            child: _buildActionButton(
+              label: 'Unload',
+              icon: Icons.eject_rounded,
+              color: const Color(0xFF94A3B8),
+              outlined: true,
+              onPressed: () => appState.unloadActiveWhisperModel(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoWhisperModelBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFF151E2E),
+        border: Border.all(color: const Color(0xFF94A3B8).withAlpha(40)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF94A3B8).withAlpha(30),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.mic_off_rounded,
+              color: Color(0xFF94A3B8),
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 14),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'No Active Speech Model',
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Download and activate a Whisper model from the list below to enable speech recognition.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF94A3B8),
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

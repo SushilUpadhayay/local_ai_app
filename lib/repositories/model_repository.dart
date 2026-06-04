@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/model_item.dart';
 
@@ -13,11 +14,18 @@ class ModelRepository {
     if (!await _modelsDir.exists()) {
       await _modelsDir.create(recursive: true);
     }
+    debugPrint(
+      '[ModelRepository] Initialized models directory: ${_modelsDir.path}',
+    );
     _metadataFile = File('${_modelsDir.path}/metadata_v2.json');
   }
 
   String getLocalPathForModel(String id) {
-    return '${_modelsDir.path}/$id.gguf';
+    final path = id.startsWith('whisper-')
+        ? '${_modelsDir.path}/whisper/ggml-${id.substring('whisper-'.length)}.bin'
+        : '${_modelsDir.path}/$id.gguf';
+    debugPrint('[ModelRepository] Model path for $id: $path');
+    return path;
   }
 
   Future<Map<String, dynamic>?> _readMetadata() async {
@@ -63,6 +71,17 @@ class ModelRepository {
   Future<void> saveActiveModelId(String? id) async {
     final data = await _readMetadata() ?? {};
     data['activeModelId'] = id;
+    await _writeMetadata(data);
+  }
+
+  Future<String?> loadActiveWhisperModelId() async {
+    final data = await _readMetadata();
+    return data?['activeWhisperModelId'] as String?;
+  }
+
+  Future<void> saveActiveWhisperModelId(String? id) async {
+    final data = await _readMetadata() ?? {};
+    data['activeWhisperModelId'] = id;
     await _writeMetadata(data);
   }
 }

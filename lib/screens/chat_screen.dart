@@ -100,8 +100,10 @@ class _ChatScreenState extends State<ChatScreen>
                   : _buildMessagesList(activeConv.messages, appState),
             ),
 
-            // Input row (hidden during voice session)
-            if (appState.voiceState == VoiceState.idle)
+            // Input row (shown during idle, listening, or error so user can see transcription and edit)
+            if (appState.voiceState == VoiceState.idle ||
+                appState.voiceState == VoiceState.listening ||
+                appState.voiceState == VoiceState.error)
               _buildInputRow(appState),
           ],
         ),
@@ -404,6 +406,9 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget _buildMessageBubble(Message msg, bool isUser) {
+    final isSpeakingThis = widget.appState.currentlySpeakingMessage == msg &&
+        widget.appState.voiceState == VoiceState.speaking;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
@@ -412,6 +417,22 @@ class _ChatScreenState extends State<ChatScreen>
             : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (!isUser) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0, right: 4.0),
+              child: IconButton(
+                icon: Icon(
+                  isSpeakingThis ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+                  color: isSpeakingThis ? const Color(0xFFEF4444) : const Color(0xFF94A3B8),
+                  size: 20,
+                ),
+                onPressed: () => widget.appState.speakMessage(msg),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                splashRadius: 18,
+              ),
+            ),
+          ],
           Flexible(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -607,18 +628,24 @@ class _ChatScreenState extends State<ChatScreen>
                   // Voice trigger
                   IconButton(
                     icon: Icon(
-                      Icons.mic,
-                      color: canSend
-                          ? const Color(0xFF94A3B8)
-                          : const Color(0xFF334155),
+                      appState.voiceState == VoiceState.listening
+                          ? Icons.stop_circle_rounded
+                          : Icons.mic,
+                      color: appState.voiceState == VoiceState.listening
+                          ? const Color(0xFFEF4444)
+                          : canSend
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF334155),
                       size: 20,
                     ),
-                    onPressed: canSend
-                        ? () {
-                            FocusScope.of(context).unfocus();
-                            appState.startVoiceSession();
-                          }
-                        : null,
+                    onPressed: appState.voiceState == VoiceState.listening
+                        ? () => appState.cancelVoiceSession()
+                        : canSend
+                            ? () {
+                                FocusScope.of(context).unfocus();
+                                appState.startVoiceSession(_inputController);
+                              }
+                            : null,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     splashRadius: 20,

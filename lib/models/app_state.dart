@@ -8,10 +8,12 @@ import '../services/local_llm_service.dart';
 import '../services/compatibility_service.dart';
 import '../services/context_window_manager.dart';
 import '../repositories/conversation_repository.dart';
+import '../services/stt_service.dart';
+import '../services/tts_service.dart';
 
 enum AppScreen { chat, history, models }
 
-enum VoiceState { idle, listening, processing, speaking }
+enum VoiceState { idle, listening, processing, speaking, error }
 
 /// The lifecycle state of the local LLM engine.
 enum ModelLoadState {
@@ -28,6 +30,71 @@ class AppState extends ChangeNotifier {
 
   VoiceState _voiceState = VoiceState.idle;
   VoiceState get voiceState => _voiceState;
+
+  // Voice services
+  late SttService _sttService;
+  TtsService _ttsService = DeviceTtsService();
+
+  // Sentence Queue TTS fields
+  final List<String> _sentenceQueue = [];
+  String _sentenceBuffer = '';
+  bool _isSentenceTtsSpeaking = false;
+
+  @visibleForTesting
+  set sttService(SttService service) {
+    _sttService = service;
+  }
+
+  @visibleForTesting
+  set ttsService(TtsService service) {
+    _ttsService = service;
+    _ttsService.setHandlers(
+      onStart: () {
+        _voiceState = VoiceState.speaking;
+        notifyListeners();
+      },
+      onComplete: () {
+        _isSentenceTtsSpeaking = false;
+        if (_sentenceQueue.isNotEmpty) {
+          _speakNextSentenceSegment();
+        } else {
+          if (!_isStreaming) {
+            _voiceState = VoiceState.idle;
+            _currentlySpeakingMessage = null;
+            notifyListeners();
+          }
+        }
+      },
+      onError: (err) {
+        debugPrint('[Sentence Queue TTS] onError handler: $err');
+        _isSentenceTtsSpeaking = false;
+        if (_sentenceQueue.isNotEmpty) {
+          _speakNextSentenceSegment();
+        } else {
+          if (!_isStreaming) {
+            _voiceState = VoiceState.error;
+            _voiceErrorMessage = err;
+            _currentlySpeakingMessage = null;
+            notifyListeners();
+          }
+        }
+      },
+    );
+  }
+
+  String _voiceErrorMessage = '';
+  String get voiceErrorMessage => _voiceErrorMessage;
+
+  String _downloadErrorMessage = '';
+  String get downloadErrorMessage => _downloadErrorMessage;
+
+  void clearDownloadError() {
+    _downloadErrorMessage = '';
+    notifyListeners();
+  }
+
+  Message? _currentlySpeakingMessage;
+  Message? get currentlySpeakingMessage => _currentlySpeakingMessage;
 
   // Services
   final ModelManager modelManager = ModelManager();
@@ -90,7 +157,53 @@ class AppState extends ChangeNotifier {
   Timer? _voiceTimer;
 
   AppState() {
+    _sttService = WhisperSttService(
+      activeModelPathProvider: () => modelManager.activeWhisperModel?.localPath,
+      activeModelIdProvider: () => modelManager.activeWhisperModelId,
+    );
     _initData();
+    _initVoiceServices();
+  }
+
+  Future<void> _initVoiceServices() async {
+    try {
+      await _sttService.initialize();
+      await _ttsService.initialize();
+      _ttsService.setHandlers(
+        onStart: () {
+          _voiceState = VoiceState.speaking;
+          notifyListeners();
+        },
+        onComplete: () {
+          _isSentenceTtsSpeaking = false;
+          if (_sentenceQueue.isNotEmpty) {
+            _speakNextSentenceSegment();
+          } else {
+            if (!_isStreaming) {
+              _voiceState = VoiceState.idle;
+              _currentlySpeakingMessage = null;
+              notifyListeners();
+            }
+          }
+        },
+        onError: (err) {
+          debugPrint('[Sentence Queue TTS] onError handler: $err');
+          _isSentenceTtsSpeaking = false;
+          if (_sentenceQueue.isNotEmpty) {
+            _speakNextSentenceSegment();
+          } else {
+            if (!_isStreaming) {
+              _voiceState = VoiceState.error;
+              _voiceErrorMessage = err;
+              _currentlySpeakingMessage = null;
+              notifyListeners();
+            }
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint('[AppState] Failed to initialize voice services: $e');
+    }
   }
 
   //  INITIALISATION
@@ -162,6 +275,19 @@ class AppState extends ChangeNotifier {
     if (model.status != 'installed') return;
     if (model.localPath == null) return;
 
+    // ── GUARD: Never pass Whisper/speech models to llama_cpp_dart ────────────
+    // Whisper models are GGML .bin files — they are not GGUF and cannot be
+    // loaded by LlamaEngine. Routing them here crashes with LlamaModel.load().
+    if (model.id.startsWith('whisper-') || model.modelFamily == 'Whisper') {
+      debugPrint(
+        '[AppState] selectModel() called with a Whisper model (${model.id}). '
+        'This would crash llama_cpp_dart. Re-routing to selectWhisperModel().',
+      );
+      await selectWhisperModel(model);
+      return;
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     // Abort any in-progress generation.
     await _cancelGeneration();
 
@@ -181,6 +307,10 @@ class AppState extends ChangeNotifier {
     notifyListeners();
 
     try {
+      debugPrint(
+        '[AppState] Loading LLM model via LocalLlmService: '
+        'id=${model.id}  family=${model.modelFamily}  path=${model.localPath}',
+      );
       await _llmService.loadModel(
         model.localPath!,
         contextWindow: model.contextWindow,
@@ -206,6 +336,7 @@ class AppState extends ChangeNotifier {
   void downloadModel(ModelItem model) {
     if (model.status != 'available') return;
 
+    _downloadErrorMessage = '';
     model.status = 'downloading';
     model.downloadProgress = 0.0;
     notifyListeners();
@@ -228,6 +359,7 @@ class AppState extends ChangeNotifier {
       onError: (error) async {
         model.status = 'available';
         model.downloadProgress = 0.0;
+        _downloadErrorMessage = error.toString().replaceFirst('Exception: ', '');
         await modelManager.saveMetadata();
         notifyListeners();
       },
@@ -365,11 +497,17 @@ class AppState extends ChangeNotifier {
       'You are a helpful, concise AI assistant running entirely offline on this device.',
     );
 
+    // Clear buffer, queue, and speaking state for the new stream
+    _sentenceQueue.clear();
+    _sentenceBuffer = '';
+    _isSentenceTtsSpeaking = false;
+
     // Stream tokens from LLM engine
     final tokenStream = _llmService.generate(prompt);
     _llmStreamSub = tokenStream.listen(
       (token) {
         _streamingToken += token;
+        _processSentenceBuffer(token);
         notifyListeners();
       },
       onError: (err) {
@@ -379,6 +517,7 @@ class AppState extends ChangeNotifier {
         );
       },
       onDone: () {
+        _flushSentenceBuffer();
         final finalText = _streamingToken.isEmpty
             ? '*(No response generated)*'
             : _streamingToken;
@@ -419,10 +558,59 @@ class AppState extends ChangeNotifier {
     _llmStreamSub?.cancel();
     _llmStreamSub = null;
     _llmService.cancelGeneration();
+    await stopSpeaking();
     if (_isStreaming) {
       _isStreaming = false;
       _streamingToken = '';
       notifyListeners();
+    }
+  }
+
+  void _processSentenceBuffer(String newTokens) {
+    _sentenceBuffer += newTokens;
+    final regExp = RegExp(r'[.?!।\n]');
+    while (true) {
+      final match = regExp.firstMatch(_sentenceBuffer);
+      if (match == null) break;
+      final end = match.end;
+      final sentence = _sentenceBuffer.substring(0, end).trim();
+      _sentenceBuffer = _sentenceBuffer.substring(end);
+      if (sentence.isNotEmpty) {
+        _enqueueSentenceTts(sentence);
+      }
+    }
+  }
+
+  void _flushSentenceBuffer() {
+    final leftover = _sentenceBuffer.trim();
+    _sentenceBuffer = '';
+    if (leftover.isNotEmpty) {
+      _enqueueSentenceTts(leftover);
+    }
+  }
+
+  void _enqueueSentenceTts(String sentence) {
+    debugPrint('[Sentence Queue TTS] Enqueuing: "$sentence"');
+    _sentenceQueue.add(sentence);
+    _speakNextSentenceSegment();
+  }
+
+  Future<void> _speakNextSentenceSegment() async {
+    if (_isSentenceTtsSpeaking) return;
+    if (_sentenceQueue.isEmpty) return;
+
+    _isSentenceTtsSpeaking = true;
+    final sentence = _sentenceQueue.removeAt(0);
+
+    try {
+      debugPrint('[Sentence Queue TTS] Speaking: "$sentence"');
+      _voiceState = VoiceState.speaking;
+      notifyListeners();
+      await _ttsService.speak(sentence);
+    } catch (e) {
+      debugPrint('[Sentence Queue TTS] Error speaking: $e');
+      _isSentenceTtsSpeaking = false;
+      _speakNextSentenceSegment();
     }
   }
 
@@ -451,41 +639,118 @@ class AppState extends ChangeNotifier {
 
   //  VOICE INTERACTION
 
-  void startVoiceSession() {
+  Future<void> selectWhisperModel(ModelItem model) async {
+    if (model.status != 'installed') return;
+    if (model.localPath == null) return;
+    await modelManager.setActiveWhisperModel(model.id);
+    notifyListeners();
+  }
+
+  Future<void> unloadActiveWhisperModel() async {
+    await modelManager.setActiveWhisperModel(null);
+    notifyListeners();
+  }
+
+  Future<void> startVoiceSession(TextEditingController inputController) async {
+    _voiceErrorMessage = '';
+
+    // Check if Whisper model is active
+    if (modelManager.activeWhisperModelId == null || modelManager.activeWhisperModel == null) {
+      _voiceState = VoiceState.error;
+      _voiceErrorMessage = 'No speech recognition model active.\n\nPlease download and activate a Whisper model from the local models screen.';
+      notifyListeners();
+      return;
+    }
+
     _voiceState = VoiceState.listening;
     notifyListeners();
 
-    _voiceTimer?.cancel();
-
-    _voiceTimer = Timer(const Duration(milliseconds: 2500), () {
-      _voiceState = VoiceState.processing;
-      notifyListeners();
-
-      _voiceTimer = Timer(const Duration(milliseconds: 1500), () {
-        _voiceState = VoiceState.speaking;
+    try {
+      final isSttAvailable = await _sttService.initialize();
+      if (!isSttAvailable) {
+        _voiceState = VoiceState.error;
+        _voiceErrorMessage = 'Speech recognition is not available or permission denied on this device.';
         notifyListeners();
+        return;
+      }
 
-        _voiceTimer = Timer(const Duration(milliseconds: 2500), () {
+      // Pass 'ne' as localeId to ensure Nepali transcription, supporting multilingual recognition
+      await _sttService.startListening(
+        localeId: 'ne',
+        onResult: (text) {
+          inputController.text = text;
+          inputController.selection = TextSelection.fromPosition(
+            TextPosition(offset: text.length),
+          );
           _voiceState = VoiceState.idle;
           notifyListeners();
-
-          final voicePrompts = [
-            "How does a local model handle context length?",
-            "Draft a quick summary email for today's team sync",
-            "Write a simple Python script to parse JSON file inputs",
-            "Explain quantum physics to a 10 year old simply",
-          ];
-          final index = DateTime.now().millisecond % voicePrompts.length;
-          sendMessage(voicePrompts[index]);
-        });
-      });
-    });
+        },
+        onError: (errorMsg) {
+          _voiceState = VoiceState.error;
+          _voiceErrorMessage = errorMsg;
+          notifyListeners();
+        },
+        onDone: () {
+          if (_voiceState != VoiceState.error && _voiceState != VoiceState.processing) {
+            _voiceState = VoiceState.idle;
+            notifyListeners();
+          }
+        },
+      );
+    } catch (e) {
+      _voiceState = VoiceState.error;
+      _voiceErrorMessage = 'Failed to start speech recognition: $e';
+      notifyListeners();
+    }
   }
 
-  void cancelVoiceSession() {
-    _voiceTimer?.cancel();
-    _voiceTimer = null;
+  Future<void> cancelVoiceSession() async {
+    if (_voiceState == VoiceState.listening) {
+      _voiceState = VoiceState.processing;
+      notifyListeners();
+      await _sttService.stopListening();
+    } else {
+      _voiceState = VoiceState.idle;
+      _voiceErrorMessage = '';
+      notifyListeners();
+    }
+  }
+
+  Future<void> speakMessage(Message msg) async {
+    if (_currentlySpeakingMessage == msg) {
+      await stopSpeaking();
+      return;
+    }
+
+    // Stop any existing speech first
+    await stopSpeaking();
+
+    _currentlySpeakingMessage = msg;
+    _voiceState = VoiceState.speaking;
+    _voiceErrorMessage = '';
+    notifyListeners();
+
+    _sentenceQueue.clear();
+    _sentenceBuffer = '';
+    _isSentenceTtsSpeaking = false;
+
+    _processSentenceBuffer(msg.text);
+    _flushSentenceBuffer();
+  }
+
+  Future<void> stopSpeaking() async {
+    _sentenceQueue.clear();
+    _sentenceBuffer = '';
+    _isSentenceTtsSpeaking = false;
+    await _ttsService.stop();
     _voiceState = VoiceState.idle;
+    _currentlySpeakingMessage = null;
+    notifyListeners();
+  }
+
+  void clearVoiceError() {
+    _voiceState = VoiceState.idle;
+    _voiceErrorMessage = '';
     notifyListeners();
   }
 
@@ -495,6 +760,9 @@ class AppState extends ChangeNotifier {
     _voiceTimer?.cancel();
     _llmStreamSub?.cancel();
     _llmService.unloadModel();
+    _sttService.stopListening();
+    _ttsService.stop();
     super.dispose();
   }
 }
+

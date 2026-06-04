@@ -13,10 +13,22 @@ class ModelManager {
   String? _activeModelId;
   String? get activeModelId => _activeModelId;
 
+  String? _activeWhisperModelId;
+  String? get activeWhisperModelId => _activeWhisperModelId;
+
   ModelItem? get activeModel {
     if (_activeModelId == null) return null;
     try {
       return _models.firstWhere((m) => m.id == _activeModelId && m.status == 'installed');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  ModelItem? get activeWhisperModel {
+    if (_activeWhisperModelId == null) return null;
+    try {
+      return _models.firstWhere((m) => m.id == _activeWhisperModelId && m.status == 'installed');
     } catch (_) {
       return null;
     }
@@ -37,6 +49,7 @@ class ModelManager {
   Future<void> loadMetadata() async {
     final loadedModels = await _repository.loadModels();
     _activeModelId = await _repository.loadActiveModelId();
+    _activeWhisperModelId = await _repository.loadActiveWhisperModelId();
 
     if (loadedModels != null && loadedModels.isNotEmpty) {
       _models = loadedModels;
@@ -50,11 +63,13 @@ class ModelManager {
   Future<void> saveMetadata() async {
     await _repository.saveModels(_models);
     await _repository.saveActiveModelId(_activeModelId);
+    await _repository.saveActiveWhisperModelId(_activeWhisperModelId);
   }
 
   // Default models list from ModelCatalogService
   Future<void> _loadDefaultRegistry() async {
     _activeModelId = null;
+    _activeWhisperModelId = null;
     _models = await _catalogService.getAvailableModels();
     await saveMetadata();
   }
@@ -80,6 +95,9 @@ class ModelManager {
           if (_activeModelId == model.id) {
             _activeModelId = null;
           }
+          if (_activeWhisperModelId == model.id) {
+            _activeWhisperModelId = null;
+          }
           dirty = true;
         } else {
           // Keep local path sync
@@ -101,10 +119,12 @@ class ModelManager {
       }
     }
 
-    // Ensure active state matches the activeModelId
+    // Ensure active state matches the activeModelId or activeWhisperModelId
     for (int i = 0; i < _models.length; i++) {
       final model = _models[i];
-      final shouldBeActive = model.id == _activeModelId && model.status == 'installed';
+      final isWhisper = model.id.startsWith('whisper-');
+      final currentActiveId = isWhisper ? _activeWhisperModelId : _activeModelId;
+      final shouldBeActive = model.id == currentActiveId && model.status == 'installed';
       if (model.active != shouldBeActive) {
         _models[i] = model.copyWith(active: shouldBeActive);
         dirty = true;
@@ -121,7 +141,9 @@ class ModelManager {
     if (id == null) {
       _activeModelId = null;
       for (int i = 0; i < _models.length; i++) {
-        _models[i] = _models[i].copyWith(active: false);
+        if (!_models[i].id.startsWith('whisper-')) {
+          _models[i] = _models[i].copyWith(active: false);
+        }
       }
     } else {
       // Verify model is installed
@@ -129,7 +151,36 @@ class ModelManager {
         _models.firstWhere((m) => m.id == id && m.status == 'installed');
         _activeModelId = id;
         for (int i = 0; i < _models.length; i++) {
-          _models[i] = _models[i].copyWith(active: _models[i].id == id);
+          if (!_models[i].id.startsWith('whisper-')) {
+            _models[i] = _models[i].copyWith(active: _models[i].id == id);
+          }
+        }
+      } catch (_) {
+        // Model not found or not installed, keep current or do nothing
+        return;
+      }
+    }
+    await saveMetadata();
+  }
+
+  // Switch/Set active whisper model
+  Future<void> setActiveWhisperModel(String? id) async {
+    if (id == null) {
+      _activeWhisperModelId = null;
+      for (int i = 0; i < _models.length; i++) {
+        if (_models[i].id.startsWith('whisper-')) {
+          _models[i] = _models[i].copyWith(active: false);
+        }
+      }
+    } else {
+      // Verify model is installed
+      try {
+        _models.firstWhere((m) => m.id == id && m.status == 'installed');
+        _activeWhisperModelId = id;
+        for (int i = 0; i < _models.length; i++) {
+          if (_models[i].id.startsWith('whisper-')) {
+            _models[i] = _models[i].copyWith(active: _models[i].id == id);
+          }
         }
       } catch (_) {
         // Model not found or not installed, keep current or do nothing
@@ -160,6 +211,9 @@ class ModelManager {
 
     if (_activeModelId == id) {
       _activeModelId = null;
+    }
+    if (_activeWhisperModelId == id) {
+      _activeWhisperModelId = null;
     }
 
     await saveMetadata();

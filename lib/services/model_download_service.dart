@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class ModelDownloadService {
@@ -19,15 +20,29 @@ class ModelDownloadService {
     _cancelledDownloads[modelId] = false;
 
     // Determine if we should run a high-fidelity simulation (when using mock URLs, or for robust testing)
-    final isMockUrl = url.contains('mock') || 
-                      url.startsWith('http://mock') || 
-                      url.contains('example.com') || 
-                      !url.startsWith('http');
+    final isMockUrl =
+        url.contains('mock') ||
+        url.startsWith('http://mock') ||
+        url.contains('example.com') ||
+        !url.startsWith('http');
 
     if (isMockUrl) {
-      await _downloadSimulated(modelId, localPath, onProgress, onComplete, onError);
+      await _downloadSimulated(
+        modelId,
+        localPath,
+        onProgress,
+        onComplete,
+        onError,
+      );
     } else {
-      await _downloadReal(modelId, url, localPath, onProgress, onComplete, onError);
+      await _downloadReal(
+        modelId,
+        url,
+        localPath,
+        onProgress,
+        onComplete,
+        onError,
+      );
     }
   }
 
@@ -50,13 +65,21 @@ class ModelDownloadService {
     Function(dynamic error) onError,
   ) async {
     try {
+      debugPrint('[ModelDownloadService] Starting download for $modelId');
+      debugPrint('[ModelDownloadService] URL: $url');
+      debugPrint('[ModelDownloadService] Local path: $localPath');
+
       final file = File(localPath);
       if (file.existsSync()) {
+        debugPrint('[ModelDownloadService] Deleting existing file: $localPath');
         await file.delete();
       }
-      
+
       // Ensure directory exists
       await file.parent.create(recursive: true);
+      debugPrint(
+        '[ModelDownloadService] Created directory: ${file.parent.path}',
+      );
 
       final client = http.Client();
       final request = http.Request('GET', Uri.parse(url));
@@ -65,6 +88,9 @@ class ModelDownloadService {
       final contentLength = response.contentLength ?? 0;
       int downloadedBytes = 0;
       final sink = file.openWrite();
+      debugPrint(
+        '[ModelDownloadService] Download started. Content length: $contentLength bytes',
+      );
 
       final streamSubscription = response.stream.listen(
         (chunk) {
@@ -81,6 +107,7 @@ class ModelDownloadService {
         onError: (err) async {
           await sink.close();
           client.close();
+          debugPrint('[ModelDownloadService] Stream error for $modelId: $err');
           onError(err);
         },
         onDone: () async {
@@ -95,10 +122,30 @@ class ModelDownloadService {
             onError('Download cancelled');
           } else {
             // Verify file size is greater than 0
-            if (file.existsSync() && file.lengthSync() > 0) {
+            final fileSize = file.existsSync() ? file.lengthSync() : 0;
+            final fileSizeMb = fileSize / (1024 * 1024);
+
+            debugPrint(
+              '[ModelDownloadService] Download completed for $modelId',
+            );
+            debugPrint('[ModelDownloadService] File path: $localPath');
+            debugPrint(
+              '[ModelDownloadService] File size: $fileSize bytes (~${fileSizeMb.toStringAsFixed(2)} MB)',
+            );
+            debugPrint(
+              '[ModelDownloadService] File exists: ${file.existsSync()}',
+            );
+
+            if (file.existsSync() && fileSize > 0) {
+              debugPrint(
+                '[ModelDownloadService] ✓ Download successful for $modelId',
+              );
               onComplete(localPath);
             } else {
-              onError('Downloaded file is empty or corrupted');
+              final errorMsg =
+                  'Downloaded file is empty or corrupted. Size: $fileSize bytes';
+              debugPrint('[ModelDownloadService] ✗ ERROR: $errorMsg');
+              onError(errorMsg);
             }
           }
         },
@@ -107,6 +154,7 @@ class ModelDownloadService {
 
       _activeDownloads[modelId] = streamSubscription;
     } catch (e) {
+      debugPrint('[ModelDownloadService] Download error for $modelId: $e');
       onError(e);
     }
   }
@@ -143,10 +191,12 @@ class ModelDownloadService {
         if (progress >= 1.0) {
           progress = 1.0;
           timer.cancel();
-          
-          sink.write('Simulated Model Weights GGUF file content for ID: $modelId');
+
+          sink.write(
+            'Simulated Model Weights GGUF file content for ID: $modelId',
+          );
           await sink.close();
-          
+
           onProgress(1.0);
           onComplete(localPath);
         } else {

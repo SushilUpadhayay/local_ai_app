@@ -66,5 +66,10 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app requires microphone access to hear your speech and convert it to text.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>This app requires speech recognition access to convert your spoken words to text.</string>
 </dict>
 </plist>
+

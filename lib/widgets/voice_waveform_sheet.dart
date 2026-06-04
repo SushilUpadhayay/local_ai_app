@@ -3,6 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../models/app_state.dart';
 
+/// PUSH-TO-TALK Voice UI Modal
+///
+/// Displays the status of speech recording and transcription.
+/// States:
+/// - listening: User is recording (show animated waveform)
+/// - processing: Whisper is transcribing (show pulse animation)
+/// - speaking: TTS is playing response (show waveform)
+/// - error: Error occurred (show error message)
+///
+/// User interaction:
+/// - Tap the circular button to stop/cancel
+/// - Text result is placed in input field (NOT automatically sent)
+/// - User must manually press Send button to trigger LLM
 class VoiceWaveformSheet extends StatefulWidget {
   final AppState appState;
 
@@ -49,9 +62,7 @@ class _VoiceWaveformSheetState extends State<VoiceWaveformSheet>
           topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
         ),
-        border: Border(
-          top: BorderSide(color: Color(0xFF1E293B)),
-        ),
+        border: Border(top: BorderSide(color: Color(0xFF1E293B))),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -76,7 +87,9 @@ class _VoiceWaveformSheetState extends State<VoiceWaveformSheet>
               decoration: BoxDecoration(
                 color: const Color(0xFFEF4444).withAlpha(20),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFEF4444).withAlpha(50)),
+                border: Border.all(
+                  color: const Color(0xFFEF4444).withAlpha(50),
+                ),
               ),
               child: Text(
                 widget.appState.voiceErrorMessage,
@@ -88,8 +101,12 @@ class _VoiceWaveformSheetState extends State<VoiceWaveformSheet>
                 ),
               ),
             ),
-            if (widget.appState.voiceErrorMessage.toLowerCase().contains('permission') ||
-                widget.appState.voiceErrorMessage.toLowerCase().contains('settings')) ...[
+            if (widget.appState.voiceErrorMessage.toLowerCase().contains(
+                  'permission',
+                ) ||
+                widget.appState.voiceErrorMessage.toLowerCase().contains(
+                  'settings',
+                )) ...[
               const SizedBox(height: 12),
               ElevatedButton.icon(
                 onPressed: () async {
@@ -108,7 +125,10 @@ class _VoiceWaveformSheetState extends State<VoiceWaveformSheet>
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFEF4444),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -204,12 +224,16 @@ class _VoiceWaveformSheetState extends State<VoiceWaveformSheet>
           Text(
             () {
               switch (voiceState) {
+                case VoiceState.listening:
+                  return 'TAP BUTTON TO STOP RECORDING';
+                case VoiceState.processing:
+                  return 'PROCESSING... DO NOT CLOSE';
                 case VoiceState.speaking:
                   return 'TAP TO STOP SPEAKING';
                 case VoiceState.error:
                   return 'TAP TO DISMISS';
                 default:
-                  return 'TAP TO CANCEL / RETURN';
+                  return 'TAP TO CANCEL';
               }
             }(),
             style: const TextStyle(
@@ -227,9 +251,9 @@ class _VoiceWaveformSheetState extends State<VoiceWaveformSheet>
   String _getStatusText(VoiceState state) {
     switch (state) {
       case VoiceState.listening:
-        return 'Listening...';
+        return 'RECORDING... Tap to stop';
       case VoiceState.processing:
-        return 'Processing Locally...';
+        return 'Transcribing with Whisper...';
       case VoiceState.speaking:
         return 'Speaking Answer...';
       case VoiceState.error:
@@ -257,7 +281,11 @@ class _VoiceWaveformSheetState extends State<VoiceWaveformSheet>
   double _getBarScale(int index, VoiceState state) {
     if (state == VoiceState.processing) {
       // Slow pulse animation
-      return 0.3 + 0.4 * math.sin((_animationController.value * 2 * math.pi) + (index * 0.5));
+      return 0.3 +
+          0.4 *
+              math.sin(
+                (_animationController.value * 2 * math.pi) + (index * 0.5),
+              );
     }
 
     // Waveform simulation
@@ -266,8 +294,10 @@ class _VoiceWaveformSheetState extends State<VoiceWaveformSheet>
     double animValue = _animationController.value * 2 * math.pi;
 
     // Distribute peaks inside the middle bars
-    double centerScale = 1.0 - (index - 4).abs() / 5.0; // Peak in the center (index 4)
+    double centerScale =
+        1.0 - (index - 4).abs() / 5.0; // Peak in the center (index 4)
 
-    return centerScale * (0.3 + 0.7 * (0.5 + 0.5 * math.sin((animValue * frequency) + offset)));
+    return centerScale *
+        (0.3 + 0.7 * (0.5 + 0.5 * math.sin((animValue * frequency) + offset)));
   }
 }

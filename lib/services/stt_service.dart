@@ -6,19 +6,40 @@ import 'package:record/record.dart';
 import 'package:whisper_flutter_new/whisper_flutter_new.dart';
 import 'package:path_provider/path_provider.dart';
 
+/// STT (Speech-to-Text) service interface using Whisper
+///
+/// This implements a PUSH-TO-TALK pattern:
+/// - User manually controls when recording starts/stops (not continuous listening)
+/// - Audio is transcribed by Whisper
+/// - Results are passed back via callbacks
+/// - No automatic message sending or LLM invocation
 abstract class SttService {
   Future<bool> initialize();
+
+  /// Start recording audio - called when user taps microphone button
+  /// User must call [stopListening] to stop recording and trigger transcription
   Future<void> startListening({
     required Function(String text) onResult,
     required Function(String error) onError,
     required Function() onDone,
     String? localeId,
   });
+
+  /// Stop recording and transcribe the audio
+  /// This triggers the onResult callback with the transcribed text
   Future<void> stopListening();
   bool get isListening;
   bool get isAvailable;
 }
 
+/// Whisper-based implementation of STT
+///
+/// PUSH-TO-TALK WORKFLOW:
+/// 1. startListening() → records audio to /tmp/whisper_record.wav
+/// 2. stopListening() → stops recording and sends to Whisper for transcription
+/// 3. onResult callback → returns transcribed text (placed in input field)
+/// 4. User manually edits text and presses Send button
+/// 5. Only after Send does the LLM generate a response
 class WhisperSttService implements SttService {
   final AudioRecorder _recorder = AudioRecorder();
   final String? Function() _activeModelPathProvider;
@@ -81,11 +102,13 @@ class WhisperSttService implements SttService {
     required Function() onDone,
     String? localeId,
   }) async {
+    // Store callbacks for later use in stopListening()
     _onResult = onResult;
     _onError = onError;
     _onDone = onDone;
     _localeId = localeId;
 
+    // Ensure microphone permission is granted
     if (!_isAvailable) {
       final ok = await initialize();
       if (!ok) {
@@ -94,6 +117,7 @@ class WhisperSttService implements SttService {
       }
     }
 
+    // Verify Whisper model is available
     final modelPath = _activeModelPathProvider();
     if (modelPath == null || modelPath.isEmpty) {
       onError(
@@ -103,6 +127,7 @@ class WhisperSttService implements SttService {
     }
 
     try {
+      // Prepare WAV file for recording
       final tempDir = await getTemporaryDirectory();
       final wavPath = '${tempDir.path}/whisper_record.wav';
       final file = File(wavPath);
@@ -113,6 +138,7 @@ class WhisperSttService implements SttService {
       // Ensure the directory exists
       await file.parent.create(recursive: true);
 
+      // Start recording - user controls recording duration by tapping mic again
       _isListening = true;
       await _recorder.start(
         const RecordConfig(
@@ -122,13 +148,27 @@ class WhisperSttService implements SttService {
         ),
         path: wavPath,
       );
-      debugPrint('[WhisperSttService] Recording started: $wavPath');
+      debugPrint(
+        '[WhisperSttService] PUSH-TO-TALK: Recording started at $wavPath',
+      );
     } catch (e) {
       _isListening = false;
       onError('Failed to start recording: $e');
     }
   }
 
+  /// PUSH-TO-TALK: Stop recording and transcribe the audio
+  ///
+  /// Called when user taps the microphone button a second time (or cancels).
+  /// This method:
+  /// 1. Stops the audio recording
+  /// 2. Validates the Whisper model is available
+  /// 3. Sends the audio file to Whisper for transcription
+  /// 4. Calls onResult() with the transcribed text
+  /// 5. Text is placed in the input field for user to review/edit
+  /// 6. User must manually press Send button to trigger LLM
+  ///
+  /// NO automatic message sending or LLM invocation happens here.
   @override
   Future<void> stopListening() async {
     if (!_isListening) return;
@@ -136,7 +176,9 @@ class WhisperSttService implements SttService {
 
     try {
       final wavPath = await _recorder.stop();
-      debugPrint('[WhisperSttService] Recording stopped. WAV path: $wavPath');
+      debugPrint(
+        '[WhisperSttService] PUSH-TO-TALK: Recording stopped. WAV path: $wavPath',
+      );
       if (wavPath == null) {
         _onError?.call('Recording failed: path is null.');
         _onDone?.call();
@@ -151,7 +193,7 @@ class WhisperSttService implements SttService {
         return;
       }
 
-      // ===== FILE VERIFICATION LOGGING =====
+      // Validate Whisper model file
       final modelFile = File(modelPath);
       final modelDir = modelFile.parent.path;
       final fileExists = await modelFile.exists();
@@ -202,6 +244,7 @@ class WhisperSttService implements SttService {
         return;
       }
 
+      // Convert model ID to Whisper enum
       WhisperModel whisperModel;
       if (modelId == 'whisper-tiny') {
         whisperModel = WhisperModel.tiny;
@@ -218,6 +261,7 @@ class WhisperSttService implements SttService {
       );
       final Whisper whisper = Whisper(model: whisperModel, modelDir: modelDir);
 
+      // Determine language for transcription (Nepali by default)
       String whisperLang = 'auto';
       if (_localeId != null) {
         if (_localeId!.toLowerCase().startsWith('ne')) {
@@ -230,6 +274,8 @@ class WhisperSttService implements SttService {
       debugPrint(
         '[WhisperSttService] Transcribing with language: $whisperLang',
       );
+
+      // Send audio to Whisper for transcription
       final res = await whisper.transcribe(
         transcribeRequest: TranscribeRequest(
           audio: wavPath,
@@ -239,6 +285,8 @@ class WhisperSttService implements SttService {
         ),
       );
 
+      // Return transcribed text - it will be placed in input field
+      // User can then review, edit, and manually press Send
       debugPrint('[WhisperSttService] Transcription result: ${res.text}');
       _onResult?.call(res.text.trim());
       _onDone?.call();

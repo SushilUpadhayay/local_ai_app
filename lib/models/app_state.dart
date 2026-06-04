@@ -359,7 +359,10 @@ class AppState extends ChangeNotifier {
       onError: (error) async {
         model.status = 'available';
         model.downloadProgress = 0.0;
-        _downloadErrorMessage = error.toString().replaceFirst('Exception: ', '');
+        _downloadErrorMessage = error.toString().replaceFirst(
+          'Exception: ',
+          '',
+        );
         await modelManager.saveMetadata();
         notifyListeners();
       },
@@ -422,8 +425,21 @@ class AppState extends ChangeNotifier {
     }).toList();
   }
 
-  //  SEND MESSAGE  (streaming via LocalLlmService)
+  //  SEND MESSAGE  (manual trigger only - NOT automatic)
 
+  /// Send a user message and generate an LLM response
+  ///
+  /// This method is ONLY called when the user manually presses the Send button.
+  /// It is NOT called automatically by the STT (speech-to-text) workflow.
+  ///
+  /// STT Workflow (PUSH-TO-TALK):
+  /// 1. User taps microphone → recording starts
+  /// 2. User taps microphone again → Whisper transcribes
+  /// 3. Transcription text appears in input field
+  /// 4. User manually calls this method by pressing Send button
+  /// 5. Only then does the LLM generate a response
+  ///
+  /// There is NO automatic sending, NO continuous listening, NO automatic processing.
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
     if (_isStreaming) return; // Block concurrent requests.
@@ -651,32 +667,52 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// PUSH-TO-TALK: Starts recording audio
+  ///
+  /// Workflow:
+  /// 1. User taps microphone button → calls this method
+  /// 2. Audio recording starts (state = listening)
+  /// 3. User taps microphone button again → calls [cancelVoiceSession]
+  /// 4. Recording stops and Whisper transcribes audio (state = processing)
+  /// 5. Transcription result populates the input field (NOT automatically sent)
+  /// 6. User can edit the text and manually press Send button
+  /// 7. Only then does the LLM generate a response
+  ///
+  /// NO automatic sending of messages occurs.
   Future<void> startVoiceSession(TextEditingController inputController) async {
     _voiceErrorMessage = '';
 
-    // Check if Whisper model is active
-    if (modelManager.activeWhisperModelId == null || modelManager.activeWhisperModel == null) {
+    // Validate Whisper model is available
+    if (modelManager.activeWhisperModelId == null ||
+        modelManager.activeWhisperModel == null) {
       _voiceState = VoiceState.error;
-      _voiceErrorMessage = 'No speech recognition model active.\n\nPlease download and activate a Whisper model from the local models screen.';
+      _voiceErrorMessage =
+          'No speech recognition model active.\n\nPlease download and activate a Whisper model from the local models screen.';
       notifyListeners();
       return;
     }
 
+    // Update UI: show listening state
     _voiceState = VoiceState.listening;
     notifyListeners();
 
     try {
+      // Initialize microphone permission
       final isSttAvailable = await _sttService.initialize();
       if (!isSttAvailable) {
         _voiceState = VoiceState.error;
-        _voiceErrorMessage = 'Speech recognition is not available or permission denied on this device.';
+        _voiceErrorMessage =
+            'Speech recognition is not available or permission denied on this device.';
         notifyListeners();
         return;
       }
 
-      // Pass 'ne' as localeId to ensure Nepali transcription, supporting multilingual recognition
+      // Start recording with language set to Nepali ('ne')
+      // When user taps mic again, stopListening() will be called
       await _sttService.startListening(
         localeId: 'ne',
+        // This callback fires when transcription completes
+        // Text is placed in input field WITHOUT automatic sending
         onResult: (text) {
           inputController.text = text;
           inputController.selection = TextSelection.fromPosition(
@@ -684,6 +720,7 @@ class AppState extends ChangeNotifier {
           );
           _voiceState = VoiceState.idle;
           notifyListeners();
+          // User must manually press Send button to trigger LLM
         },
         onError: (errorMsg) {
           _voiceState = VoiceState.error;
@@ -691,7 +728,8 @@ class AppState extends ChangeNotifier {
           notifyListeners();
         },
         onDone: () {
-          if (_voiceState != VoiceState.error && _voiceState != VoiceState.processing) {
+          if (_voiceState != VoiceState.error &&
+              _voiceState != VoiceState.processing) {
             _voiceState = VoiceState.idle;
             notifyListeners();
           }
@@ -704,12 +742,24 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// PUSH-TO-TALK: Stops recording and triggers transcription
+  ///
+  /// Called when:
+  /// 1. User taps the microphone button a second time (during listening)
+  /// 2. User taps the cancel button in the voice modal
+  ///
+  /// This stops audio recording and sends it to Whisper for transcription.
+  /// The resulting text is placed in the input field for manual review/editing
+  /// before the user presses Send to trigger the LLM.
   Future<void> cancelVoiceSession() async {
     if (_voiceState == VoiceState.listening) {
+      // Transition to processing state while Whisper transcribes the audio
       _voiceState = VoiceState.processing;
       notifyListeners();
+      // This will trigger the onResult callback which populates the input field
       await _sttService.stopListening();
     } else {
+      // User cancelled from modal or error state
       _voiceState = VoiceState.idle;
       _voiceErrorMessage = '';
       notifyListeners();
@@ -765,4 +815,3 @@ class AppState extends ChangeNotifier {
     super.dispose();
   }
 }
-

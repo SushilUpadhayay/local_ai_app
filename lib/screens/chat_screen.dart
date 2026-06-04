@@ -406,7 +406,8 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget _buildMessageBubble(Message msg, bool isUser) {
-    final isSpeakingThis = widget.appState.currentlySpeakingMessage == msg &&
+    final isSpeakingThis =
+        widget.appState.currentlySpeakingMessage == msg &&
         widget.appState.voiceState == VoiceState.speaking;
 
     return Padding(
@@ -422,8 +423,12 @@ class _ChatScreenState extends State<ChatScreen>
               padding: const EdgeInsets.only(top: 8.0, right: 4.0),
               child: IconButton(
                 icon: Icon(
-                  isSpeakingThis ? Icons.volume_off_rounded : Icons.volume_up_rounded,
-                  color: isSpeakingThis ? const Color(0xFFEF4444) : const Color(0xFF94A3B8),
+                  isSpeakingThis
+                      ? Icons.volume_off_rounded
+                      : Icons.volume_up_rounded,
+                  color: isSpeakingThis
+                      ? const Color(0xFFEF4444)
+                      : const Color(0xFF94A3B8),
                   size: 20,
                 ),
                 onPressed: () => widget.appState.speakMessage(msg),
@@ -625,7 +630,11 @@ class _ChatScreenState extends State<ChatScreen>
                       onSubmitted: canSend ? (_) => _sendMessage() : null,
                     ),
                   ),
-                  // Voice trigger
+                  // PUSH-TO-TALK: Microphone button
+                  // Tap 1: Start recording (state = listening, icon = stop circle)
+                  // Tap 2: Stop recording and transcribe (state = processing)
+                  // Result: Text appears in input field (NOT automatically sent)
+                  // User can edit and manually press Send to trigger LLM
                   IconButton(
                     icon: Icon(
                       appState.voiceState == VoiceState.listening
@@ -634,18 +643,18 @@ class _ChatScreenState extends State<ChatScreen>
                       color: appState.voiceState == VoiceState.listening
                           ? const Color(0xFFEF4444)
                           : canSend
-                              ? const Color(0xFF94A3B8)
-                              : const Color(0xFF334155),
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF334155),
                       size: 20,
                     ),
                     onPressed: appState.voiceState == VoiceState.listening
                         ? () => appState.cancelVoiceSession()
                         : canSend
-                            ? () {
-                                FocusScope.of(context).unfocus();
-                                appState.startVoiceSession(_inputController);
-                              }
-                            : null,
+                        ? () {
+                            FocusScope.of(context).unfocus();
+                            appState.startVoiceSession(_inputController);
+                          }
+                        : null,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     splashRadius: 20,
@@ -655,7 +664,8 @@ class _ChatScreenState extends State<ChatScreen>
             ),
           ),
           const SizedBox(width: 8),
-          // Send / Stop button
+          // Send button - MANUALLY triggered (not automatic)
+          // Only sends message when user explicitly presses this button
           GestureDetector(
             onTap: appState.isStreaming
                 ? null // streaming — no action yet (stop can be wired here)

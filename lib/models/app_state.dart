@@ -275,6 +275,19 @@ class AppState extends ChangeNotifier {
     if (model.status != 'installed') return;
     if (model.localPath == null) return;
 
+    // ── GUARD: Never pass Whisper/speech models to llama_cpp_dart ────────────
+    // Whisper models are GGML .bin files — they are not GGUF and cannot be
+    // loaded by LlamaEngine. Routing them here crashes with LlamaModel.load().
+    if (model.id.startsWith('whisper-') || model.modelFamily == 'Whisper') {
+      debugPrint(
+        '[AppState] selectModel() called with a Whisper model (${model.id}). '
+        'This would crash llama_cpp_dart. Re-routing to selectWhisperModel().',
+      );
+      await selectWhisperModel(model);
+      return;
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     // Abort any in-progress generation.
     await _cancelGeneration();
 
@@ -294,6 +307,10 @@ class AppState extends ChangeNotifier {
     notifyListeners();
 
     try {
+      debugPrint(
+        '[AppState] Loading LLM model via LocalLlmService: '
+        'id=${model.id}  family=${model.modelFamily}  path=${model.localPath}',
+      );
       await _llmService.loadModel(
         model.localPath!,
         contextWindow: model.contextWindow,

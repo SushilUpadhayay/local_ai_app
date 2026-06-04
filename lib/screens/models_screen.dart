@@ -1065,7 +1065,23 @@ class _ModelsScreenState extends State<ModelsScreen> {
                           ? const Color(0xFFF59E0B)
                           : const Color(0xFF6366F1),
                       enabled: loadState != ModelLoadState.loading,
-                      onPressed: () => appState.selectModel(model),
+                      onPressed: () {
+                        if (_selectedTabIndex == 1) {
+                          // Speech tab: activate via WhisperSttService, NOT llama_cpp_dart
+                          debugPrint(
+                            '[ModelsScreen] Activating Whisper model: ${model.id} '
+                            '(path: ${model.localPath}) → selectWhisperModel()',
+                          );
+                          appState.selectWhisperModel(model);
+                        } else {
+                          // LLM tab: activate via LocalLlmService
+                          debugPrint(
+                            '[ModelsScreen] Activating LLM model: ${model.id} '
+                            '(path: ${model.localPath}) → selectModel()',
+                          );
+                          appState.selectModel(model);
+                        }
+                      },
                     ),
                   if (model.active && loadState == ModelLoadState.loaded) ...[
                     _buildActionButton(

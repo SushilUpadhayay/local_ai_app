@@ -136,6 +136,24 @@ class AppState extends ChangeNotifier {
 
   StreamSubscription<String>? _llmStreamSub;
 
+  // Live Streaming TTS (OPTIONAL: user-initiated real-time speech during generation)
+  /// Whether live TTS is actively speaking as text streams in
+  bool _isLiveStreamingTts = false;
+  bool get isLiveStreamingTts => _isLiveStreamingTts;
+
+  /// Buffered text waiting to be spoken in live streaming mode
+  String _liveStreamingTextBuffer = '';
+
+  /// Reference to the message being streamed (for replay button later)
+  Message? _currentStreamingMessage;
+  Message? get currentStreamingMessage => _currentStreamingMessage;
+
+  /// Whether we're currently speaking a chunk of live stream text
+  bool _isLiveStreamingSpeaking = false;
+
+  /// Check if a message is the one currently streaming
+  bool isStreamingMessage(Message msg) => _currentStreamingMessage == msg;
+
   // Models list (delegated)
   List<ModelItem> get models => modelManager.models;
   ModelItem? get activeModel => modelManager.activeModel;
@@ -518,12 +536,22 @@ class AppState extends ChangeNotifier {
     _sentenceBuffer = '';
     _isSentenceTtsSpeaking = false;
 
+    // Reset live streaming state for new message
+    _isLiveStreamingTts = false;
+    _liveStreamingTextBuffer = '';
+    _isLiveStreamingSpeaking = false;
+    _currentStreamingMessage = null;
+
     // Stream tokens from LLM engine
     final tokenStream = _llmService.generate(prompt);
     _llmStreamSub = tokenStream.listen(
       (token) {
         _streamingToken += token;
         _processSentenceBuffer(token);
+
+        // Feed to live TTS if enabled
+        _feedLiveStreamingText(token);
+
         notifyListeners();
       },
       onError: (err) {
@@ -550,12 +578,23 @@ class AppState extends ChangeNotifier {
     _llmStreamSub?.cancel();
     _llmStreamSub = null;
 
+    // Stop live TTS if it was running (allows replay button to work for full message)
+    if (_isLiveStreamingTts) {
+      _ttsService.stop();
+      _isLiveStreamingTts = false;
+      _isLiveStreamingSpeaking = false;
+      _liveStreamingTextBuffer = '';
+    }
+
     final aiMessage = Message(
       sender: 'ai',
       text: text,
       timestamp: DateTime.now(),
       model: modelName,
     );
+
+    // Store reference for replay button
+    _currentStreamingMessage = aiMessage;
 
     if (_activeConversation != null) {
       _activeConversation!.messages.add(aiMessage);
@@ -796,6 +835,114 @@ class AppState extends ChangeNotifier {
     _voiceState = VoiceState.idle;
     _currentlySpeakingMessage = null;
     notifyListeners();
+  }
+
+  // ===== LIVE STREAMING TTS (Optional feature) =====
+
+  /// Start live TTS: speak text chunks as they stream in from the LLM
+  /// This is independent from replay/sentence-queue TTS
+  /// User must manually tap "🔊 Speak Live" button - never automatic
+  void startLiveStreamingTts() {
+    // Stop any existing replay speaking
+    if (_currentlySpeakingMessage != null) {
+      _ttsService.stop();
+    }
+
+    _isLiveStreamingTts = true;
+    _liveStreamingTextBuffer = '';
+    _isLiveStreamingSpeaking = false;
+    _currentlySpeakingMessage = null;
+
+    debugPrint('[LiveStreamingTts] Started live streaming TTS');
+    notifyListeners();
+  }
+
+  /// Stop live TTS (keeps LLM generation running)
+  /// Can be restarted by tapping "Speak Live" again
+  Future<void> stopLiveStreamingTts() async {
+    if (!_isLiveStreamingTts) return;
+
+    _isLiveStreamingTts = false;
+    _isLiveStreamingSpeaking = false;
+    await _ttsService.stop();
+    _liveStreamingTextBuffer = '';
+
+    debugPrint('[LiveStreamingTts] Stopped live streaming TTS');
+    notifyListeners();
+  }
+
+  /// Queue text for live streaming TTS and speak it
+  /// Called for each token that arrives during generation
+  void _feedLiveStreamingText(String text) {
+    if (!_isLiveStreamingTts) return;
+
+    _liveStreamingTextBuffer += text;
+
+    // Try to speak by sentences/words to keep speech timely
+    _speakNextLiveStreamingChunk();
+  }
+
+  /// Process buffered text and speak sentence/word chunks
+  void _speakNextLiveStreamingChunk() {
+    if (!_isLiveStreamingTts || _isLiveStreamingSpeaking) return;
+    if (_liveStreamingTextBuffer.isEmpty) return;
+
+    // Split by sentences (. ! ? । \n) or speak word boundary if large buffer
+    final sentenceMatch = RegExp(
+      r'[.?!।\n]',
+    ).firstMatch(_liveStreamingTextBuffer);
+
+    late String textToSpeak;
+    late String remaining;
+
+    if (sentenceMatch != null) {
+      // Speak up to and including the sentence end
+      textToSpeak = _liveStreamingTextBuffer.substring(0, sentenceMatch.end);
+      remaining = _liveStreamingTextBuffer
+          .substring(sentenceMatch.end)
+          .trimLeft();
+    } else if (_liveStreamingTextBuffer.length > 50) {
+      // Buffer is large but no sentence end - speak at word boundary
+      final lastSpace = _liveStreamingTextBuffer.lastIndexOf(' ');
+      if (lastSpace > 0 && lastSpace < _liveStreamingTextBuffer.length - 1) {
+        textToSpeak = _liveStreamingTextBuffer.substring(0, lastSpace);
+        remaining = _liveStreamingTextBuffer.substring(lastSpace).trim();
+      } else {
+        // No good break point, just accumulate more
+        return;
+      }
+    } else {
+      // Buffer is small, wait for more text
+      return;
+    }
+
+    // Trim and speak
+    textToSpeak = textToSpeak.trim();
+    if (textToSpeak.isEmpty) {
+      _liveStreamingTextBuffer = remaining;
+      _speakNextLiveStreamingChunk();
+      return;
+    }
+
+    _liveStreamingTextBuffer = remaining;
+    _isLiveStreamingSpeaking = true;
+
+    debugPrint(
+      '[LiveStreamingTts] Speaking chunk: "${textToSpeak.substring(0, textToSpeak.length > 50 ? 50 : textToSpeak.length)}..."',
+    );
+
+    _ttsService
+        .speak(textToSpeak)
+        .then((_) {
+          // After this chunk completes, try to speak next
+          _isLiveStreamingSpeaking = false;
+          _speakNextLiveStreamingChunk();
+        })
+        .catchError((err) {
+          debugPrint('[LiveStreamingTts] Error speaking: $err');
+          _isLiveStreamingSpeaking = false;
+          _speakNextLiveStreamingChunk();
+        });
   }
 
   void clearVoiceError() {

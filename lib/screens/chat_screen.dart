@@ -515,12 +515,54 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   /// Live streaming bubble — shows accumulated tokens as they arrive.
+  /// Includes optional "🔊 Speak Live" button for real-time TTS
   Widget _buildStreamingBubble(String partialText) {
+    final appState = widget.appState;
+    final isLiveSpeaking = appState.isLiveStreamingTts;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Live TTS button (optional feature)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0, right: 4.0),
+            child: GestureDetector(
+              onTap: () {
+                if (isLiveSpeaking) {
+                  // Stop live TTS (keep generation running)
+                  appState.stopLiveStreamingTts();
+                } else {
+                  // Start live TTS
+                  appState.startLiveStreamingTts();
+                }
+              },
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isLiveSpeaking
+                      ? const Color(0xFFEF4444).withAlpha(25)
+                      : const Color(0xFF1E293B),
+                  border: Border.all(
+                    color: isLiveSpeaking
+                        ? const Color(0xFFEF4444)
+                        : const Color(0xFF94A3B8),
+                    width: 1.5,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    isLiveSpeaking ? '⏹' : '🔊',
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                ),
+              ),
+            ),
+          ),
           Flexible(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

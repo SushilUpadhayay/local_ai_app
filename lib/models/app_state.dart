@@ -23,6 +23,14 @@ enum ModelLoadState {
   failed, // Model loading failed
 }
 
+enum TtsState { idle, buffering, speaking, stopped, muted }
+
+class _TtsQueueItem {
+  final String sentence;
+  final int sessionId;
+  _TtsQueueItem(this.sentence, this.sessionId);
+}
+
 class AppState extends ChangeNotifier {
   // Navigation
   AppScreen _activeScreen = AppScreen.chat;
@@ -35,10 +43,26 @@ class AppState extends ChangeNotifier {
   late SttService _sttService;
   TtsService _ttsService = DeviceTtsService();
 
+  // === TTS STATE AND CONTROL FLAGS (Single Source of Truth) ===
+  TtsState _ttsState = TtsState.idle;
+  TtsState get ttsState => _ttsState;
+
+  bool _isTtsEnabled = true;
+  bool get isTtsEnabled => _isTtsEnabled;
+
+  bool get isSpeaking =>
+      _ttsState == TtsState.speaking || _ttsState == TtsState.buffering;
+
+  int _ttsSessionId = 0;
+  int? _activeUtteranceSessionId;
+  bool _isVoiceSessionActive = false;
+
   // Sentence Queue TTS fields
-  final List<String> _sentenceQueue = [];
+  final List<_TtsQueueItem> _sentenceQueue = [];
   String _sentenceBuffer = '';
   bool _isSentenceTtsSpeaking = false;
+
+
 
   @visibleForTesting
   set sttService(SttService service) {
@@ -48,38 +72,7 @@ class AppState extends ChangeNotifier {
   @visibleForTesting
   set ttsService(TtsService service) {
     _ttsService = service;
-    _ttsService.setHandlers(
-      onStart: () {
-        _voiceState = VoiceState.speaking;
-        notifyListeners();
-      },
-      onComplete: () {
-        _isSentenceTtsSpeaking = false;
-        if (_sentenceQueue.isNotEmpty) {
-          _speakNextSentenceSegment();
-        } else {
-          if (!_isStreaming) {
-            _voiceState = VoiceState.idle;
-            _currentlySpeakingMessage = null;
-            notifyListeners();
-          }
-        }
-      },
-      onError: (err) {
-        debugPrint('[Sentence Queue TTS] onError handler: $err');
-        _isSentenceTtsSpeaking = false;
-        if (_sentenceQueue.isNotEmpty) {
-          _speakNextSentenceSegment();
-        } else {
-          if (!_isStreaming) {
-            _voiceState = VoiceState.error;
-            _voiceErrorMessage = err;
-            _currentlySpeakingMessage = null;
-            notifyListeners();
-          }
-        }
-      },
-    );
+    _registerTtsHandlers();
   }
 
   String _voiceErrorMessage = '';
@@ -136,24 +129,6 @@ class AppState extends ChangeNotifier {
 
   StreamSubscription<String>? _llmStreamSub;
 
-  // Live Streaming TTS (OPTIONAL: user-initiated real-time speech during generation)
-  /// Whether live TTS is actively speaking as text streams in
-  bool _isLiveStreamingTts = false;
-  bool get isLiveStreamingTts => _isLiveStreamingTts;
-
-  /// Buffered text waiting to be spoken in live streaming mode
-  String _liveStreamingTextBuffer = '';
-
-  /// Reference to the message being streamed (for replay button later)
-  Message? _currentStreamingMessage;
-  Message? get currentStreamingMessage => _currentStreamingMessage;
-
-  /// Whether we're currently speaking a chunk of live stream text
-  bool _isLiveStreamingSpeaking = false;
-
-  /// Check if a message is the one currently streaming
-  bool isStreamingMessage(Message msg) => _currentStreamingMessage == msg;
-
   // Models list (delegated)
   List<ModelItem> get models => modelManager.models;
   ModelItem? get activeModel => modelManager.activeModel;
@@ -174,11 +149,17 @@ class AppState extends ChangeNotifier {
   // Voice timers
   Timer? _voiceTimer;
 
-  AppState() {
-    _sttService = WhisperSttService(
+  AppState({
+    SttService? sttService,
+    TtsService? ttsService,
+  }) {
+    _sttService = sttService ?? WhisperSttService(
       activeModelPathProvider: () => modelManager.activeWhisperModel?.localPath,
       activeModelIdProvider: () => modelManager.activeWhisperModelId,
     );
+    if (ttsService != null) {
+      _ttsService = ttsService;
+    }
     _initData();
     _initVoiceServices();
   }
@@ -187,40 +168,78 @@ class AppState extends ChangeNotifier {
     try {
       await _sttService.initialize();
       await _ttsService.initialize();
-      _ttsService.setHandlers(
-        onStart: () {
-          _voiceState = VoiceState.speaking;
-          notifyListeners();
-        },
-        onComplete: () {
-          _isSentenceTtsSpeaking = false;
-          if (_sentenceQueue.isNotEmpty) {
-            _speakNextSentenceSegment();
-          } else {
-            if (!_isStreaming) {
-              _voiceState = VoiceState.idle;
-              _currentlySpeakingMessage = null;
-              notifyListeners();
-            }
-          }
-        },
-        onError: (err) {
-          debugPrint('[Sentence Queue TTS] onError handler: $err');
-          _isSentenceTtsSpeaking = false;
-          if (_sentenceQueue.isNotEmpty) {
-            _speakNextSentenceSegment();
-          } else {
-            if (!_isStreaming) {
-              _voiceState = VoiceState.error;
-              _voiceErrorMessage = err;
-              _currentlySpeakingMessage = null;
-              notifyListeners();
-            }
-          }
-        },
-      );
+      _registerTtsHandlers();
     } catch (e) {
       debugPrint('[AppState] Failed to initialize voice services: $e');
+    }
+  }
+
+  void _registerTtsHandlers() {
+    _ttsService.setHandlers(
+      onStart: () {
+        if (_activeUtteranceSessionId != _ttsSessionId) {
+          debugPrint(
+            '[TTS] Ignoring onStart callback for stale session $_activeUtteranceSessionId (current: $_ttsSessionId)',
+          );
+          return;
+        }
+        if (_isTtsEnabled) {
+          _ttsState = TtsState.speaking;
+          _voiceState = VoiceState.speaking;
+          notifyListeners();
+        }
+      },
+      onComplete: () {
+        _isSentenceTtsSpeaking = false;
+        if (_activeUtteranceSessionId != _ttsSessionId) {
+          debugPrint(
+            '[TTS] Ignoring onComplete callback for stale session $_activeUtteranceSessionId (current: $_ttsSessionId)',
+          );
+          return;
+        }
+        _activeUtteranceSessionId = null; // Utterance finished — clear reference
+        _processQueueAfterUtterance();
+      },
+      onError: (err) {
+        debugPrint('[TTS] Error callback: $err');
+        _isSentenceTtsSpeaking = false;
+        if (_activeUtteranceSessionId != _ttsSessionId) {
+          debugPrint(
+            '[TTS] Ignoring onError callback for stale session $_activeUtteranceSessionId (current: $_ttsSessionId)',
+          );
+          return;
+        }
+        _activeUtteranceSessionId = null; // Utterance errored — clear reference
+        _processQueueAfterUtterance(error: err.toString());
+      },
+    );
+  }
+
+  void _processQueueAfterUtterance({String? error}) {
+    if (!_isTtsEnabled) {
+      _ttsState = TtsState.idle;
+      notifyListeners();
+      return;
+    }
+
+    // Remove expired items from the front of the queue
+    while (_sentenceQueue.isNotEmpty &&
+        _sentenceQueue.first.sessionId != _ttsSessionId) {
+      _sentenceQueue.removeAt(0);
+    }
+
+    if (_sentenceQueue.isNotEmpty) {
+      _speakNextSentenceSegment();
+    } else {
+      _ttsState = TtsState.idle;
+      if (!_isStreaming) {
+        _voiceState = error != null ? VoiceState.error : VoiceState.idle;
+        if (error != null) {
+          _voiceErrorMessage = error;
+        }
+        _currentlySpeakingMessage = null;
+      }
+      notifyListeners();
     }
   }
 
@@ -484,8 +503,21 @@ class AppState extends ChangeNotifier {
       _bumpConversationPreview(_activeConversation!.id, text);
     }
 
+    final shouldSpeak = _isVoiceSessionActive || _isLiveStreamingTtsEnabled;
+    _isVoiceSessionActive = false; // Reset for next message
+
+    _ttsSessionId++; // Invalidate old session and start a new one
+    final currentSessionId = _ttsSessionId;
+
     _isStreaming = true;
     _streamingToken = '';
+    if (shouldSpeak) {
+      _isTtsEnabled = true;
+      _ttsState = TtsState.buffering;
+    } else {
+      _isTtsEnabled = false;
+      _ttsState = TtsState.idle;
+    }
     notifyListeners();
 
     // Guard: no model selected
@@ -537,9 +569,7 @@ class AppState extends ChangeNotifier {
     _isSentenceTtsSpeaking = false;
 
     // Reset live streaming state for new message
-    _isLiveStreamingTts = false;
-    _liveStreamingTextBuffer = '';
-    _isLiveStreamingSpeaking = false;
+    _isLiveStreamingTtsEnabled = false;
     _currentStreamingMessage = null;
 
     // Stream tokens from LLM engine
@@ -547,10 +577,11 @@ class AppState extends ChangeNotifier {
     _llmStreamSub = tokenStream.listen(
       (token) {
         _streamingToken += token;
-        _processSentenceBuffer(token);
 
-        // Feed to live TTS if enabled
-        _feedLiveStreamingText(token);
+        // Guard checking session validity
+        if (_ttsSessionId == currentSessionId && _isTtsEnabled) {
+          _processSentenceBuffer(token);
+        }
 
         notifyListeners();
       },
@@ -561,7 +592,10 @@ class AppState extends ChangeNotifier {
         );
       },
       onDone: () {
-        _flushSentenceBuffer();
+        // Guard checking session validity
+        if (_ttsSessionId == currentSessionId && _isTtsEnabled) {
+          _flushSentenceBuffer();
+        }
         final finalText = _streamingToken.isEmpty
             ? '*(No response generated)*'
             : _streamingToken;
@@ -579,12 +613,7 @@ class AppState extends ChangeNotifier {
     _llmStreamSub = null;
 
     // Stop live TTS if it was running (allows replay button to work for full message)
-    if (_isLiveStreamingTts) {
-      _ttsService.stop();
-      _isLiveStreamingTts = false;
-      _isLiveStreamingSpeaking = false;
-      _liveStreamingTextBuffer = '';
-    }
+    _isLiveStreamingTtsEnabled = false;
 
     final aiMessage = Message(
       sender: 'ai',
@@ -613,7 +642,7 @@ class AppState extends ChangeNotifier {
     _llmStreamSub?.cancel();
     _llmStreamSub = null;
     _llmService.cancelGeneration();
-    await stopSpeaking();
+    await muteTts(reason: 'Generation cancelled');
     if (_isStreaming) {
       _isStreaming = false;
       _streamingToken = '';
@@ -631,7 +660,7 @@ class AppState extends ChangeNotifier {
       final sentence = _sentenceBuffer.substring(0, end).trim();
       _sentenceBuffer = _sentenceBuffer.substring(end);
       if (sentence.isNotEmpty) {
-        _enqueueSentenceTts(sentence);
+        _enqueueSentenceTts(sentence, _ttsSessionId);
       }
     }
   }
@@ -640,31 +669,75 @@ class AppState extends ChangeNotifier {
     final leftover = _sentenceBuffer.trim();
     _sentenceBuffer = '';
     if (leftover.isNotEmpty) {
-      _enqueueSentenceTts(leftover);
+      _enqueueSentenceTts(leftover, _ttsSessionId);
     }
   }
 
-  void _enqueueSentenceTts(String sentence) {
-    debugPrint('[Sentence Queue TTS] Enqueuing: "$sentence"');
-    _sentenceQueue.add(sentence);
+  void _enqueueSentenceTts(String sentence, int sessionId) {
+    // Guard: check if TTS is enabled before enqueueing
+    if (!_isTtsEnabled) {
+      debugPrint('[TTS] Blocked enqueue - TTS disabled: "$sentence"');
+      return;
+    }
+    // Guard: check if session is still active
+    if (sessionId != _ttsSessionId) {
+      debugPrint(
+        '[TTS] Blocked enqueue - stale session $sessionId (current: $_ttsSessionId): "$sentence"',
+      );
+      return;
+    }
+
+    debugPrint(
+      '[Sentence Queue TTS] Enqueuing: "$sentence" (session $sessionId)',
+    );
+    _sentenceQueue.add(_TtsQueueItem(sentence, sessionId));
     _speakNextSentenceSegment();
   }
 
   Future<void> _speakNextSentenceSegment() async {
+    // Guard: check if TTS is enabled before speaking
+    if (!_isTtsEnabled) {
+      debugPrint('[TTS] Blocked speak - TTS disabled');
+      _isSentenceTtsSpeaking = false;
+      return;
+    }
+
     if (_isSentenceTtsSpeaking) return;
+
+    // Clean up expired items from the front of the queue
+    while (_sentenceQueue.isNotEmpty &&
+        _sentenceQueue.first.sessionId != _ttsSessionId) {
+      _sentenceQueue.removeAt(0);
+    }
+
     if (_sentenceQueue.isEmpty) return;
 
     _isSentenceTtsSpeaking = true;
-    final sentence = _sentenceQueue.removeAt(0);
+    final item = _sentenceQueue.removeAt(0);
+
+    // Verify session ID before calling speak()
+    if (item.sessionId != _ttsSessionId) {
+      debugPrint(
+        '[TTS] Skipping speak() for stale item from session ${item.sessionId} (current: $_ttsSessionId)',
+      );
+      _isSentenceTtsSpeaking = false;
+      _speakNextSentenceSegment();
+      return;
+    }
+
+    _activeUtteranceSessionId = _ttsSessionId;
 
     try {
-      debugPrint('[Sentence Queue TTS] Speaking: "$sentence"');
+      debugPrint(
+        '[Sentence Queue TTS] Speaking: "${item.sentence}" (session ${item.sessionId})',
+      );
       _voiceState = VoiceState.speaking;
       notifyListeners();
-      await _ttsService.speak(sentence);
+      await _ttsService.speak(item.sentence);
     } catch (e) {
       debugPrint('[Sentence Queue TTS] Error speaking: $e');
       _isSentenceTtsSpeaking = false;
+      notifyListeners();
       _speakNextSentenceSegment();
     }
   }
@@ -720,10 +793,12 @@ class AppState extends ChangeNotifier {
   /// NO automatic sending of messages occurs.
   Future<void> startVoiceSession(TextEditingController inputController) async {
     _voiceErrorMessage = '';
+    _isVoiceSessionActive = true; // Mark voice session as active
 
     // Validate Whisper model is available
     if (modelManager.activeWhisperModelId == null ||
         modelManager.activeWhisperModel == null) {
+      _isVoiceSessionActive = false;
       _voiceState = VoiceState.error;
       _voiceErrorMessage =
           'No speech recognition model active.\n\nPlease download and activate a Whisper model from the local models screen.';
@@ -739,6 +814,7 @@ class AppState extends ChangeNotifier {
       // Initialize microphone permission
       final isSttAvailable = await _sttService.initialize();
       if (!isSttAvailable) {
+        _isVoiceSessionActive = false;
         _voiceState = VoiceState.error;
         _voiceErrorMessage =
             'Speech recognition is not available or permission denied on this device.';
@@ -762,6 +838,7 @@ class AppState extends ChangeNotifier {
           // User must manually press Send button to trigger LLM
         },
         onError: (errorMsg) {
+          _isVoiceSessionActive = false;
           _voiceState = VoiceState.error;
           _voiceErrorMessage = errorMsg;
           notifyListeners();
@@ -775,21 +852,13 @@ class AppState extends ChangeNotifier {
         },
       );
     } catch (e) {
+      _isVoiceSessionActive = false;
       _voiceState = VoiceState.error;
       _voiceErrorMessage = 'Failed to start speech recognition: $e';
       notifyListeners();
     }
   }
 
-  /// PUSH-TO-TALK: Stops recording and triggers transcription
-  ///
-  /// Called when:
-  /// 1. User taps the microphone button a second time (during listening)
-  /// 2. User taps the cancel button in the voice modal
-  ///
-  /// This stops audio recording and sends it to Whisper for transcription.
-  /// The resulting text is placed in the input field for manual review/editing
-  /// before the user presses Send to trigger the LLM.
   Future<void> cancelVoiceSession() async {
     if (_voiceState == VoiceState.listening) {
       // Transition to processing state while Whisper transcribes the audio
@@ -799,6 +868,9 @@ class AppState extends ChangeNotifier {
       await _sttService.stopListening();
     } else {
       // User cancelled from modal or error state
+      _isVoiceSessionActive = false;
+      // Stop any TTS that might be playing
+      await muteTts(reason: 'Voice session cancelled');
       _voiceState = VoiceState.idle;
       _voiceErrorMessage = '';
       notifyListeners();
@@ -817,133 +889,142 @@ class AppState extends ChangeNotifier {
     _currentlySpeakingMessage = msg;
     _voiceState = VoiceState.speaking;
     _voiceErrorMessage = '';
+
+    _isTtsEnabled = true;
+    _ttsSessionId++; // Start a new session
+    _ttsState = TtsState.buffering;
     notifyListeners();
 
     _sentenceQueue.clear();
     _sentenceBuffer = '';
     _isSentenceTtsSpeaking = false;
+    _activeUtteranceSessionId = null; // Fresh replay — reset utterance tracker
 
     _processSentenceBuffer(msg.text);
     _flushSentenceBuffer();
   }
 
   Future<void> stopSpeaking() async {
+    _ttsSessionId++; // Invalidate active operations & callbacks
+    _isTtsEnabled = false;
+    _ttsState = TtsState.stopped;
+    _activeUtteranceSessionId = null; // No active utterance after stop
+
     _sentenceQueue.clear();
     _sentenceBuffer = '';
     _isSentenceTtsSpeaking = false;
-    await _ttsService.stop();
-    _voiceState = VoiceState.idle;
+    _isLiveStreamingTtsEnabled = false;
+
     _currentlySpeakingMessage = null;
+    _voiceState = VoiceState.idle;
+
+    await _ttsService.stop();
+    notifyListeners();
+  }
+
+  /// COMPREHENSIVE TTS MUTE/STOP
+  /// Called when user presses "Stop Speaking", "Mute", or closes microphone dialog
+  /// This method ensures ALL speech activity stops immediately with no race conditions
+  Future<void> muteTts({String reason = 'User action'}) async {
+    debugPrint('[TTS] Muting TTS: $reason');
+
+    _ttsSessionId++; // Invalidate active operations & callbacks
+    _isTtsEnabled = false;
+    _ttsState = TtsState.muted;
+    _activeUtteranceSessionId = null; // No active utterance after mute
+
+    _sentenceQueue.clear();
+    _sentenceBuffer = '';
+    _isSentenceTtsSpeaking = false;
+    _isLiveStreamingTtsEnabled = false;
+
+    _currentlySpeakingMessage = null;
+    _currentStreamingMessage = null;
+    _voiceState = VoiceState.idle;
+    _voiceErrorMessage = '';
+
+    try {
+      await _ttsService.stop();
+      debugPrint('[TTS] Native TTS stop completed');
+    } catch (e) {
+      debugPrint('[TTS] Error calling native stop: $e');
+    }
+
+    notifyListeners();
+  }
+
+  /// RE-ENABLE TTS after muting
+  /// Called when user wants to resume TTS operations
+  void enableTts({String reason = 'User action'}) {
+    if (_isTtsEnabled) return; // Already enabled
+
+    debugPrint('[TTS] Enabling TTS: $reason');
+    _isTtsEnabled = true;
+    _ttsState = TtsState.idle;
+    _voiceState = VoiceState.idle;
+    _voiceErrorMessage = '';
     notifyListeners();
   }
 
   // ===== LIVE STREAMING TTS (Optional feature) =====
 
+  /// Whether the user has enabled live TTS via the button (UI flag)
+  bool _isLiveStreamingTtsEnabled = false;
+  bool get isLiveStreamingTts => _isLiveStreamingTtsEnabled;
+
+  /// Reference to the message being streamed (for replay button later)
+  Message? _currentStreamingMessage;
+  Message? get currentStreamingMessage => _currentStreamingMessage;
+
+  /// Check if a message is the one currently streaming
+  bool isStreamingMessage(Message msg) => _currentStreamingMessage == msg;
+
   /// Start live TTS: speak text chunks as they stream in from the LLM
   /// This is independent from replay/sentence-queue TTS
   /// User must manually tap "🔊 Speak Live" button - never automatic
   void startLiveStreamingTts() {
+    if (_isLiveStreamingTtsEnabled) return; // Already enabled
+
     // Stop any existing replay speaking
     if (_currentlySpeakingMessage != null) {
       _ttsService.stop();
     }
 
-    _isLiveStreamingTts = true;
-    _liveStreamingTextBuffer = '';
-    _isLiveStreamingSpeaking = false;
-    _currentlySpeakingMessage = null;
+    _ttsSessionId++; // Invalidate active operations & callbacks
+    _isLiveStreamingTtsEnabled = true;
+    _isTtsEnabled = true;
+    _ttsState = TtsState.buffering;
+    _sentenceQueue.clear();
+    _sentenceBuffer = '';
+    _isSentenceTtsSpeaking = false;
 
-    debugPrint('[LiveStreamingTts] Started live streaming TTS');
+    debugPrint('[LiveStreamingTts] User enabled live streaming TTS');
     notifyListeners();
   }
 
   /// Stop live TTS (keeps LLM generation running)
   /// Can be restarted by tapping "Speak Live" again
   Future<void> stopLiveStreamingTts() async {
-    if (!_isLiveStreamingTts) return;
+    if (!_isLiveStreamingTtsEnabled) return;
 
-    _isLiveStreamingTts = false;
-    _isLiveStreamingSpeaking = false;
+    _ttsSessionId++; // Invalidate active operations & callbacks
+    _isLiveStreamingTtsEnabled = false;
+    _isTtsEnabled = false;
+    _ttsState = TtsState.stopped;
+
+    _sentenceQueue.clear();
+    _sentenceBuffer = '';
+    _isSentenceTtsSpeaking = false;
+
+    _currentlySpeakingMessage = null;
+    _voiceState = VoiceState.idle;
+
     await _ttsService.stop();
-    _liveStreamingTextBuffer = '';
-
-    debugPrint('[LiveStreamingTts] Stopped live streaming TTS');
+    debugPrint('[LiveStreamingTts] User stopped live streaming TTS');
     notifyListeners();
   }
 
-  /// Queue text for live streaming TTS and speak it
-  /// Called for each token that arrives during generation
-  void _feedLiveStreamingText(String text) {
-    if (!_isLiveStreamingTts) return;
 
-    _liveStreamingTextBuffer += text;
-
-    // Try to speak by sentences/words to keep speech timely
-    _speakNextLiveStreamingChunk();
-  }
-
-  /// Process buffered text and speak sentence/word chunks
-  void _speakNextLiveStreamingChunk() {
-    if (!_isLiveStreamingTts || _isLiveStreamingSpeaking) return;
-    if (_liveStreamingTextBuffer.isEmpty) return;
-
-    // Split by sentences (. ! ? । \n) or speak word boundary if large buffer
-    final sentenceMatch = RegExp(
-      r'[.?!।\n]',
-    ).firstMatch(_liveStreamingTextBuffer);
-
-    late String textToSpeak;
-    late String remaining;
-
-    if (sentenceMatch != null) {
-      // Speak up to and including the sentence end
-      textToSpeak = _liveStreamingTextBuffer.substring(0, sentenceMatch.end);
-      remaining = _liveStreamingTextBuffer
-          .substring(sentenceMatch.end)
-          .trimLeft();
-    } else if (_liveStreamingTextBuffer.length > 50) {
-      // Buffer is large but no sentence end - speak at word boundary
-      final lastSpace = _liveStreamingTextBuffer.lastIndexOf(' ');
-      if (lastSpace > 0 && lastSpace < _liveStreamingTextBuffer.length - 1) {
-        textToSpeak = _liveStreamingTextBuffer.substring(0, lastSpace);
-        remaining = _liveStreamingTextBuffer.substring(lastSpace).trim();
-      } else {
-        // No good break point, just accumulate more
-        return;
-      }
-    } else {
-      // Buffer is small, wait for more text
-      return;
-    }
-
-    // Trim and speak
-    textToSpeak = textToSpeak.trim();
-    if (textToSpeak.isEmpty) {
-      _liveStreamingTextBuffer = remaining;
-      _speakNextLiveStreamingChunk();
-      return;
-    }
-
-    _liveStreamingTextBuffer = remaining;
-    _isLiveStreamingSpeaking = true;
-
-    debugPrint(
-      '[LiveStreamingTts] Speaking chunk: "${textToSpeak.substring(0, textToSpeak.length > 50 ? 50 : textToSpeak.length)}..."',
-    );
-
-    _ttsService
-        .speak(textToSpeak)
-        .then((_) {
-          // After this chunk completes, try to speak next
-          _isLiveStreamingSpeaking = false;
-          _speakNextLiveStreamingChunk();
-        })
-        .catchError((err) {
-          debugPrint('[LiveStreamingTts] Error speaking: $err');
-          _isLiveStreamingSpeaking = false;
-          _speakNextLiveStreamingChunk();
-        });
-  }
 
   void clearVoiceError() {
     _voiceState = VoiceState.idle;
@@ -958,6 +1039,7 @@ class AppState extends ChangeNotifier {
     _llmStreamSub?.cancel();
     _llmService.unloadModel();
     _sttService.stopListening();
+    _ttsService.setHandlers(onStart: null, onComplete: null, onError: null);
     _ttsService.stop();
     super.dispose();
   }

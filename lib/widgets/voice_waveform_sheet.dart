@@ -167,7 +167,7 @@ class _VoiceWaveformSheetState extends State<VoiceWaveformSheet>
           GestureDetector(
             onTap: () {
               if (voiceState == VoiceState.speaking) {
-                widget.appState.stopSpeaking();
+                widget.appState.muteTts(reason: 'User closed voice dialog');
               } else if (voiceState == VoiceState.error) {
                 widget.appState.clearVoiceError();
               } else {

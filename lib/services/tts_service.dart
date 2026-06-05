@@ -17,6 +17,7 @@ abstract class TtsService {
 class DeviceTtsService implements TtsService {
   final FlutterTts _flutterTts = FlutterTts();
   bool _isSpeaking = false;
+  bool _isStopping = false;
 
   VoidCallback? _onStart;
   VoidCallback? _onComplete;
@@ -30,21 +31,29 @@ class DeviceTtsService implements TtsService {
     try {
       _flutterTts.setStartHandler(() {
         _isSpeaking = true;
+        _isStopping = false;
+        debugPrint('[TtsService] Speech started');
         if (_onStart != null) _onStart!();
       });
 
       _flutterTts.setCompletionHandler(() {
         _isSpeaking = false;
+        _isStopping = false;
+        debugPrint('[TtsService] Speech completed');
         if (_onComplete != null) _onComplete!();
       });
 
       _flutterTts.setCancelHandler(() {
         _isSpeaking = false;
+        _isStopping = false;
+        debugPrint('[TtsService] Speech cancelled');
         if (_onComplete != null) _onComplete!();
       });
 
       _flutterTts.setErrorHandler((msg) {
         _isSpeaking = false;
+        _isStopping = false;
+        debugPrint('[TtsService] Speech error: $msg');
         if (_onError != null) _onError!(msg.toString());
       });
     } catch (e) {
@@ -65,7 +74,15 @@ class DeviceTtsService implements TtsService {
 
   @override
   Future<void> speak(String text) async {
+    // Don't start new speech if we're in the process of stopping
+    if (_isStopping) {
+      debugPrint('[TtsService] Ignoring speak() call - TTS is stopping');
+      return;
+    }
+
     _isSpeaking = true;
+    _isStopping = false;
+
     try {
       // Check if Nepali is supported by the device TTS engine
       bool isNepaliAvailable = false;
@@ -94,9 +111,13 @@ class DeviceTtsService implements TtsService {
       await _flutterTts.setSpeechRate(
         0.5,
       ); // Standard speed for natural listening
+      debugPrint(
+        '[TtsService] Enqueueing speech: "${text.substring(0, text.length > 50 ? 50 : text.length)}..."',
+      );
       await _flutterTts.speak(text);
     } catch (e) {
       _isSpeaking = false;
+      _isStopping = false;
       debugPrint('[TtsService] Speak error: $e');
       if (_onError != null) {
         _onError!(e.toString());
@@ -106,10 +127,23 @@ class DeviceTtsService implements TtsService {
 
   @override
   Future<void> stop() async {
+    if (_isStopping) {
+      debugPrint(
+        '[TtsService] Stop already in progress, ignoring duplicate call',
+      );
+      return;
+    }
+
+    _isStopping = true;
+    _isSpeaking = false;
+
     try {
+      debugPrint('[TtsService] Calling stop on native TTS engine');
       await _flutterTts.stop();
-      _isSpeaking = false;
+      _isStopping = false;
+      debugPrint('[TtsService] Native TTS stop completed');
     } catch (e) {
+      _isStopping = false;
       debugPrint('[TtsService] Stop error: $e');
     }
   }

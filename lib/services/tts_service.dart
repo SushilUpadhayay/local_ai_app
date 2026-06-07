@@ -84,36 +84,17 @@ class DeviceTtsService implements TtsService {
     _isStopping = false;
 
     try {
-      // Check if Nepali is supported by the device TTS engine
-      bool isNepaliAvailable = false;
-      try {
-        final res = await _flutterTts.isLanguageAvailable("ne-NP");
-        if (res != null) {
-          isNepaliAvailable = res as bool;
-        }
-      } catch (e) {
-        debugPrint('[TtsService] Error checking language ne-NP: $e');
-      }
-
-      if (isNepaliAvailable) {
-        await _flutterTts.setLanguage("ne-NP");
-        debugPrint('[TtsService] Set language to Nepali');
-      } else {
-        await _flutterTts.setLanguage("en-US");
-        debugPrint('[TtsService] Set language to English');
-      }
-    } catch (e) {
-      debugPrint('[TtsService] Error setting language, using default: $e');
-    }
-
-    try {
+      // Basic audio configurations
       await _flutterTts.setPitch(1.0);
       await _flutterTts.setSpeechRate(
         0.5,
       ); // Standard speed for natural listening
+
       debugPrint(
-        '[TtsService] Enqueueing speech: "${text.substring(0, text.length > 50 ? 50 : text.length)}..."',
+        '[TtsService] Enqueueing speech using device active language: "${text.substring(0, text.length > 50 ? 50 : text.length)}..."',
       );
+
+      // Speaks directly using whatever language configuration the device/engine currently holds
       await _flutterTts.speak(text);
     } catch (e) {
       _isSpeaking = false;

@@ -97,10 +97,7 @@ void main() {
     setUp(() {
       fakeTts = FakeTtsService();
       fakeStt = FakeSttService();
-      appState = AppState(
-        sttService: fakeStt,
-        ttsService: fakeTts,
-      );
+      appState = AppState(sttService: fakeStt, ttsService: fakeTts);
     });
 
     test('Initial state of TTS', () {

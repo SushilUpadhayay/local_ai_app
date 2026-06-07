@@ -10,6 +10,8 @@ import '../services/context_window_manager.dart';
 import '../repositories/conversation_repository.dart';
 import '../services/stt_service.dart';
 import '../services/tts_service.dart';
+import '../services/trek_knowledge_service.dart';
+import 'dart:convert';
 
 enum AppScreen { chat, history, models }
 
@@ -97,6 +99,11 @@ class AppState extends ChangeNotifier {
   final ContextWindowManager _contextWindowManager = ContextWindowManager();
   final ConversationRepository _conversationRepository =
       ConversationRepository();
+  final TrekKnowledgeService _trekKnowledgeService = TrekKnowledgeService();
+  TrekKnowledgeService get trekKnowledgeService => _trekKnowledgeService;
+
+  // Context retention for trek assistant
+  final Map<String, String> _lastSelectedTrekIds = {};
 
   // Startup loading state
   bool _isLoading = true;
@@ -253,10 +260,14 @@ class AppState extends ChangeNotifier {
       await modelManager.init();
 
       // 2. Detect device hardware.
+      // 2. Detect device hardware.
       await _detectDeviceHardware();
 
       // 3. Load persisted conversations.
       await _loadPersistedConversations();
+
+      // 4. Initialize trek knowledge service.
+      await _trekKnowledgeService.initialize();
     } catch (e) {
       debugPrint('[AppState] Init error: $e');
     }
@@ -520,6 +531,221 @@ class AppState extends ChangeNotifier {
     }
     notifyListeners();
 
+    // 1. Run local intent detection using preprocessed synonyms and aliases
+    final convId = _activeConversation?.id;
+    final lastTrekId = convId != null ? _lastSelectedTrekIds[convId] : null;
+    final intentResult = _trekKnowledgeService.detectIntent(text, lastTrekId: lastTrekId);
+
+    // Helper to capitalize ID to short name
+    String getShortTrekName(String id) {
+      if (id == 'annapurna_base_camp') return 'Annapurna Base Camp';
+      if (id == 'everest_base_camp') return 'Everest Base Camp';
+      if (id == 'langtang_valley') return 'Langtang Valley';
+      return id.split('_').map((word) => word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1)).join(' ');
+    }
+
+    // A. Ambiguity Fallback: Multiple treks matched without compare intent
+    if (intentResult != null && intentResult['ambiguous'] == true) {
+      _isStreaming = false;
+      _streamingToken = '';
+      final List<String> matches = List<String>.from(intentResult['matches']);
+      final names = matches.map(getShortTrekName).toList();
+      final namesString = names.length > 2 
+          ? '${names.sublist(0, names.length - 1).join(", ")}, or ${names.last}' 
+          : names.join(" or ");
+      final reply = "Did you mean $namesString?";
+      
+      _finishStreamingWithMessage(reply, modelName: 'Trek System');
+      return;
+    }
+
+    // B. Trek Fallback: Trek not found but trek-related intent keyword was present
+    if (intentResult != null && intentResult['fallback'] == 'trek_missing') {
+      _isStreaming = false;
+      _streamingToken = '';
+      final reply = "I couldn't find a matching trek. I currently support Annapurna Base Camp (ABC), Everest Base Camp (EBC), and Langtang Valley. Which one are you interested in?";
+      
+      _finishStreamingWithMessage(reply, modelName: 'Trek System');
+      return;
+    }
+
+    // C. Intent Fallback: Trek matched but specific question is unclear
+    if (intentResult != null && intentResult['fallback'] == 'intent_unclear') {
+      _isStreaming = false;
+      _streamingToken = '';
+      final trekId = intentResult['trekId'] as String;
+      final trekName = getShortTrekName(trekId);
+      final reply = "What do you want to know about $trekName?\n• Route / Itinerary\n• Difficulty & Info\n• Landmarks & Peaks\n• Villages & Tea Houses\n• Health Posts & Rescue\n• Transport / How to reach\n• Emergency & Safety";
+      
+      _finishStreamingWithMessage(reply, modelName: 'Trek System');
+      return;
+    }
+
+    // D. Clear Tool Selection matched
+    if (intentResult != null && intentResult['tool'] != null) {
+      final stopwatch = Stopwatch()..start();
+      final tool = intentResult['tool'] as String;
+      final trekId = intentResult['trekId'] as String;
+      
+      // Visual feedback: retrieving message
+      final readableTrek = trekId == 'all' ? 'available treks' : getShortTrekName(trekId);
+      _streamingToken = '*(Retrieving data for $readableTrek from database…)*\n\n';
+      notifyListeners();
+
+      Map<String, dynamic> toolResult;
+      if (tool == 'compare_treks') {
+        final trekIds = List<String>.from(intentResult['trekIds']);
+        final List<Map<String, dynamic>> comparisonData = [];
+        for (final id in trekIds) {
+          comparisonData.add(_trekKnowledgeService.get_trek_info(id));
+        }
+        toolResult = {
+          'success': true,
+          'tool': 'compare_treks',
+          'trekIds': trekIds,
+          'data': {'treks': comparisonData}
+        };
+      } else {
+        switch (tool) {
+          case 'search_trek':
+            toolResult = _trekKnowledgeService.search_trek(trekId);
+            break;
+          case 'get_trek_info':
+            toolResult = _trekKnowledgeService.get_trek_info(trekId);
+            break;
+          case 'get_route_info':
+            toolResult = _trekKnowledgeService.get_route_info(trekId);
+            break;
+          case 'get_landmarks':
+            toolResult = _trekKnowledgeService.get_landmarks(trekId);
+            break;
+          case 'get_villages':
+            toolResult = _trekKnowledgeService.get_villages(trekId);
+            break;
+          case 'get_health_posts':
+            toolResult = _trekKnowledgeService.get_health_posts(trekId);
+            break;
+          case 'get_emergency_info':
+            toolResult = _trekKnowledgeService.get_emergency_info(trekId);
+            break;
+          case 'get_transport_info':
+            toolResult = _trekKnowledgeService.get_transport_info(trekId);
+            break;
+          case 'get_faq_answer':
+            final rawQuestion = intentResult['raw_question'] as String? ?? text;
+            toolResult = _trekKnowledgeService.get_faq_answer(trekId, rawQuestion);
+            break;
+          case 'list_available_treks':
+            toolResult = _trekKnowledgeService.list_available_treks();
+            break;
+          default:
+            toolResult = {
+              'success': false,
+              'tool': tool,
+              'trekId': trekId,
+              'error': 'Unknown tool requested',
+              'data': {}
+            };
+        }
+      }
+
+      stopwatch.stop();
+      final execTime = stopwatch.elapsedMilliseconds;
+
+      // Exec metrics logging
+      debugPrint('--- [Trek System Tool Execution Log] ---');
+      debugPrint('Query: $text');
+      debugPrint('Trek Matched: $trekId');
+      debugPrint('Tool Selected: $tool');
+      debugPrint('Execution Time: ${execTime}ms');
+      debugPrint('Source File: ${toolResult['source_file'] ?? 'N/A'}');
+      debugPrint('----------------------------------------');
+
+      // Context retention
+      if (trekId != 'all' && trekId != 'none' && tool != 'compare_treks' && convId != null) {
+        _lastSelectedTrekIds[convId] = trekId;
+      }
+
+      // Synthesis step: final Conversational Formatting
+      // Guard: no model selected
+      final model = activeModel;
+      if (model == null) {
+        _finishStreamingWithMessage(
+          "*(No Active Model Selected)*\n\nTo format the offline results:\n1. Open **Local Models** from the menu.\n2. Download a model that fits your device.\n3. Tap **Set Active** to load it.",
+          modelName: 'System',
+        );
+        return;
+      }
+
+      // Guard: model not loaded into engine
+      if (_modelLoadState != ModelLoadState.loaded) {
+        _finishStreamingWithMessage(
+          '*(Model Not Loaded)*\n\nThe local model is required to format the database results into natural language. Please activate a model first.',
+          modelName: 'System',
+        );
+        return;
+      }
+
+      // Format the prompt containing the standardized result
+      final synthesisPrompt = _contextWindowManager.buildChatMLPrompt(
+        [
+          Message(
+            sender: 'user',
+            text: '''You are a helpful, concise trek assistant running offline. 
+Answer the user's question using the provided standardized database JSON result. 
+Do not output raw JSON. Do not reference the database, tool execution, files, or JSON in your response. 
+Convert the database information into a natural, friendly, and complete conversational response.
+If the database indicates success is false, explain that the information is unavailable.
+
+User Question: "$text"
+Database JSON Result: ${jsonEncode(toolResult)}''',
+            timestamp: DateTime.now(),
+          )
+        ],
+        'You are an offline trek assistant. Always format tool/database results into natural conversational language, never showing raw JSON, tools, or references to file lookups.'
+      );
+
+      // Clear visual feedback retrieve banner before streaming actual response tokens
+      _streamingToken = '';
+      _sentenceQueue.clear();
+      _sentenceBuffer = '';
+      _isSentenceTtsSpeaking = false;
+      _isLiveStreamingTtsEnabled = false;
+      _currentStreamingMessage = null;
+
+      final tokenStream = _llmService.generate(
+        synthesisPrompt,
+        maxTokens: model.maxOutputTokens > 0 ? model.maxOutputTokens : 512,
+      );
+      _llmStreamSub = tokenStream.listen(
+        (token) {
+          _streamingToken += token;
+          if (_ttsSessionId == currentSessionId && _isTtsEnabled) {
+            _processSentenceBuffer(token);
+          }
+          notifyListeners();
+        },
+        onError: (err) {
+          _finishStreamingWithMessage(
+            '*(Inference Error during formatting)*\n\n${err.toString()}',
+            modelName: model.name,
+          );
+        },
+        onDone: () {
+          if (_ttsSessionId == currentSessionId && _isTtsEnabled) {
+            _flushSentenceBuffer();
+          }
+          final finalText = _streamingToken.isEmpty
+              ? '*(No response generated)*'
+              : _streamingToken;
+          _finishStreamingWithMessage(finalText, modelName: model.name);
+        },
+        cancelOnError: true,
+      );
+      return;
+    }
+
+    // E. General/Fallback Chat: Normal General Assistant LLM Generation
     // Guard: no model selected
     final model = activeModel;
     if (model == null) {
@@ -543,7 +769,6 @@ class AppState extends ChangeNotifier {
           modelName: 'System',
         );
       } else {
-        // unloaded — trigger lazy load
         _finishStreamingWithMessage(
           '*(Model Not Loaded)*\n\nThe model file is installed but not yet loaded into memory. Go to **Local Models** and tap **Set Active** to load it.',
           modelName: 'System',
@@ -567,22 +792,20 @@ class AppState extends ChangeNotifier {
     _sentenceQueue.clear();
     _sentenceBuffer = '';
     _isSentenceTtsSpeaking = false;
-
-    // Reset live streaming state for new message
     _isLiveStreamingTtsEnabled = false;
     _currentStreamingMessage = null;
 
     // Stream tokens from LLM engine
-    final tokenStream = _llmService.generate(prompt);
+    final tokenStream = _llmService.generate(
+      prompt,
+      maxTokens: model.maxOutputTokens > 0 ? model.maxOutputTokens : 512,
+    );
     _llmStreamSub = tokenStream.listen(
       (token) {
         _streamingToken += token;
-
-        // Guard checking session validity
         if (_ttsSessionId == currentSessionId && _isTtsEnabled) {
           _processSentenceBuffer(token);
         }
-
         notifyListeners();
       },
       onError: (err) {
@@ -592,7 +815,6 @@ class AppState extends ChangeNotifier {
         );
       },
       onDone: () {
-        // Guard checking session validity
         if (_ttsSessionId == currentSessionId && _isTtsEnabled) {
           _flushSentenceBuffer();
         }

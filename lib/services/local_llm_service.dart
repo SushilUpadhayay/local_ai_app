@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 abstract class LlmService {
   Future<void> loadModel(String modelPath, {int contextWindow = 2048});
   Future<void> unloadModel();
-  Stream<String> generate(String prompt);
+  Stream<String> generate(String prompt, {int maxTokens = 512});
   void cancelGeneration();
   bool get isModelLoaded;
 }
@@ -32,7 +32,7 @@ class LocalLlmService implements LlmService {
     await _cleanUpResources();
 
     try {
-      if (!Platform.isAndroid && !Platform.isIOS && !Platform.isMacOS && !Platform.isWindows && !Platform.isLinux) {
+      if (!Platform.isAndroid && !Platform.isIOS) {
         throw UnsupportedError('Real local inference is only supported on Android, iOS, macOS, Windows, or Linux.');
       }
 
@@ -137,7 +137,7 @@ class LocalLlmService implements LlmService {
   }
 
   @override
-  Stream<String> generate(String prompt) {
+  Stream<String> generate(String prompt, {int maxTokens = 512}) {
     if (!_isLoaded || _session == null) {
       return Stream.error(StateError('No model loaded. You must load a model before generating text.'));
     }
@@ -158,7 +158,7 @@ class LocalLlmService implements LlmService {
         
         final eventStream = _session!.generate(
           prompt: prompt,
-          maxTokens: 512,
+          maxTokens: maxTokens,
         );
 
         _activeGenSub = eventStream.listen(

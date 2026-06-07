@@ -16,6 +16,21 @@ class ModelItem {
   final int contextWindow;
   final String modelFamily;
 
+  /// Computed from contextWindow — no need to hardcode per model.
+  ///
+  /// Rule: 25% of context window for output tokens, clamped to [512, 2048].
+  /// Audio/speech models (contextWindow == 0) return 0.
+  ///
+  /// Examples:
+  ///   2048 ctx  → 512  max output tokens
+  ///   4096 ctx  → 1024 max output tokens
+  ///   8192 ctx  → 2048 max output tokens (capped)
+  ///  32768 ctx  → 2048 max output tokens (capped)
+  int get maxOutputTokens {
+    if (contextWindow == 0) return 0; // audio/speech model
+    return (contextWindow / 4).round().clamp(512, 2048);
+  }
+
   ModelItem({
     required this.id,
     required this.name,
@@ -82,6 +97,7 @@ class ModelItem {
       'url': url,
       'quantization': quantization,
       'contextWindow': contextWindow,
+      // maxOutputTokens is computed — not stored
       'modelFamily': modelFamily,
     };
   }
@@ -101,6 +117,7 @@ class ModelItem {
       url: map['url'],
       quantization: map['quantization'] ?? 'Q4_K_M',
       contextWindow: (map['contextWindow'] as num?)?.toInt() ?? 2048,
+      // maxOutputTokens is computed from contextWindow — not read from map
       modelFamily: map['modelFamily'] ?? 'Unknown',
     );
   }

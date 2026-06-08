@@ -64,8 +64,6 @@ class AppState extends ChangeNotifier {
   String _sentenceBuffer = '';
   bool _isSentenceTtsSpeaking = false;
 
-
-
   @visibleForTesting
   set sttService(SttService service) {
     _sttService = service;
@@ -156,14 +154,14 @@ class AppState extends ChangeNotifier {
   // Voice timers
   Timer? _voiceTimer;
 
-  AppState({
-    SttService? sttService,
-    TtsService? ttsService,
-  }) {
-    _sttService = sttService ?? WhisperSttService(
-      activeModelPathProvider: () => modelManager.activeWhisperModel?.localPath,
-      activeModelIdProvider: () => modelManager.activeWhisperModelId,
-    );
+  AppState({SttService? sttService, TtsService? ttsService}) {
+    _sttService =
+        sttService ??
+        WhisperSttService(
+          activeModelPathProvider: () =>
+              modelManager.activeWhisperModel?.localPath,
+          activeModelIdProvider: () => modelManager.activeWhisperModelId,
+        );
     if (ttsService != null) {
       _ttsService = ttsService;
     }
@@ -204,7 +202,8 @@ class AppState extends ChangeNotifier {
           );
           return;
         }
-        _activeUtteranceSessionId = null; // Utterance finished — clear reference
+        _activeUtteranceSessionId =
+            null; // Utterance finished — clear reference
         _processQueueAfterUtterance();
       },
       onError: (err) {
@@ -323,7 +322,7 @@ class AppState extends ChangeNotifier {
     if (model.status != 'installed') return;
     if (model.localPath == null) return;
 
-    // ── GUARD: Never pass Whisper/speech models to llama_cpp_dart ────────────
+    // GUARD: Never pass Whisper/speech models to llama_cpp_dart
     // Whisper models are GGML .bin files — they are not GGUF and cannot be
     // loaded by LlamaEngine. Routing them here crashes with LlamaModel.load().
     if (model.id.startsWith('whisper-') || model.modelFamily == 'Whisper') {
@@ -334,8 +333,6 @@ class AppState extends ChangeNotifier {
       await selectWhisperModel(model);
       return;
     }
-    // ─────────────────────────────────────────────────────────────────────────
-
     // Abort any in-progress generation.
     await _cancelGeneration();
 
@@ -473,21 +470,6 @@ class AppState extends ChangeNotifier {
     }).toList();
   }
 
-  //  SEND MESSAGE  (manual trigger only - NOT automatic)
-
-  /// Send a user message and generate an LLM response
-  ///
-  /// This method is ONLY called when the user manually presses the Send button.
-  /// It is NOT called automatically by the STT (speech-to-text) workflow.
-  ///
-  /// STT Workflow (PUSH-TO-TALK):
-  /// 1. User taps microphone → recording starts
-  /// 2. User taps microphone again → Whisper transcribes
-  /// 3. Transcription text appears in input field
-  /// 4. User manually calls this method by pressing Send button
-  /// 5. Only then does the LLM generate a response
-  ///
-  /// There is NO automatic sending, NO continuous listening, NO automatic processing.
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
     if (_isStreaming) return; // Block concurrent requests.
@@ -534,14 +516,23 @@ class AppState extends ChangeNotifier {
     // 1. Run local intent detection using preprocessed synonyms and aliases
     final convId = _activeConversation?.id;
     final lastTrekId = convId != null ? _lastSelectedTrekIds[convId] : null;
-    final intentResult = _trekKnowledgeService.detectIntent(text, lastTrekId: lastTrekId);
+    final intentResult = _trekKnowledgeService.detectIntent(
+      text,
+      lastTrekId: lastTrekId,
+    );
 
     // Helper to capitalize ID to short name
     String getShortTrekName(String id) {
       if (id == 'annapurna_base_camp') return 'Annapurna Base Camp';
       if (id == 'everest_base_camp') return 'Everest Base Camp';
       if (id == 'langtang_valley') return 'Langtang Valley';
-      return id.split('_').map((word) => word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1)).join(' ');
+      return id
+          .split('_')
+          .map(
+            (word) =>
+                word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1),
+          )
+          .join(' ');
     }
 
     // A. Ambiguity Fallback: Multiple treks matched without compare intent
@@ -550,11 +541,11 @@ class AppState extends ChangeNotifier {
       _streamingToken = '';
       final List<String> matches = List<String>.from(intentResult['matches']);
       final names = matches.map(getShortTrekName).toList();
-      final namesString = names.length > 2 
-          ? '${names.sublist(0, names.length - 1).join(", ")}, or ${names.last}' 
+      final namesString = names.length > 2
+          ? '${names.sublist(0, names.length - 1).join(", ")}, or ${names.last}'
           : names.join(" or ");
       final reply = "Did you mean $namesString?";
-      
+
       _finishStreamingWithMessage(reply, modelName: 'Trek System');
       return;
     }
@@ -563,8 +554,9 @@ class AppState extends ChangeNotifier {
     if (intentResult != null && intentResult['fallback'] == 'trek_missing') {
       _isStreaming = false;
       _streamingToken = '';
-      final reply = "I couldn't find a matching trek. I currently support Annapurna Base Camp (ABC), Everest Base Camp (EBC), and Langtang Valley. Which one are you interested in?";
-      
+      final reply =
+          "I couldn't find a matching trek. I currently support Annapurna Base Camp (ABC), Everest Base Camp (EBC), and Langtang Valley. Which one are you interested in?";
+
       _finishStreamingWithMessage(reply, modelName: 'Trek System');
       return;
     }
@@ -575,8 +567,9 @@ class AppState extends ChangeNotifier {
       _streamingToken = '';
       final trekId = intentResult['trekId'] as String;
       final trekName = getShortTrekName(trekId);
-      final reply = "What do you want to know about $trekName?\n• Route / Itinerary\n• Difficulty & Info\n• Landmarks & Peaks\n• Villages & Tea Houses\n• Health Posts & Rescue\n• Transport / How to reach\n• Emergency & Safety";
-      
+      final reply =
+          "What do you want to know about $trekName?\n• Route / Itinerary\n• Difficulty & Info\n• Landmarks & Peaks\n• Villages & Tea Houses\n• Health Posts & Rescue\n• Transport / How to reach\n• Emergency & Safety";
+
       _finishStreamingWithMessage(reply, modelName: 'Trek System');
       return;
     }
@@ -586,10 +579,13 @@ class AppState extends ChangeNotifier {
       final stopwatch = Stopwatch()..start();
       final tool = intentResult['tool'] as String;
       final trekId = intentResult['trekId'] as String;
-      
+
       // Visual feedback: retrieving message
-      final readableTrek = trekId == 'all' ? 'available treks' : getShortTrekName(trekId);
-      _streamingToken = '*(Retrieving data for $readableTrek from database…)*\n\n';
+      final readableTrek = trekId == 'all'
+          ? 'available treks'
+          : getShortTrekName(trekId);
+      _streamingToken =
+          '*(Retrieving data for $readableTrek from database…)*\n\n';
       notifyListeners();
 
       Map<String, dynamic> toolResult;
@@ -603,7 +599,7 @@ class AppState extends ChangeNotifier {
           'success': true,
           'tool': 'compare_treks',
           'trekIds': trekIds,
-          'data': {'treks': comparisonData}
+          'data': {'treks': comparisonData},
         };
       } else {
         switch (tool) {
@@ -633,7 +629,10 @@ class AppState extends ChangeNotifier {
             break;
           case 'get_faq_answer':
             final rawQuestion = intentResult['raw_question'] as String? ?? text;
-            toolResult = _trekKnowledgeService.get_faq_answer(trekId, rawQuestion);
+            toolResult = _trekKnowledgeService.get_faq_answer(
+              trekId,
+              rawQuestion,
+            );
             break;
           case 'list_available_treks':
             toolResult = _trekKnowledgeService.list_available_treks();
@@ -644,7 +643,7 @@ class AppState extends ChangeNotifier {
               'tool': tool,
               'trekId': trekId,
               'error': 'Unknown tool requested',
-              'data': {}
+              'data': {},
             };
         }
       }
@@ -662,7 +661,10 @@ class AppState extends ChangeNotifier {
       debugPrint('----------------------------------------');
 
       // Context retention
-      if (trekId != 'all' && trekId != 'none' && tool != 'compare_treks' && convId != null) {
+      if (trekId != 'all' &&
+          trekId != 'none' &&
+          tool != 'compare_treks' &&
+          convId != null) {
         _lastSelectedTrekIds[convId] = trekId;
       }
 
@@ -691,7 +693,8 @@ class AppState extends ChangeNotifier {
         [
           Message(
             sender: 'user',
-            text: '''You are a helpful, concise trek assistant running offline. 
+            text:
+                '''You are a helpful, concise trek assistant running offline. 
 Answer the user's question using the provided standardized database JSON result. 
 Do not output raw JSON. Do not reference the database, tool execution, files, or JSON in your response. 
 Convert the database information into a natural, friendly, and complete conversational response.
@@ -700,9 +703,9 @@ If the database indicates success is false, explain that the information is unav
 User Question: "$text"
 Database JSON Result: ${jsonEncode(toolResult)}''',
             timestamp: DateTime.now(),
-          )
+          ),
         ],
-        'You are an offline trek assistant. Always format tool/database results into natural conversational language, never showing raw JSON, tools, or references to file lookups.'
+        'You are an offline trek assistant. Always format tool/database results into natural conversational language, never showing raw JSON, tools, or references to file lookups.',
       );
 
       // Clear visual feedback retrieve banner before streaming actual response tokens
@@ -1245,8 +1248,6 @@ Database JSON Result: ${jsonEncode(toolResult)}''',
     debugPrint('[LiveStreamingTts] User stopped live streaming TTS');
     notifyListeners();
   }
-
-
 
   void clearVoiceError() {
     _voiceState = VoiceState.idle;

@@ -505,7 +505,85 @@ class _ChatScreenState extends State<ChatScreen>
                       ),
                     ],
                   ),
+                  if (!isUser &&
+                      (msg.reasoningTrace?.hasToolExecution ?? false)) ...[
+                    const SizedBox(height: 8),
+                    _buildReasoningSection(msg.reasoningTrace!),
+                  ],
                 ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReasoningSection(ReasoningTrace trace) {
+    return Theme(
+      data: Theme.of(context).copyWith(
+        dividerColor: Colors.transparent,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+      ),
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: const EdgeInsets.only(top: 4),
+        dense: true,
+        visualDensity: VisualDensity.compact,
+        iconColor: const Color(0xFF94A3B8),
+        collapsedIconColor: const Color(0xFF64748B),
+        title: const Text(
+          'View Reasoning',
+          style: TextStyle(
+            color: Color(0xFF94A3B8),
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        children: [
+          _buildTraceRow(
+            'Selected Trek',
+            trace.matchedTrek.isEmpty ? 'None' : trace.matchedTrek,
+          ),
+          _buildTraceRow(
+            'Tools Used',
+            trace.toolsUsed.isEmpty ? 'None' : trace.toolsUsed.join(', '),
+          ),
+          _buildTraceRow(
+            'Source Files',
+            trace.sourceFiles.isEmpty ? 'None' : trace.sourceFiles.join(', '),
+          ),
+          _buildTraceRow('Execution Time', '${trace.executionTimeMs} ms'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTraceRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 92,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFF64748B),
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: Color(0xFFCBD5E1),
+                fontSize: 10,
+                height: 1.3,
               ),
             ),
           ),

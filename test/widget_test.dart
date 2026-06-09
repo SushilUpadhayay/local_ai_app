@@ -30,7 +30,6 @@ class FakeSttService implements SttService {
 class FakeTtsService implements TtsService {
   VoidCallback? _onStart;
   VoidCallback? _onComplete;
-  Function(String)? _onError;
 
   bool _isSpeaking = false;
   List<String> spokenTexts = [];
@@ -50,7 +49,6 @@ class FakeTtsService implements TtsService {
   }) {
     _onStart = onStart;
     _onComplete = onComplete;
-    _onError = onError;
   }
 
   @override
@@ -97,10 +95,7 @@ void main() {
     setUp(() {
       fakeTts = FakeTtsService();
       fakeStt = FakeSttService();
-      appState = AppState(
-        sttService: fakeStt,
-        ttsService: fakeTts,
-      );
+      appState = AppState(sttService: fakeStt, ttsService: fakeTts);
     });
 
     test('Initial state of TTS', () {

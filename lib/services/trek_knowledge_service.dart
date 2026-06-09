@@ -26,7 +26,9 @@ class TrekKnowledgeService {
       for (final assetPath in _trekAssetPaths) {
         await _loadAsset(assetPath);
       }
-      debugPrint('[TrekKnowledgeService] Load complete. Treks in memory: ${_trekData.keys.join(', ')}');
+      debugPrint(
+        '[TrekKnowledgeService] Load complete. Treks in memory: ${_trekData.keys.join(', ')}',
+      );
       _isInitialized = true;
     } catch (e) {
       debugPrint('[TrekKnowledgeService] Initialization failed: $e');
@@ -45,16 +47,25 @@ class TrekKnowledgeService {
       final basicInfo = data['basic_trek_information'];
       final routeInfo = data['route_information'];
 
-      if (id == null || aliases == null || basicInfo == null || routeInfo == null) {
-        debugPrint('[TrekKnowledgeService] WARNING: Skipping $filename — missing required fields (id, aliases, basic_trek_information, route_information).');
+      if (id == null ||
+          aliases == null ||
+          basicInfo == null ||
+          routeInfo == null) {
+        debugPrint(
+          '[TrekKnowledgeService] WARNING: Skipping $filename — missing required fields (id, aliases, basic_trek_information, route_information).',
+        );
         return;
       }
 
       _trekData[id] = data;
       _sourceFiles[id] = filename;
-      debugPrint('[TrekKnowledgeService] Loaded trek "$id" from $filename  aliases=${aliases.join(', ')}');
+      debugPrint(
+        '[TrekKnowledgeService] Loaded trek "$id" from $filename  aliases=${aliases.join(', ')}',
+      );
     } catch (e) {
-      debugPrint('[TrekKnowledgeService] Failed to load asset "$assetPath": $e');
+      debugPrint(
+        '[TrekKnowledgeService] Failed to load asset "$assetPath": $e',
+      );
     }
   }
 
@@ -74,7 +85,7 @@ class TrekKnowledgeService {
   Map<String, dynamic>? detectIntent(String query, {String? lastTrekId}) {
     final preprocessed = preprocessQuery(query);
 
-    // Trek Matching 
+    // Trek Matching
     // Strategy: for each alias, check if it appears as a whole word/phrase in
     // the preprocessed query. Multi-word aliases use simple containment; single
     // words use a character-boundary check so "abc" doesn't match "abcdef".
@@ -90,8 +101,12 @@ class TrekKnowledgeService {
         } else {
           // Single word → require non-letter boundary on both sides so that
           // "abc" in "tell me about abc" matches but "a" in "annapurna" doesn't
-          final pattern = '(?:^|[^a-z0-9])${RegExp.escape(aliasLower)}(?:[^a-z0-9]|\$)';
-          matched = RegExp(pattern, caseSensitive: false).hasMatch(preprocessed);
+          final pattern =
+              '(?:^|[^a-z0-9])${RegExp.escape(aliasLower)}(?:[^a-z0-9]|\$)';
+          matched = RegExp(
+            pattern,
+            caseSensitive: false,
+          ).hasMatch(preprocessed);
         }
         if (matched) {
           matchedTreks.add(id);
@@ -100,75 +115,187 @@ class TrekKnowledgeService {
       }
     });
 
-    debugPrint('[TrekKnowledgeService] detectIntent: query="$query"'
-        '  preprocessed="$preprocessed"  matched=$matchedTreks  ctx=$lastTrekId');
+    if (matchedTreks.isEmpty && preprocessed.contains('base camp')) {
+      _trekData.forEach((id, data) {
+        final basicInfo = data['basic_trek_information'] ?? {};
+        final name = (basicInfo['trek_name'] as String? ?? '').toLowerCase();
+        final aliases = List<String>.from(data['aliases'] ?? []);
+        if (name.contains('base camp') ||
+            aliases.any((alias) => alias.toLowerCase().contains('base camp'))) {
+          matchedTreks.add(id);
+        }
+      });
+    }
 
-    // Context fallback 
+    debugPrint(
+      '[TrekKnowledgeService] detectIntent: query="$query"'
+      '  preprocessed="$preprocessed"  matched=$matchedTreks  ctx=$lastTrekId',
+    );
+
+    // Context fallback
     String? matchedTrekId;
     bool isContextUsed = false;
-    if (matchedTreks.isEmpty && lastTrekId != null && _trekData.containsKey(lastTrekId)) {
+    if (matchedTreks.isEmpty &&
+        lastTrekId != null &&
+        _trekData.containsKey(lastTrekId)) {
       matchedTrekId = lastTrekId;
       isContextUsed = true;
     } else if (matchedTreks.length == 1) {
       matchedTrekId = matchedTreks.first;
     }
 
-    // Ambiguity / Comparison 
+    // Ambiguity / Comparison
     if (matchedTreks.length > 1) {
       const compareKeywords = {
-        'compare', 'comparison', 'difference', 'versus', 'vs',
-        'which', 'harder', 'easier', 'longer', 'shorter', 'better'
+        'compare',
+        'comparison',
+        'difference',
+        'versus',
+        'vs',
+        'which',
+        'harder',
+        'easier',
+        'longer',
+        'shorter',
+        'better',
       };
       final isCompare = compareKeywords.any((kw) => preprocessed.contains(kw));
 
       if (isCompare) {
-        return {'tool': 'compare_treks', 'trekIds': matchedTreks.toList(), 'confidence': 0.95};
+        return {
+          'tool': 'compare_treks',
+          'trekIds': matchedTreks.toList(),
+          'confidence': 0.95,
+        };
       }
-      return {'ambiguous': true, 'matches': matchedTreks.toList(), 'confidence': 0.90};
+      return {
+        'ambiguous': true,
+        'matches': matchedTreks.toList(),
+        'confidence': 0.90,
+      };
     }
 
-    // Intent scoring 
+    // Intent scoring
     final intentScores = <String, int>{};
 
     intentScores['get_route_info'] = _countKeywordMatches(preprocessed, [
-      'route', 'itinerary', 'day', 'days', 'schedule', 'path', 'distance',
-      'walk', 'walking', 'hour', 'hours', 'elevation', 'map', 'how long',
+      'route',
+      'itinerary',
+      'day',
+      'days',
+      'schedule',
+      'path',
+      'distance',
+      'walk',
+      'walking',
+      'hour',
+      'hours',
+      'elevation',
+      'map',
+      'how long',
     ]);
 
     intentScores['get_landmarks'] = _countKeywordMatches(preprocessed, [
-      'landmark', 'peak', 'peaks', 'river', 'lake', 'viewpoint', 'forest',
-      'culture', 'cultural', 'monastery', 'temple', 'shrine', 'visible', 'see',
+      'landmark',
+      'peak',
+      'peaks',
+      'river',
+      'lake',
+      'viewpoint',
+      'forest',
+      'culture',
+      'cultural',
+      'monastery',
+      'temple',
+      'shrine',
+      'visible',
+      'see',
     ]);
 
     intentScores['get_villages'] = _countKeywordMatches(preprocessed, [
-      'village', 'settlement', 'lodge', 'lodging', 'tea house', 'facility',
-      'room', 'accommodation', 'stay', 'sleep', 'night',
+      'village',
+      'settlement',
+      'lodge',
+      'lodging',
+      'tea house',
+      'facility',
+      'room',
+      'accommodation',
+      'stay',
+      'sleep',
+      'night',
     ]);
 
     intentScores['get_health_posts'] = _countKeywordMatches(preprocessed, [
-      'health post', 'medical', 'doctor', 'clinic', 'first aid', 'hospital',
+      'health post',
+      'medical',
+      'doctor',
+      'clinic',
+      'first aid',
+      'hospital',
     ]);
 
     intentScores['get_emergency_info'] = _countKeywordMatches(preprocessed, [
-      'emergency', 'risk', 'safety', 'accident', 'altitude', 'sickness',
-      'ams', 'hape', 'hace', 'symptom', 'prevent', 'rescue', 'helicopter', 'evacuation',
+      'emergency',
+      'risk',
+      'safety',
+      'accident',
+      'altitude',
+      'sickness',
+      'ams',
+      'hape',
+      'hace',
+      'symptom',
+      'prevent',
+      'rescue',
+      'helicopter',
+      'evacuation',
     ]);
 
     intentScores['get_transport_info'] = _countKeywordMatches(preprocessed, [
-      'transport', 'bus', 'jeep', 'flight', 'reach', 'drive', 'travel',
-      'starting point', 'access', 'road', 'how to get',
+      'transport',
+      'bus',
+      'jeep',
+      'flight',
+      'reach',
+      'drive',
+      'travel',
+      'starting point',
+      'access',
+      'road',
+      'how to get',
     ]);
 
     // get_trek_info covers general curiosity: "tell me about", "what is", etc.
     intentScores['get_trek_info'] = _countKeywordMatches(preprocessed, [
-      'info', 'about', 'overview', 'tell', 'explain', 'describe',
-      'what is', 'what are', 'difficulty', 'difficult', 'duration',
-      'season', 'permit', 'acap', 'tims', 'fee', 'cost', 'general',
+      'info',
+      'about',
+      'overview',
+      'tell',
+      'explain',
+      'describe',
+      'what is',
+      'what are',
+      'difficulty',
+      'difficult',
+      'duration',
+      'season',
+      'permit',
+      'acap',
+      'tims',
+      'fee',
+      'cost',
+      'general',
     ]);
 
     intentScores['list_available_treks'] = _countKeywordMatches(preprocessed, [
-      'list treks', 'available treks', 'what treks', 'show treks',
-      'trek options', 'all treks', 'list of treks',
+      'list treks',
+      'available treks',
+      'what treks',
+      'show treks',
+      'trek options',
+      'all treks',
+      'list of treks',
     ]);
 
     var bestTool = 'get_trek_info';
@@ -182,14 +309,22 @@ class TrekKnowledgeService {
 
     // list_available_treks doesn't need a trek matched
     if (bestTool == 'list_available_treks' && maxScore > 0) {
-      return {'tool': 'list_available_treks', 'trekId': 'all', 'confidence': 0.95};
+      return {
+        'tool': 'list_available_treks',
+        'trekId': 'all',
+        'confidence': 0.95,
+      };
     }
 
-    // No trek found 
+    // No trek found
     if (matchedTrekId == null && matchedTreks.isEmpty) {
       if (maxScore > 0 && bestTool != 'list_available_treks') {
         // Intent keywords present but no trek name → suggest treks
-        return {'fallback': 'trek_missing', 'tool': bestTool, 'confidence': 0.80};
+        return {
+          'fallback': 'trek_missing',
+          'tool': bestTool,
+          'confidence': 0.80,
+        };
       }
       return null; // pure general chat
     }
@@ -205,16 +340,19 @@ class TrekKnowledgeService {
 
     if (maxScore > 0) {
       finalTool = bestTool;
-      confidence = 0.55 + (0.43 * (maxScore / (preprocessed.split(RegExp(r'\s+')).length + 1)));
+      confidence =
+          0.55 +
+          (0.43 * (maxScore / (preprocessed.split(RegExp(r'\s+')).length + 1)));
       confidence = confidence.clamp(0.55, 0.98);
     } else if (faqMatchResult != null) {
       finalTool = 'get_faq_answer';
       confidence = 0.90;
     } else if (!isContextUsed) {
-      // Trek name explicitly mentioned but no specific intent keyword →
-      // treat as a general overview request ("Tell me about ABC")
-      finalTool = 'get_trek_info';
-      confidence = 0.75;
+      return {
+        'fallback': 'intent_unclear',
+        'trekId': trekId,
+        'confidence': 0.75,
+      };
     } else {
       // Context-only match with no intent → let general chat handle it
       return null;
@@ -222,7 +360,9 @@ class TrekKnowledgeService {
 
     if (confidence < 0.5) return null;
 
-    debugPrint('[TrekKnowledgeService] → tool=$finalTool trekId=$trekId confidence=${confidence.toStringAsFixed(2)}');
+    debugPrint(
+      '[TrekKnowledgeService] → tool=$finalTool trekId=$trekId confidence=${confidence.toStringAsFixed(2)}',
+    );
 
     return {
       'tool': finalTool,
@@ -242,7 +382,10 @@ class TrekKnowledgeService {
     return count;
   }
 
-  Map<String, String>? _findMatchingFaq(String trekId, String preprocessedQuery) {
+  Map<String, String>? _findMatchingFaq(
+    String trekId,
+    String preprocessedQuery,
+  ) {
     final trek = _trekData[trekId];
     if (trek == null) return null;
     final faqs = trek['facts_frequently_asked_by_trekkers'] as List<dynamic>?;
@@ -257,14 +400,14 @@ class TrekKnowledgeService {
     for (final faq in faqs) {
       final q = (faq['question'] as String? ?? '').toLowerCase();
       final qWords = _tokenize(q);
-      
+
       int intersection = 0;
       for (final qw in queryWords) {
         if (qWords.contains(qw)) {
           intersection++;
         }
       }
-      
+
       final union = (queryWords.length + qWords.length - intersection);
       final score = union > 0 ? intersection / union : 0.0;
 
@@ -305,8 +448,34 @@ class TrekKnowledgeService {
 
   List<String> _tokenize(String text) {
     final stopWords = {
-      'is', 'the', 'a', 'of', 'to', 'on', 'in', 'for', 'do', 'i', 'can', 'what', 'how', 'are', 'about', 'with', 'at', 'from', 'trek', 'abcs', 'ebcs',
-      'it', 'its', 'you', 'your', 'me', 'my', 'we'
+      'is',
+      'the',
+      'a',
+      'of',
+      'to',
+      'on',
+      'in',
+      'for',
+      'do',
+      'i',
+      'can',
+      'what',
+      'how',
+      'are',
+      'about',
+      'with',
+      'at',
+      'from',
+      'trek',
+      'abcs',
+      'ebcs',
+      'it',
+      'its',
+      'you',
+      'your',
+      'me',
+      'my',
+      'we',
     };
     return text
         .toLowerCase()
@@ -317,10 +486,16 @@ class TrekKnowledgeService {
   }
 
   // 4. In-Memory Tool Result Cache Wrapper
-  Map<String, dynamic> _executeWithCache(String toolName, String trekId, Map<String, dynamic> Function() toolExecution) {
+  Map<String, dynamic> _executeWithCache(
+    String toolName,
+    String trekId,
+    Map<String, dynamic> Function() toolExecution,
+  ) {
     final cacheKey = '${toolName}_$trekId';
     if (_toolCache.containsKey(cacheKey)) {
-      debugPrint('[TrekKnowledgeService] CACHE HIT: Returning cached result for $cacheKey');
+      debugPrint(
+        '[TrekKnowledgeService] CACHE HIT: Returning cached result for $cacheKey',
+      );
       return _toolCache[cacheKey];
     }
     final result = toolExecution();
@@ -357,8 +532,11 @@ class TrekKnowledgeService {
       _trekData.forEach((id, data) {
         final basicInfo = data['basic_trek_information'] ?? {};
         final aliases = List<String>.from(data['aliases'] ?? []);
-        bool isMatch = id.contains(cleanName) ||
-            (basicInfo['trek_name'] as String? ?? '').toLowerCase().contains(cleanName) ||
+        bool isMatch =
+            id.contains(cleanName) ||
+            (basicInfo['trek_name'] as String? ?? '').toLowerCase().contains(
+              cleanName,
+            ) ||
             aliases.any((a) => a.contains(cleanName));
 
         if (isMatch || cleanName.isEmpty) {
@@ -386,7 +564,13 @@ class TrekKnowledgeService {
     return _executeWithCache('get_trek_info', trekId, () {
       final trek = _trekData[trekId];
       if (trek == null) {
-        return _standardResponse(success: false, tool: 'get_trek_info', trekId: trekId, error: 'Trek not found', data: {});
+        return _standardResponse(
+          success: false,
+          tool: 'get_trek_info',
+          trekId: trekId,
+          error: 'Trek not found',
+          data: {},
+        );
       }
       return _standardResponse(
         success: true,
@@ -401,7 +585,13 @@ class TrekKnowledgeService {
     return _executeWithCache('get_route_info', trekId, () {
       final trek = _trekData[trekId];
       if (trek == null) {
-        return _standardResponse(success: false, tool: 'get_route_info', trekId: trekId, error: 'Trek not found', data: {});
+        return _standardResponse(
+          success: false,
+          tool: 'get_route_info',
+          trekId: trekId,
+          error: 'Trek not found',
+          data: {},
+        );
       }
       return _standardResponse(
         success: true,
@@ -416,13 +606,21 @@ class TrekKnowledgeService {
     return _executeWithCache('get_landmarks', trekId, () {
       final trek = _trekData[trekId];
       if (trek == null) {
-        return _standardResponse(success: false, tool: 'get_landmarks', trekId: trekId, error: 'Trek not found', data: {});
+        return _standardResponse(
+          success: false,
+          tool: 'get_landmarks',
+          trekId: trekId,
+          error: 'Trek not found',
+          data: {},
+        );
       }
       return _standardResponse(
         success: true,
         tool: 'get_landmarks',
         trekId: trekId,
-        data: Map<String, dynamic>.from(trek['landmarks_and_attractions'] ?? {}),
+        data: Map<String, dynamic>.from(
+          trek['landmarks_and_attractions'] ?? {},
+        ),
       );
     });
   }
@@ -431,7 +629,13 @@ class TrekKnowledgeService {
     return _executeWithCache('get_villages', trekId, () {
       final trek = _trekData[trekId];
       if (trek == null) {
-        return _standardResponse(success: false, tool: 'get_villages', trekId: trekId, error: 'Trek not found', data: {});
+        return _standardResponse(
+          success: false,
+          tool: 'get_villages',
+          trekId: trekId,
+          error: 'Trek not found',
+          data: {},
+        );
       }
       return _standardResponse(
         success: true,
@@ -446,7 +650,13 @@ class TrekKnowledgeService {
     return _executeWithCache('get_health_posts', trekId, () {
       final trek = _trekData[trekId];
       if (trek == null) {
-        return _standardResponse(success: false, tool: 'get_health_posts', trekId: trekId, error: 'Trek not found', data: {});
+        return _standardResponse(
+          success: false,
+          tool: 'get_health_posts',
+          trekId: trekId,
+          error: 'Trek not found',
+          data: {},
+        );
       }
       final healthAndEmergency = trek['health_and_emergency_information'] ?? {};
       return _standardResponse(
@@ -457,7 +667,8 @@ class TrekKnowledgeService {
           'health_posts': healthAndEmergency['health_posts'],
           'medical_centers': healthAndEmergency['medical_centers'],
           'rescue_points': healthAndEmergency['rescue_points'],
-          'helicopter_evacuation_locations': healthAndEmergency['helicopter_evacuation_locations'],
+          'helicopter_evacuation_locations':
+              healthAndEmergency['helicopter_evacuation_locations'],
         },
       );
     });
@@ -467,13 +678,21 @@ class TrekKnowledgeService {
     return _executeWithCache('get_emergency_info', trekId, () {
       final trek = _trekData[trekId];
       if (trek == null) {
-        return _standardResponse(success: false, tool: 'get_emergency_info', trekId: trekId, error: 'Trek not found', data: {});
+        return _standardResponse(
+          success: false,
+          tool: 'get_emergency_info',
+          trekId: trekId,
+          error: 'Trek not found',
+          data: {},
+        );
       }
       return _standardResponse(
         success: true,
         tool: 'get_emergency_info',
         trekId: trekId,
-        data: Map<String, dynamic>.from(trek['health_and_emergency_information'] ?? {}),
+        data: Map<String, dynamic>.from(
+          trek['health_and_emergency_information'] ?? {},
+        ),
       );
     });
   }
@@ -482,13 +701,21 @@ class TrekKnowledgeService {
     return _executeWithCache('get_transport_info', trekId, () {
       final trek = _trekData[trekId];
       if (trek == null) {
-        return _standardResponse(success: false, tool: 'get_transport_info', trekId: trekId, error: 'Trek not found', data: {});
+        return _standardResponse(
+          success: false,
+          tool: 'get_transport_info',
+          trekId: trekId,
+          error: 'Trek not found',
+          data: {},
+        );
       }
       return _standardResponse(
         success: true,
         tool: 'get_transport_info',
         trekId: trekId,
-        data: Map<String, dynamic>.from(trek['transportation_information'] ?? {}),
+        data: Map<String, dynamic>.from(
+          trek['transportation_information'] ?? {},
+        ),
       );
     });
   }
@@ -547,9 +774,10 @@ class TrekKnowledgeService {
       'data': {
         'latitude': lat,
         'longitude': lon,
-        'note': 'GPS services are offline. Nearest location tracking placeholder triggered.',
-        'nearest_points': []
-      }
+        'note':
+            'GPS services are offline. Nearest location tracking placeholder triggered.',
+        'nearest_points': [],
+      },
     };
   }
 
@@ -561,9 +789,10 @@ class TrekKnowledgeService {
       'data': {
         'latitude': lat,
         'longitude': lon,
-        'note': 'GPS services are offline. Nearest medical facility tracking placeholder triggered.',
-        'nearest_health_posts': []
-      }
+        'note':
+            'GPS services are offline. Nearest medical facility tracking placeholder triggered.',
+        'nearest_health_posts': [],
+      },
     };
   }
 }

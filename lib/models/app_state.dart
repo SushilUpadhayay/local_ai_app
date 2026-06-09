@@ -11,6 +11,7 @@ import '../repositories/conversation_repository.dart';
 import '../services/stt_service.dart';
 import '../services/tts_service.dart';
 import '../services/trek_knowledge_service.dart';
+import '../services/tool_registry_service.dart';
 import 'dart:convert';
 
 enum AppScreen { chat, history, models }
@@ -98,7 +99,11 @@ class AppState extends ChangeNotifier {
   final ConversationRepository _conversationRepository =
       ConversationRepository();
   final TrekKnowledgeService _trekKnowledgeService = TrekKnowledgeService();
+  late final ToolRegistryService _toolRegistryService = ToolRegistryService(
+    _trekKnowledgeService,
+  );
   TrekKnowledgeService get trekKnowledgeService => _trekKnowledgeService;
+  ToolRegistryService get toolRegistryService => _toolRegistryService;
 
   // Context retention for trek assistant
   final Map<String, String> _lastSelectedTrekIds = {};
@@ -513,15 +518,10 @@ class AppState extends ChangeNotifier {
     }
     notifyListeners();
 
-    // 1. Run local intent detection using preprocessed synonyms and aliases
+    // 1. Ask the local LLM to select Trek tools, then validate in Dart.
     final convId = _activeConversation?.id;
     final lastTrekId = convId != null ? _lastSelectedTrekIds[convId] : null;
-    final intentResult = _trekKnowledgeService.detectIntent(
-      text,
-      lastTrekId: lastTrekId,
-    );
 
-    // Helper to capitalize ID to short name
     String getShortTrekName(String id) {
       if (id == 'annapurna_base_camp') return 'Annapurna Base Camp';
       if (id == 'everest_base_camp') return 'Everest Base Camp';
@@ -535,180 +535,131 @@ class AppState extends ChangeNotifier {
           .join(' ');
     }
 
-    // A. Ambiguity Fallback: Multiple treks matched without compare intent
-    if (intentResult != null && intentResult['ambiguous'] == true) {
+    final model = activeModel;
+    var toolCalls = <ToolCall>[];
+    var detectedIntent = _trekKnowledgeService.detectIntent(
+      text,
+      lastTrekId: lastTrekId,
+    );
+
+    if (detectedIntent != null && detectedIntent['ambiguous'] == true) {
       _isStreaming = false;
       _streamingToken = '';
-      final List<String> matches = List<String>.from(intentResult['matches']);
+      final matches = List<String>.from(detectedIntent['matches']);
       final names = matches.map(getShortTrekName).toList();
       final namesString = names.length > 2
           ? '${names.sublist(0, names.length - 1).join(", ")}, or ${names.last}'
           : names.join(" or ");
-      final reply = "Did you mean $namesString?";
-
-      _finishStreamingWithMessage(reply, modelName: 'Trek System');
+      _finishStreamingWithMessage(
+        "Did you mean $namesString?",
+        modelName: 'Trek System',
+      );
       return;
     }
 
-    // B. Trek Fallback: Trek not found but trek-related intent keyword was present
-    if (intentResult != null && intentResult['fallback'] == 'trek_missing') {
+    if (detectedIntent != null &&
+        detectedIntent['fallback'] == 'trek_missing') {
       _isStreaming = false;
       _streamingToken = '';
-      final reply =
-          "I couldn't find a matching trek. I currently support Annapurna Base Camp (ABC), Everest Base Camp (EBC), and Langtang Valley. Which one are you interested in?";
-
-      _finishStreamingWithMessage(reply, modelName: 'Trek System');
+      _finishStreamingWithMessage(
+        "I couldn't find a matching trek. I currently support Annapurna Base Camp (ABC), Everest Base Camp (EBC), and Langtang Valley. Which one are you interested in?",
+        modelName: 'Trek System',
+      );
       return;
     }
 
-    // C. Intent Fallback: Trek matched but specific question is unclear
-    if (intentResult != null && intentResult['fallback'] == 'intent_unclear') {
+    if (detectedIntent != null &&
+        detectedIntent['fallback'] == 'intent_unclear') {
       _isStreaming = false;
       _streamingToken = '';
-      final trekId = intentResult['trekId'] as String;
+      final trekId = detectedIntent['trekId'] as String;
       final trekName = getShortTrekName(trekId);
-      final reply =
-          "What do you want to know about $trekName?\n• Route / Itinerary\n• Difficulty & Info\n• Landmarks & Peaks\n• Villages & Tea Houses\n• Health Posts & Rescue\n• Transport / How to reach\n• Emergency & Safety";
-
-      _finishStreamingWithMessage(reply, modelName: 'Trek System');
+      _finishStreamingWithMessage(
+        "What do you want to know about $trekName?\n- Route / Itinerary\n- Difficulty & Info\n- Landmarks & Peaks\n- Villages & Tea Houses\n- Health Posts & Rescue\n- Transport / How to reach\n- Emergency & Safety",
+        modelName: 'Trek System',
+      );
       return;
     }
 
-    // D. Clear Tool Selection matched
-    if (intentResult != null && intentResult['tool'] != null) {
-      final stopwatch = Stopwatch()..start();
-      final tool = intentResult['tool'] as String;
-      final trekId = intentResult['trekId'] as String;
+    if (model != null && _modelLoadState == ModelLoadState.loaded) {
+      final selectionPrompt = _llmService.buildToolSelectionPrompt(
+        userQuery: text,
+        availableTools: _toolRegistryService.availableToolNames,
+        lastTrekId: lastTrekId,
+      );
+      try {
+        final selectionText = await _llmService.generateText(
+          selectionPrompt,
+          maxTokens: 180,
+        );
+        toolCalls = _toolRegistryService.parseToolSelection(selectionText);
+      } catch (e) {
+        debugPrint('[AppState] Tool selection prompt failed: $e');
+      }
+    }
 
-      // Visual feedback: retrieving message
-      final readableTrek = trekId == 'all'
-          ? 'available treks'
-          : getShortTrekName(trekId);
-      _streamingToken =
-          '*(Retrieving data for $readableTrek from database…)*\n\n';
+    if (toolCalls.isEmpty) {
+      final fallbackCall = _toolRegistryService.callFromDetectedIntent(
+        detectedIntent,
+        text,
+      );
+      if (fallbackCall != null) {
+        toolCalls = [fallbackCall];
+      }
+    }
+
+    if (toolCalls.isNotEmpty) {
+      _toolRegistryService.beginResponseTrace();
+      final firstTrekId = toolCalls.first.arguments['trekId']?.toString();
+      final readableTrek = firstTrekId == null || firstTrekId == 'all'
+          ? 'trek knowledge'
+          : getShortTrekName(firstTrekId);
+      _streamingToken = '*(Retrieving $readableTrek offline data...)*\n\n';
       notifyListeners();
 
-      Map<String, dynamic> toolResult;
-      if (tool == 'compare_treks') {
-        final trekIds = List<String>.from(intentResult['trekIds']);
-        final List<Map<String, dynamic>> comparisonData = [];
-        for (final id in trekIds) {
-          comparisonData.add(_trekKnowledgeService.get_trek_info(id));
-        }
-        toolResult = {
-          'success': true,
-          'tool': 'compare_treks',
-          'trekIds': trekIds,
-          'data': {'treks': comparisonData},
-        };
-      } else {
-        switch (tool) {
-          case 'search_trek':
-            toolResult = _trekKnowledgeService.search_trek(trekId);
-            break;
-          case 'get_trek_info':
-            toolResult = _trekKnowledgeService.get_trek_info(trekId);
-            break;
-          case 'get_route_info':
-            toolResult = _trekKnowledgeService.get_route_info(trekId);
-            break;
-          case 'get_landmarks':
-            toolResult = _trekKnowledgeService.get_landmarks(trekId);
-            break;
-          case 'get_villages':
-            toolResult = _trekKnowledgeService.get_villages(trekId);
-            break;
-          case 'get_health_posts':
-            toolResult = _trekKnowledgeService.get_health_posts(trekId);
-            break;
-          case 'get_emergency_info':
-            toolResult = _trekKnowledgeService.get_emergency_info(trekId);
-            break;
-          case 'get_transport_info':
-            toolResult = _trekKnowledgeService.get_transport_info(trekId);
-            break;
-          case 'get_faq_answer':
-            final rawQuestion = intentResult['raw_question'] as String? ?? text;
-            toolResult = _trekKnowledgeService.get_faq_answer(
-              trekId,
-              rawQuestion,
-            );
-            break;
-          case 'list_available_treks':
-            toolResult = _trekKnowledgeService.list_available_treks();
-            break;
-          default:
-            toolResult = {
-              'success': false,
-              'tool': tool,
-              'trekId': trekId,
-              'error': 'Unknown tool requested',
-              'data': {},
-            };
-        }
-      }
-
-      stopwatch.stop();
-      final execTime = stopwatch.elapsedMilliseconds;
-
-      // Exec metrics logging
-      debugPrint('--- [Trek System Tool Execution Log] ---');
+      final results = _toolRegistryService.executeAll(toolCalls);
+      final trace = _toolRegistryService.currentTrace;
+      debugPrint('--- [Trek Tool Execution] ---');
       debugPrint('Query: $text');
-      debugPrint('Trek Matched: $trekId');
-      debugPrint('Tool Selected: $tool');
-      debugPrint('Execution Time: ${execTime}ms');
-      debugPrint('Source File: ${toolResult['source_file'] ?? 'N/A'}');
-      debugPrint('----------------------------------------');
+      debugPrint('Matched Trek: ${trace.matchedTrek}');
+      debugPrint('Tools Used: ${trace.toolsUsed.join(", ")}');
+      debugPrint('Source Files: ${trace.sourceFiles.join(", ")}');
+      debugPrint('Execution Time: ${trace.executionTimeMs}ms');
+      debugPrint('-----------------------------');
 
-      // Context retention
-      if (trekId != 'all' &&
-          trekId != 'none' &&
-          tool != 'compare_treks' &&
+      final matchedTrek = trace.matchedTrek;
+      if (matchedTrek.isNotEmpty &&
+          matchedTrek != 'none' &&
+          matchedTrek != 'response' &&
           convId != null) {
-        _lastSelectedTrekIds[convId] = trekId;
+        _lastSelectedTrekIds[convId] = matchedTrek;
       }
 
-      // Synthesis step: final Conversational Formatting
-      // Guard: no model selected
-      final model = activeModel;
       if (model == null) {
         _finishStreamingWithMessage(
           "*(No Active Model Selected)*\n\nTo format the offline results:\n1. Open **Local Models** from the menu.\n2. Download a model that fits your device.\n3. Tap **Set Active** to load it.",
           modelName: 'System',
+          reasoningTrace: trace,
         );
         return;
       }
 
-      // Guard: model not loaded into engine
       if (_modelLoadState != ModelLoadState.loaded) {
         _finishStreamingWithMessage(
-          '*(Model Not Loaded)*\n\nThe local model is required to format the database results into natural language. Please activate a model first.',
+          '*(Model Not Loaded)*\n\nThe local model is required to format the offline Trek Knowledge results into natural language. Please activate a model first.',
           modelName: 'System',
+          reasoningTrace: trace,
         );
         return;
       }
 
-      // Format the prompt containing the standardized result
-      final synthesisPrompt = _contextWindowManager.buildChatMLPrompt(
-        [
-          Message(
-            sender: 'user',
-            text:
-                '''You are a helpful, concise trek assistant running offline. 
-Answer the user's question using the provided standardized database JSON result. 
-Do not output raw JSON. Do not reference the database, tool execution, files, or JSON in your response. 
-Convert the database information into a natural, friendly, and complete conversational response.
-If the database indicates success is false, explain that the information is unavailable.
-
-User Question: "$text"
-Database JSON Result: ${jsonEncode(toolResult)}''',
-            timestamp: DateTime.now(),
-          ),
-        ],
-        'You are an offline trek assistant. Always format tool/database results into natural conversational language, never showing raw JSON, tools, or references to file lookups.',
+      final synthesisPrompt = _llmService.buildToolSynthesisPrompt(
+        userQuery: text,
+        toolResultsJson: jsonEncode(
+          results.map((result) => result.payload).toList(),
+        ),
       );
 
-      // Clear visual feedback retrieve banner before streaming actual response tokens
       _streamingToken = '';
       _sentenceQueue.clear();
       _sentenceBuffer = '';
@@ -732,6 +683,7 @@ Database JSON Result: ${jsonEncode(toolResult)}''',
           _finishStreamingWithMessage(
             '*(Inference Error during formatting)*\n\n${err.toString()}',
             modelName: model.name,
+            reasoningTrace: trace,
           );
         },
         onDone: () {
@@ -741,7 +693,11 @@ Database JSON Result: ${jsonEncode(toolResult)}''',
           final finalText = _streamingToken.isEmpty
               ? '*(No response generated)*'
               : _streamingToken;
-          _finishStreamingWithMessage(finalText, modelName: model.name);
+          _finishStreamingWithMessage(
+            finalText,
+            modelName: model.name,
+            reasoningTrace: trace,
+          );
         },
         cancelOnError: true,
       );
@@ -750,7 +706,6 @@ Database JSON Result: ${jsonEncode(toolResult)}''',
 
     // E. General/Fallback Chat: Normal General Assistant LLM Generation
     // Guard: no model selected
-    final model = activeModel;
     if (model == null) {
       _finishStreamingWithMessage(
         "*(No Active Model Selected)*\n\nTo start chatting:\n1. Open **Local Models** from the menu.\n2. Download a model that fits your device.\n3. Tap **Set Active** to load it into memory.",
@@ -831,7 +786,11 @@ Database JSON Result: ${jsonEncode(toolResult)}''',
   }
 
   /// Commits the streamed text as a completed AI message and persists.
-  void _finishStreamingWithMessage(String text, {required String modelName}) {
+  void _finishStreamingWithMessage(
+    String text, {
+    required String modelName,
+    ReasoningTrace? reasoningTrace,
+  }) {
     _isStreaming = false;
     _streamingToken = '';
     _llmStreamSub?.cancel();
@@ -845,6 +804,7 @@ Database JSON Result: ${jsonEncode(toolResult)}''',
       text: text,
       timestamp: DateTime.now(),
       model: modelName,
+      reasoningTrace: reasoningTrace,
     );
 
     // Store reference for replay button

@@ -599,6 +599,11 @@ class _ModelsScreenState extends State<ModelsScreen> {
                 Icons.wrap_text_rounded,
                 '${active.contextWindow} ctx',
               ),
+              const SizedBox(width: 10),
+              _buildActiveMeta(
+                Icons.output_rounded,
+                '${active.maxOutputTokens} max tkns',
+              ),
             ],
           ),
           if (loadState == ModelLoadState.failed) ...[

@@ -10,6 +10,9 @@ import '../services/context_window_manager.dart';
 import '../repositories/conversation_repository.dart';
 import '../services/stt_service.dart';
 import '../services/tts_service.dart';
+import '../services/trek_knowledge_service.dart';
+import '../services/tool_registry_service.dart';
+import 'dart:convert';
 
 enum AppScreen { chat, history, models }
 
@@ -62,8 +65,6 @@ class AppState extends ChangeNotifier {
   String _sentenceBuffer = '';
   bool _isSentenceTtsSpeaking = false;
 
-
-
   @visibleForTesting
   set sttService(SttService service) {
     _sttService = service;
@@ -97,6 +98,15 @@ class AppState extends ChangeNotifier {
   final ContextWindowManager _contextWindowManager = ContextWindowManager();
   final ConversationRepository _conversationRepository =
       ConversationRepository();
+  final TrekKnowledgeService _trekKnowledgeService = TrekKnowledgeService();
+  late final ToolRegistryService _toolRegistryService = ToolRegistryService(
+    _trekKnowledgeService,
+  );
+  TrekKnowledgeService get trekKnowledgeService => _trekKnowledgeService;
+  ToolRegistryService get toolRegistryService => _toolRegistryService;
+
+  // Context retention for trek assistant
+  final Map<String, String> _lastSelectedTrekIds = {};
 
   // Startup loading state
   bool _isLoading = true;
@@ -149,14 +159,14 @@ class AppState extends ChangeNotifier {
   // Voice timers
   Timer? _voiceTimer;
 
-  AppState({
-    SttService? sttService,
-    TtsService? ttsService,
-  }) {
-    _sttService = sttService ?? WhisperSttService(
-      activeModelPathProvider: () => modelManager.activeWhisperModel?.localPath,
-      activeModelIdProvider: () => modelManager.activeWhisperModelId,
-    );
+  AppState({SttService? sttService, TtsService? ttsService}) {
+    _sttService =
+        sttService ??
+        WhisperSttService(
+          activeModelPathProvider: () =>
+              modelManager.activeWhisperModel?.localPath,
+          activeModelIdProvider: () => modelManager.activeWhisperModelId,
+        );
     if (ttsService != null) {
       _ttsService = ttsService;
     }
@@ -197,7 +207,8 @@ class AppState extends ChangeNotifier {
           );
           return;
         }
-        _activeUtteranceSessionId = null; // Utterance finished — clear reference
+        _activeUtteranceSessionId =
+            null; // Utterance finished — clear reference
         _processQueueAfterUtterance();
       },
       onError: (err) {
@@ -253,10 +264,14 @@ class AppState extends ChangeNotifier {
       await modelManager.init();
 
       // 2. Detect device hardware.
+      // 2. Detect device hardware.
       await _detectDeviceHardware();
 
       // 3. Load persisted conversations.
       await _loadPersistedConversations();
+
+      // 4. Initialize trek knowledge service.
+      await _trekKnowledgeService.initialize();
     } catch (e) {
       debugPrint('[AppState] Init error: $e');
     }
@@ -312,7 +327,7 @@ class AppState extends ChangeNotifier {
     if (model.status != 'installed') return;
     if (model.localPath == null) return;
 
-    // ── GUARD: Never pass Whisper/speech models to llama_cpp_dart ────────────
+    // GUARD: Never pass Whisper/speech models to llama_cpp_dart
     // Whisper models are GGML .bin files — they are not GGUF and cannot be
     // loaded by LlamaEngine. Routing them here crashes with LlamaModel.load().
     if (model.id.startsWith('whisper-') || model.modelFamily == 'Whisper') {
@@ -323,8 +338,6 @@ class AppState extends ChangeNotifier {
       await selectWhisperModel(model);
       return;
     }
-    // ─────────────────────────────────────────────────────────────────────────
-
     // Abort any in-progress generation.
     await _cancelGeneration();
 
@@ -462,21 +475,6 @@ class AppState extends ChangeNotifier {
     }).toList();
   }
 
-  //  SEND MESSAGE  (manual trigger only - NOT automatic)
-
-  /// Send a user message and generate an LLM response
-  ///
-  /// This method is ONLY called when the user manually presses the Send button.
-  /// It is NOT called automatically by the STT (speech-to-text) workflow.
-  ///
-  /// STT Workflow (PUSH-TO-TALK):
-  /// 1. User taps microphone → recording starts
-  /// 2. User taps microphone again → Whisper transcribes
-  /// 3. Transcription text appears in input field
-  /// 4. User manually calls this method by pressing Send button
-  /// 5. Only then does the LLM generate a response
-  ///
-  /// There is NO automatic sending, NO continuous listening, NO automatic processing.
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
     if (_isStreaming) return; // Block concurrent requests.
@@ -520,8 +518,194 @@ class AppState extends ChangeNotifier {
     }
     notifyListeners();
 
-    // Guard: no model selected
+    // 1. Ask the local LLM to select Trek tools, then validate in Dart.
+    final convId = _activeConversation?.id;
+    final lastTrekId = convId != null ? _lastSelectedTrekIds[convId] : null;
+
+    String getShortTrekName(String id) {
+      if (id == 'annapurna_base_camp') return 'Annapurna Base Camp';
+      if (id == 'everest_base_camp') return 'Everest Base Camp';
+      if (id == 'langtang_valley') return 'Langtang Valley';
+      return id
+          .split('_')
+          .map(
+            (word) =>
+                word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1),
+          )
+          .join(' ');
+    }
+
     final model = activeModel;
+    var toolCalls = <ToolCall>[];
+    var detectedIntent = _trekKnowledgeService.detectIntent(
+      text,
+      lastTrekId: lastTrekId,
+    );
+
+    if (detectedIntent != null && detectedIntent['ambiguous'] == true) {
+      _isStreaming = false;
+      _streamingToken = '';
+      final matches = List<String>.from(detectedIntent['matches']);
+      final names = matches.map(getShortTrekName).toList();
+      final namesString = names.length > 2
+          ? '${names.sublist(0, names.length - 1).join(", ")}, or ${names.last}'
+          : names.join(" or ");
+      _finishStreamingWithMessage(
+        "Did you mean $namesString?",
+        modelName: 'Trek System',
+      );
+      return;
+    }
+
+    if (detectedIntent != null &&
+        detectedIntent['fallback'] == 'trek_missing') {
+      _isStreaming = false;
+      _streamingToken = '';
+      _finishStreamingWithMessage(
+        "I couldn't find a matching trek. I currently support Annapurna Base Camp (ABC), Everest Base Camp (EBC), and Langtang Valley. Which one are you interested in?",
+        modelName: 'Trek System',
+      );
+      return;
+    }
+
+    if (detectedIntent != null &&
+        detectedIntent['fallback'] == 'intent_unclear') {
+      _isStreaming = false;
+      _streamingToken = '';
+      final trekId = detectedIntent['trekId'] as String;
+      final trekName = getShortTrekName(trekId);
+      _finishStreamingWithMessage(
+        "What do you want to know about $trekName?\n- Route / Itinerary\n- Difficulty & Info\n- Landmarks & Peaks\n- Villages & Tea Houses\n- Health Posts & Rescue\n- Transport / How to reach\n- Emergency & Safety",
+        modelName: 'Trek System',
+      );
+      return;
+    }
+
+    if (model != null && _modelLoadState == ModelLoadState.loaded) {
+      final selectionPrompt = _llmService.buildToolSelectionPrompt(
+        userQuery: text,
+        availableTools: _toolRegistryService.availableToolNames,
+        lastTrekId: lastTrekId,
+      );
+      try {
+        final selectionText = await _llmService.generateText(
+          selectionPrompt,
+          maxTokens: 180,
+        );
+        toolCalls = _toolRegistryService.parseToolSelection(selectionText);
+      } catch (e) {
+        debugPrint('[AppState] Tool selection prompt failed: $e');
+      }
+    }
+
+    if (toolCalls.isEmpty) {
+      final fallbackCall = _toolRegistryService.callFromDetectedIntent(
+        detectedIntent,
+        text,
+      );
+      if (fallbackCall != null) {
+        toolCalls = [fallbackCall];
+      }
+    }
+
+    if (toolCalls.isNotEmpty) {
+      _toolRegistryService.beginResponseTrace();
+      final firstTrekId = toolCalls.first.arguments['trekId']?.toString();
+      final readableTrek = firstTrekId == null || firstTrekId == 'all'
+          ? 'trek knowledge'
+          : getShortTrekName(firstTrekId);
+      _streamingToken = '*(Retrieving $readableTrek offline data...)*\n\n';
+      notifyListeners();
+
+      final results = _toolRegistryService.executeAll(toolCalls);
+      final trace = _toolRegistryService.currentTrace;
+      debugPrint('--- [Trek Tool Execution] ---');
+      debugPrint('Query: $text');
+      debugPrint('Matched Trek: ${trace.matchedTrek}');
+      debugPrint('Tools Used: ${trace.toolsUsed.join(", ")}');
+      debugPrint('Source Files: ${trace.sourceFiles.join(", ")}');
+      debugPrint('Execution Time: ${trace.executionTimeMs}ms');
+      debugPrint('-----------------------------');
+
+      final matchedTrek = trace.matchedTrek;
+      if (matchedTrek.isNotEmpty &&
+          matchedTrek != 'none' &&
+          matchedTrek != 'response' &&
+          convId != null) {
+        _lastSelectedTrekIds[convId] = matchedTrek;
+      }
+
+      if (model == null) {
+        _finishStreamingWithMessage(
+          "*(No Active Model Selected)*\n\nTo format the offline results:\n1. Open **Local Models** from the menu.\n2. Download a model that fits your device.\n3. Tap **Set Active** to load it.",
+          modelName: 'System',
+          reasoningTrace: trace,
+        );
+        return;
+      }
+
+      if (_modelLoadState != ModelLoadState.loaded) {
+        _finishStreamingWithMessage(
+          '*(Model Not Loaded)*\n\nThe local model is required to format the offline Trek Knowledge results into natural language. Please activate a model first.',
+          modelName: 'System',
+          reasoningTrace: trace,
+        );
+        return;
+      }
+
+      final synthesisPrompt = _llmService.buildToolSynthesisPrompt(
+        userQuery: text,
+        toolResultsJson: jsonEncode(
+          results.map((result) => result.payload).toList(),
+        ),
+      );
+
+      _streamingToken = '';
+      _sentenceQueue.clear();
+      _sentenceBuffer = '';
+      _isSentenceTtsSpeaking = false;
+      _isLiveStreamingTtsEnabled = false;
+      _currentStreamingMessage = null;
+
+      final tokenStream = _llmService.generate(
+        synthesisPrompt,
+        maxTokens: model.maxOutputTokens > 0 ? model.maxOutputTokens : 512,
+      );
+      _llmStreamSub = tokenStream.listen(
+        (token) {
+          _streamingToken += token;
+          if (_ttsSessionId == currentSessionId && _isTtsEnabled) {
+            _processSentenceBuffer(token);
+          }
+          notifyListeners();
+        },
+        onError: (err) {
+          _finishStreamingWithMessage(
+            '*(Inference Error during formatting)*\n\n${err.toString()}',
+            modelName: model.name,
+            reasoningTrace: trace,
+          );
+        },
+        onDone: () {
+          if (_ttsSessionId == currentSessionId && _isTtsEnabled) {
+            _flushSentenceBuffer();
+          }
+          final finalText = _streamingToken.isEmpty
+              ? '*(No response generated)*'
+              : _streamingToken;
+          _finishStreamingWithMessage(
+            finalText,
+            modelName: model.name,
+            reasoningTrace: trace,
+          );
+        },
+        cancelOnError: true,
+      );
+      return;
+    }
+
+    // E. General/Fallback Chat: Normal General Assistant LLM Generation
+    // Guard: no model selected
     if (model == null) {
       _finishStreamingWithMessage(
         "*(No Active Model Selected)*\n\nTo start chatting:\n1. Open **Local Models** from the menu.\n2. Download a model that fits your device.\n3. Tap **Set Active** to load it into memory.",
@@ -543,7 +727,6 @@ class AppState extends ChangeNotifier {
           modelName: 'System',
         );
       } else {
-        // unloaded — trigger lazy load
         _finishStreamingWithMessage(
           '*(Model Not Loaded)*\n\nThe model file is installed but not yet loaded into memory. Go to **Local Models** and tap **Set Active** to load it.',
           modelName: 'System',
@@ -567,22 +750,20 @@ class AppState extends ChangeNotifier {
     _sentenceQueue.clear();
     _sentenceBuffer = '';
     _isSentenceTtsSpeaking = false;
-
-    // Reset live streaming state for new message
     _isLiveStreamingTtsEnabled = false;
     _currentStreamingMessage = null;
 
     // Stream tokens from LLM engine
-    final tokenStream = _llmService.generate(prompt);
+    final tokenStream = _llmService.generate(
+      prompt,
+      maxTokens: model.maxOutputTokens > 0 ? model.maxOutputTokens : 512,
+    );
     _llmStreamSub = tokenStream.listen(
       (token) {
         _streamingToken += token;
-
-        // Guard checking session validity
         if (_ttsSessionId == currentSessionId && _isTtsEnabled) {
           _processSentenceBuffer(token);
         }
-
         notifyListeners();
       },
       onError: (err) {
@@ -592,7 +773,6 @@ class AppState extends ChangeNotifier {
         );
       },
       onDone: () {
-        // Guard checking session validity
         if (_ttsSessionId == currentSessionId && _isTtsEnabled) {
           _flushSentenceBuffer();
         }
@@ -606,7 +786,11 @@ class AppState extends ChangeNotifier {
   }
 
   /// Commits the streamed text as a completed AI message and persists.
-  void _finishStreamingWithMessage(String text, {required String modelName}) {
+  void _finishStreamingWithMessage(
+    String text, {
+    required String modelName,
+    ReasoningTrace? reasoningTrace,
+  }) {
     _isStreaming = false;
     _streamingToken = '';
     _llmStreamSub?.cancel();
@@ -620,6 +804,7 @@ class AppState extends ChangeNotifier {
       text: text,
       timestamp: DateTime.now(),
       model: modelName,
+      reasoningTrace: reasoningTrace,
     );
 
     // Store reference for replay button
@@ -1023,8 +1208,6 @@ class AppState extends ChangeNotifier {
     debugPrint('[LiveStreamingTts] User stopped live streaming TTS');
     notifyListeners();
   }
-
-
 
   void clearVoiceError() {
     _voiceState = VoiceState.idle;

@@ -1,14 +1,64 @@
+class ReasoningTrace {
+  final String matchedTrek;
+  final List<String> toolsUsed;
+  final List<String> sourceFiles;
+  final int executionTimeMs;
+
+  const ReasoningTrace({
+    required this.matchedTrek,
+    required this.toolsUsed,
+    required this.sourceFiles,
+    required this.executionTimeMs,
+  });
+
+  bool get hasToolExecution =>
+      matchedTrek.isNotEmpty ||
+      toolsUsed.isNotEmpty ||
+      sourceFiles.isNotEmpty ||
+      executionTimeMs > 0;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'matchedTrek': matchedTrek,
+      'toolsUsed': toolsUsed,
+      'sourceFiles': sourceFiles,
+      'executionTimeMs': executionTimeMs,
+    };
+  }
+
+  factory ReasoningTrace.empty() {
+    return const ReasoningTrace(
+      matchedTrek: '',
+      toolsUsed: [],
+      sourceFiles: [],
+      executionTimeMs: 0,
+    );
+  }
+
+  factory ReasoningTrace.fromMap(Map<String, dynamic>? map) {
+    if (map == null) return ReasoningTrace.empty();
+    return ReasoningTrace(
+      matchedTrek: map['matchedTrek'] as String? ?? '',
+      toolsUsed: List<String>.from(map['toolsUsed'] ?? const []),
+      sourceFiles: List<String>.from(map['sourceFiles'] ?? const []),
+      executionTimeMs: map['executionTimeMs'] as int? ?? 0,
+    );
+  }
+}
+
 class Message {
   final String sender; // 'user' or 'ai'
   final String text;
   final DateTime timestamp;
   final String? model; // Model used for this response
+  final ReasoningTrace? reasoningTrace;
 
   Message({
     required this.sender,
     required this.text,
     required this.timestamp,
     this.model,
+    this.reasoningTrace,
   });
 
   Map<String, dynamic> toMap() {
@@ -17,6 +67,7 @@ class Message {
       'text': text,
       'timestamp': timestamp.toIso8601String(),
       'model': model,
+      'reasoningTrace': reasoningTrace?.toMap(),
     };
   }
 
@@ -24,8 +75,13 @@ class Message {
     return Message(
       sender: map['sender'] ?? 'user',
       text: map['text'] ?? '',
-      timestamp: DateTime.parse(map['timestamp'] ?? DateTime.now().toIso8601String()),
+      timestamp: DateTime.parse(
+        map['timestamp'] ?? DateTime.now().toIso8601String(),
+      ),
       model: map['model'],
+      reasoningTrace: ReasoningTrace.fromMap(
+        map['reasoningTrace'] as Map<String, dynamic>?,
+      ),
     );
   }
 }

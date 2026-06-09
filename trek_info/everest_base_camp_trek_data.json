@@ -1,4 +1,9 @@
 {
+  "id": "everest_base_camp",
+  "aliases": ["ebc", "everest base camp", "everest"],
+  "gps_points": [],
+  "offline_maps": [],
+  "weather_notes": [],
   "basic_trek_information": {
     "trek_name": "Everest Base Camp Trek (EBC Trek)",
     "overview": "The Everest Base Camp Trek is the ultimate Himalayan adventure, taking trekkers to the base of the world's highest mountain at 5,364m. This classic 14-day trek traverses the Khumbu region through ancient Sherpa villages, crosses high suspension bridges over the Dudh Koshi River, passes through Sagarmatha National Park (UNESCO World Heritage Site), and culminates at the South Base Camp of Mount Everest. The trek offers unparalleled views of Everest, Lhotse, Nuptse, and Makalu, with the option to hike Kala Patthar (5,545m) for the best Everest viewpoint.",

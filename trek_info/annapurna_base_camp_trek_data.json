@@ -1,4 +1,9 @@
 {
+  "id": "annapurna_base_camp",
+  "aliases": ["abc", "annapurna base camp", "annapurna"],
+  "gps_points": [],
+  "offline_maps": [],
+  "weather_notes": [],
   "basic_trek_information": {
     "trek_name": "Annapurna Base Camp Trek (ABC Trek)",
     "overview": "The Annapurna Base Camp Trek is a moderate journey through the Annapurna Conservation Area, taking trekkers to the base of the 10th highest mountain in the world. The trek passes through diverse landscapes from subtropical forests to high-altitude alpine terrain, traditional Gurung and Magar villages, and culminates at 4,130m in the Annapurna Sanctuary.",

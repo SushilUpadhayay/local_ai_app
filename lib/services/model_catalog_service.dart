@@ -1,8 +1,13 @@
 import '../models/model_item.dart';
 
 class ModelCatalogService {
-  // Returns the list of default/available models with advanced metadata.
-  // In the future, this can query remote Hugging Face API or local storage.
+  // Returns the list of available models with advanced metadata.
+  // maxOutputTokens is computed automatically from contextWindow — do NOT add it here.
+  // Rule: 25% of contextWindow, clamped to [512, 2048]. See ModelItem.maxOutputTokens.
+  //
+  // To add a new model, just provide:
+  //   id, name, fullName, size, ram, url, quantization, contextWindow, modelFamily
+  // Output token limit is derived automatically.
   Future<List<ModelItem>> getAvailableModels() async {
     return [
       ModelItem(
@@ -14,9 +19,10 @@ class ModelCatalogService {
         status: 'available',
         active: false,
         category: 'General Text',
-        url: 'https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf',
+        url:
+            'https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf',
         quantization: 'Q4_K_M',
-        contextWindow: 4096, // Configured context size for mobile
+        contextWindow: 4096, // maxOutputTokens: 4096/4 i.e 25% of contextWindow
         modelFamily: 'Qwen',
       ),
       ModelItem(
@@ -28,7 +34,8 @@ class ModelCatalogService {
         status: 'available',
         active: false,
         category: 'Reasoning',
-        url: 'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf',
+        url:
+            'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf',
         quantization: 'Q4_K_M',
         contextWindow: 4096,
         modelFamily: 'Qwen',
@@ -42,7 +49,8 @@ class ModelCatalogService {
         status: 'available',
         active: false,
         category: 'Advanced Text',
-        url: 'https://huggingface.co/lmstudio-community/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf',
+        url:
+            'https://huggingface.co/lmstudio-community/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf',
         quantization: 'Q4_K_M',
         contextWindow: 4096,
         modelFamily: 'Gemma',
@@ -56,9 +64,10 @@ class ModelCatalogService {
         status: 'available',
         active: false,
         category: 'Speech Recognition',
-        url: 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin',
+        url:
+            'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin',
         quantization: 'F16',
-        contextWindow: 0,
+        contextWindow: 0, // → auto maxOutputTokens: 0 (audio model)
         modelFamily: 'Whisper',
       ),
       ModelItem(
@@ -70,9 +79,10 @@ class ModelCatalogService {
         status: 'available',
         active: false,
         category: 'Speech Recognition',
-        url: 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin',
+        url:
+            'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin',
         quantization: 'F16',
-        contextWindow: 0,
+        contextWindow: 0, // → auto maxOutputTokens: 0 (audio model)
         modelFamily: 'Whisper',
       ),
       ModelItem(
@@ -84,9 +94,10 @@ class ModelCatalogService {
         status: 'available',
         active: false,
         category: 'Speech Recognition',
-        url: 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin',
+        url:
+            'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin',
         quantization: 'F16',
-        contextWindow: 0,
+        contextWindow: 0, // → auto maxOutputTokens: 0 (audio model)
         modelFamily: 'Whisper',
       ),
     ];

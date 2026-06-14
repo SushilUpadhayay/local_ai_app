@@ -21,7 +21,10 @@ class CompatibilityService {
   // Fetch device free storage in bytes. Falls back to 50GB on unsupported platforms.
   Future<int> getDeviceFreeStorage() async {
     if (!Platform.isAndroid) {
-      return 50 * 1024 * 1024 * 1024; // Fallback to 50GB for Desktop/Web testing
+      return 50 *
+          1024 *
+          1024 *
+          1024; // Fallback to 50GB for Desktop/Web testing
     }
     try {
       final int? storage = await _channel.invokeMethod<int>('getFreeStorage');
@@ -55,11 +58,13 @@ class CompatibilityService {
     return 500 * 1024 * 1024;
   }
 
-  // Verify RAM compatibility
+  // Verify RAM compatibility using rounded GB to account for OS reservation
   Future<bool> checkRamCompatibility(ModelItem model) async {
-    final totalRam = await getDeviceTotalRam();
-    final requiredRam = getRequiredRamBytes(model);
-    return totalRam >= requiredRam;
+    final totalRamBytes = await getDeviceTotalRam();
+    final totalRamGb = (totalRamBytes / (1024 * 1024 * 1024)).round();
+    final requiredRamGb = (getRequiredRamBytes(model) / (1024 * 1024 * 1024))
+        .round();
+    return totalRamGb >= requiredRamGb;
   }
 
   // Verify Storage compatibility (requires a 1.2x buffer of model size for safety)

@@ -626,6 +626,7 @@ class AppState extends ChangeNotifier {
     var finalResponse = '';
     var forceFinalAnswer = false;
     var retriedMalformedToolCall = false;
+    var wasStreamed = false;
 
     try {
       if (bypassToolCalling) {
@@ -637,10 +638,12 @@ class AppState extends ChangeNotifier {
           lastTrekName: _selectedtrek_name ?? lasttrekName,
           allowTools: false,
         );
-        finalResponse = (await _llmService.generateText(
+        finalResponse = await _streamResponse(
           prompt,
-          maxTokens: maxTokens,
-        )).trim();
+          maxTokens,
+          currentSessionId,
+        );
+        wasStreamed = true;
         debugPrint('[Agent] Final response generated via bypass.');
       }
 
@@ -775,10 +778,12 @@ class AppState extends ChangeNotifier {
           lastTrekName: _selectedtrek_name ?? lasttrekName,
           allowTools: false,
         );
-        finalResponse = (await _llmService.generateText(
+        finalResponse = await _streamResponse(
           prompt,
-          maxTokens: maxTokens,
-        )).trim();
+          maxTokens,
+          currentSessionId,
+        );
+        wasStreamed = true;
         debugPrint('[Agent] Final response generated after tool loop.');
       }
     } catch (e) {
@@ -804,15 +809,58 @@ class AppState extends ChangeNotifier {
     _streamingToken = finalResponse.isEmpty
         ? '*(No response generated)*'
         : finalResponse;
+
     if (_ttsSessionId == currentSessionId && _isTtsEnabled) {
-      _processSentenceBuffer(_streamingToken);
+      if (!wasStreamed) {
+        _processSentenceBuffer(_streamingToken);
+      }
       _flushSentenceBuffer();
     }
+    
     _finishStreamingWithMessage(
       _streamingToken,
       modelName: model.name,
       reasoningTrace: trace,
     );
+  }
+
+  Future<String> _streamResponse(
+    String prompt,
+    int maxTokens,
+    int currentSessionId,
+  ) async {
+    final stream = _llmService.generate(prompt, maxTokens: maxTokens);
+    final buffer = StringBuffer();
+    _streamingToken = '';
+
+    final completer = Completer<void>();
+
+    _llmStreamSub = stream.listen(
+      (token) {
+        buffer.write(token);
+        _streamingToken = buffer.toString();
+        notifyListeners();
+        if (_isTtsEnabled && _ttsSessionId == currentSessionId) {
+          _processSentenceBuffer(token);
+        }
+      },
+      onDone: () {
+        if (!completer.isCompleted) completer.complete();
+      },
+      onError: (e) {
+        debugPrint('[Agent] Stream error: $e');
+        if (!completer.isCompleted) completer.completeError(e);
+      },
+      cancelOnError: true,
+    );
+
+    try {
+      await completer.future;
+    } catch (e) {
+      debugPrint('[Agent] _streamResponse caught error: $e');
+    }
+    _llmStreamSub = null;
+    return buffer.toString().trim();
   }
 
   bool _shouldBypassToolCalling(String text) {

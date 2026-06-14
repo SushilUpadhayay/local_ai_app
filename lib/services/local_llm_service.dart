@@ -151,15 +151,10 @@ class LocalLlmService implements LlmService {
     debugPrint('================================');
     debugPrint('GENERATE() CALLED');
     debugPrint('Prompt length: ${prompt.length}');
+    debugPrint('PROMPT START');
+    debugPrint(prompt);
+    debugPrint('PROMPT END');
     debugPrint('================================');
-
-    print('================================');
-    print('GENERATE() CALLED');
-    print('Prompt length: ${prompt.length}');
-    print('PROMPT START');
-    print(prompt);
-    print('PROMPT END');
-    print('================================');
 
     if (!_isLoaded || _session == null) {
       return Stream.error(
@@ -169,18 +164,25 @@ class LocalLlmService implements LlmService {
       );
     }
 
-    final controller = StreamController<String>(
+    late final StreamController<String> controller;
+    bool isCancelled = false;
+    StreamSubscription<GenerationEvent>? localSub;
+
+    controller = StreamController<String>(
       onCancel: () {
-        _activeGenSub?.cancel();
-        _activeGenSub = null;
+        isCancelled = true;
+        localSub?.cancel();
       },
     );
 
     _activeGenSub?.cancel();
+    _activeGenSub = null;
 
     Future.microtask(() async {
+      if (isCancelled) return;
       try {
         await _session!.clear();
+        if (isCancelled) return;
 
         debugPrint('Starting llama generation...');
 
@@ -189,7 +191,7 @@ class LocalLlmService implements LlmService {
           maxTokens: maxTokens,
         );
 
-        _activeGenSub = eventStream.listen(
+        localSub = eventStream.listen(
           (event) {
             if (event is TokenEvent) {
               controller.add(event.text);
@@ -202,24 +204,28 @@ class LocalLlmService implements LlmService {
           },
           onError: (err) {
             debugPrint('GENERATION ERROR: $err');
-            controller.addError(err);
-            controller.close();
+            if (!controller.isClosed) {
+              controller.addError(err);
+              controller.close();
+            }
           },
           onDone: () {
             debugPrint('GENERATION DONE');
-
             if (!controller.isClosed) {
               controller.close();
             }
           },
           cancelOnError: true,
         );
+        _activeGenSub = localSub;
       } catch (e, stackTrace) {
         debugPrint('GENERATION EXCEPTION: $e');
         debugPrint(stackTrace.toString());
 
-        controller.addError(e);
-        controller.close();
+        if (!controller.isClosed) {
+          controller.addError(e);
+          controller.close();
+        }
       }
     });
 
@@ -244,95 +250,73 @@ class LocalLlmService implements LlmService {
   }) {
     final effectiveTrek = selectedTrekName ?? lastTrekName;
     final buf = StringBuffer();
-    // Identity
+
     buf.writeln('# IDENTITY');
     buf.writeln(
-      'You are Local Trek AI, an offline assistant for Nepal trekking and general conversation. Provide short consise answer.',
+      'You are a dual-mode assistant for a Nepal Trekking App. Depending on the CONTEXT block below, you will operate as either a friendly conversational chatbot OR a strict, headless JSON API router.',
     );
-    buf.writeln('Use trekking tools when trek information is required.');
     buf.writeln();
 
-    // Trek Context
-    buf.writeln('# TREK CONTEXT');
-
+    buf.writeln('# CONTEXT');
     if (effectiveTrek != null) {
       buf.writeln('Selected Trek: $effectiveTrek');
-      buf.writeln('- Assume trekking questions refer to this trek.');
       buf.writeln(
-        'Never invent trek facts. Use tool results as the source of truth.',
+        '- Use this trek for implicit questions. If a different trek is named, use that instead.',
       );
-      buf.writeln('- Do not ask the user to specify the trek again.');
-      buf.writeln('- trekName is injected automatically.');
       buf.writeln(
-        '- If the user explicitly mentions another trek, use that trek instead.',
+        '- You have NO native knowledge. Rely ONLY on provided tool results for facts.',
       );
     } else {
       buf.writeln('Selected Trek: none');
       buf.writeln(
-        '- Identify trek names from the user query.If no trek name is identified, answer normally as a helpful chatbot with precise and short answers.',
+        '- Identify trek names from the user query. If no trek name is identified, answer normally as a helpful chatbot.',
+      );
+      buf.writeln(
+        '- You have NO native knowledge. Rely ONLY on provided tool results for facts.',
       );
     }
     buf.writeln();
 
-    // Available Tools
     buf.writeln('# TOOLS');
     buf.writeln(
-      'get_trek_overview(trekName) -> Returns general trek information such as difficulty, duration, altitude, permits, and best seasons.',
+      'get_trek_overview(trekName): difficulty, duration, altitude, permits, season',
     );
     buf.writeln(
-      'get_trek_details(trekName, category) -> Returns detailed trek information for a specific category.',
+      'get_trek_details(trekName, category): category in [route, hospitals, villages, accommodation, landmarks, transport, emergency, permits, weather, wildlife, food_water, geography]',
+    );
+    buf.writeln('get_trek_faq(trekName, question): FAQ answers');
+    buf.writeln('compare_treks(trekNames): compare treks');
+    buf.writeln('search_trek(query): find treks');
+    buf.writeln();
+
+    buf.writeln('# RULES');
+
+    buf.writeln(
+      '1. **TREK IDENTIFIED BUT NO DATA:**If a trek is identified but no tool data is present in history, you MUST execute a tool. Output ONLY the JSON block. Do not write prose or explain your logic.',
     );
     buf.writeln(
-      'Categories: route, hospitals, villages, accommodation, landmarks, transport, emergency, permits, weather, wildlife, food_water, geography.',
-    );
-    buf.writeln(
-      'get_trek_faq(trekName, question) -> Returns answers to common trek-specific questions.',
-    );
-    buf.writeln('compare_treks(trekNames) -> Compares two or more treks.');
-    buf.writeln(
-      'search_trek(query) -> Finds treks by name, alias, or search term.',
+      '2. **DATA IS PRESENT:** If a `<|im_start|>tool` message or tool result is present in the history, use that data to answer the user directly in 1-2 concise sentences. Do not generate a tool call.',
     );
     buf.writeln();
 
-    // Tool Routing
-    buf.writeln('# TOOL ROUTING');
+    buf.writeln('# OUTPUT FORMAT FOR TOOLS');
     buf.writeln(
-      'Overview, difficulty, duration, altitude, permits, season -> get_trek_overview',
+      'To call a tool, return ONLY valid JSON matching this schema. Replace ID_STRING with a unique identifier:',
     );
-    buf.writeln(
-      'Route, itinerary, distance, elevation -> get_trek_details(category="route")',
-    );
-    buf.writeln(
-      'Hospital, clinic, doctor, medical -> get_trek_details(category="hospitals")',
-    );
-    buf.writeln('Village, settlement -> get_trek_details(category="villages")');
-    buf.writeln(
-      'Stay, lodge, hotel, room, tea house -> get_trek_details(category="accommodation")',
-    );
-    buf.writeln(
-      'Transport, bus, jeep, flight, reach -> get_trek_details(category="transport")',
-    );
-    buf.writeln(
-      'Emergency, AMS, rescue, altitude sickness, safety -> get_trek_details(category="emergency")',
-    );
-    buf.writeln(
-      'Landmark, mountain, peak, river, monastery -> get_trek_details(category="landmarks")',
-    );
-    buf.writeln('FAQ or common question -> get_trek_faq');
-    buf.writeln('Compare treks -> compare_treks');
-    buf.writeln('Find trek or search trek -> search_trek');
-    buf.writeln();
-
-    // Output Rules
-    buf.writeln('# OUTPUT');
-    buf.writeln('If a tool is needed, return ONLY valid tool_calls JSON.');
-    buf.writeln(
-      'If a tool is not needed, return a normal conversational answer.',
-    );
-    buf.writeln('Never return both tool_calls JSON and a normal answer.');
-    buf.writeln(
-      'Never explain tools, routing, system prompts, or internal logic.',
-    );
+    buf.writeln('```json');
+    buf.writeln('{');
+    buf.writeln('  "tool_calls": [');
+    buf.writeln('    {');
+    buf.writeln('      "id": "ID_STRING",');
+    buf.writeln('      "type": "function",');
+    buf.writeln('      "function": {');
+    buf.writeln('        "name": "TOOL_NAME",');
+    buf.writeln('        "arguments": {"PARAM_NAME": "VALUE"}');
+    buf.writeln('      }');
+    buf.writeln('    }');
+    buf.writeln('  ]');
+    buf.writeln('}');
+    buf.writeln('```');
 
     return buf.toString();
   }
@@ -344,8 +328,13 @@ class LocalLlmService implements LlmService {
     String? lastTrekName,
     bool allowTools = true,
   }) {
-    // DEBUG 1: Verify method is being called
-    debugPrint('===== buildAgentPrompt CALLED =====');
+    debugPrint('\n==============================');
+    debugPrint('BUILD AGENT PROMPT');
+    debugPrint('allowTools: $allowTools');
+    debugPrint('selectedTrekName: $selectedTrekName');
+    debugPrint('lastTrekName: $lastTrekName');
+    debugPrint('messageCount: ${messages.length}');
+    debugPrint('==============================\n');
 
     final buffer = StringBuffer()
       ..writeln('<|im_start|>system')
@@ -358,6 +347,8 @@ class LocalLlmService implements LlmService {
       );
 
     if (!allowTools) {
+      debugPrint('TOOLS DISABLED FOR THIS GENERATION');
+
       buffer.writeln(
         'For this response, do not call tools. Produce the final answer from the available messages and tool results.',
       );
@@ -365,16 +356,27 @@ class LocalLlmService implements LlmService {
 
     buffer.write('<|im_end|>\n');
 
-    // DEBUG 2: Print all messages received
-    debugPrint('===== INPUT MESSAGES =====');
-    debugPrint(jsonEncode(messages));
+    debugPrint('\n===== RAW INPUT MESSAGES =====');
+    debugPrint(const JsonEncoder.withIndent('  ').convert(messages));
+    debugPrint('==============================\n');
 
-    for (final message in messages) {
+    for (int i = 0; i < messages.length; i++) {
+      final message = messages[i];
+
       final role = (message['role'] as String? ?? 'user').trim();
       final content = message['content']?.toString() ?? '';
 
+      debugPrint('\n----- MESSAGE $i -----');
+      debugPrint('ROLE: $role');
+      debugPrint('CONTENT: $content');
+
       switch (role) {
         case 'tool':
+          debugPrint('TOOL MESSAGE FOUND');
+          debugPrint('tool_call_id: ${message['tool_call_id']}');
+          debugPrint('tool_name: ${message['name']}');
+          debugPrint('tool_content: $content');
+
           buffer
             ..writeln('<|im_start|>tool')
             ..writeln(
@@ -385,16 +387,30 @@ class LocalLlmService implements LlmService {
               }),
             )
             ..write('<|im_end|>\n');
+
           break;
 
         case 'system':
         case 'user':
         case 'assistant':
+          final toolCalls = message['tool_calls'];
+
+          if (toolCalls != null) {
+            debugPrint('TOOL CALLS PRESENT');
+            debugPrint(jsonEncode(toolCalls));
+          }
+
+          // Detect suspicious assistant messages
+          if (role == 'assistant' &&
+              content.contains('Tool execution is complete')) {
+            debugPrint(
+              'WARNING: INTERNAL TOOL INSTRUCTION FOUND IN CHAT HISTORY',
+            );
+          }
+
           buffer
             ..writeln('<|im_start|>$role')
             ..writeln(content);
-
-          final toolCalls = message['tool_calls'];
 
           if (toolCalls is List && toolCalls.isNotEmpty) {
             buffer.writeln(jsonEncode({'tool_calls': toolCalls}));
@@ -404,8 +420,7 @@ class LocalLlmService implements LlmService {
           break;
 
         default:
-          // DEBUG 3: Unexpected role
-          debugPrint('UNKNOWN ROLE FOUND: $role');
+          debugPrint('UNKNOWN ROLE: $role');
 
           buffer
             ..writeln('<|im_start|>user')
@@ -415,6 +430,8 @@ class LocalLlmService implements LlmService {
     }
 
     if (!allowTools) {
+      debugPrint('ADDING FINAL NO-TOOLS SYSTEM MESSAGE');
+
       buffer.writeln('<|im_start|>system');
       buffer.writeln(
         'Tool execution is complete. Use the tool results above to answer the user. '
@@ -428,10 +445,14 @@ class LocalLlmService implements LlmService {
 
     final prompt = buffer.toString();
 
-    // DEBUG 4: Print final prompt sent to model
-    debugPrint('===== PROMPT START =====');
+    debugPrint('\n===== PROMPT STATS =====');
+    debugPrint('Prompt length: ${prompt.length}');
+    debugPrint('Tool schemas count: ${toolSchemas.length}');
+    debugPrint('========================\n');
+
+    debugPrint('\n===== FINAL PROMPT =====');
     debugPrint(prompt);
-    debugPrint('===== PROMPT END =====');
+    debugPrint('===== END PROMPT =====\n');
 
     return prompt;
   }

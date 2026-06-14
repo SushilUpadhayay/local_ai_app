@@ -1,3 +1,4 @@
+// ignore_for_file: non_constant_identifier_names
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'model_item.dart';
@@ -105,8 +106,32 @@ class AppState extends ChangeNotifier {
   TrekKnowledgeService get trekKnowledgeService => _trekKnowledgeService;
   ToolRegistryService get toolRegistryService => _toolRegistryService;
 
+  String? _selectedtrek_name;
+  String? get selectedTrekName => _selectedtrek_name;
+  bool get hasSelectedTrek => _selectedtrek_name != null;
+
+  List<Map<String, dynamic>> get availableTreks {
+    final result = _trekKnowledgeService.list_available_treks();
+    final data = Map<String, dynamic>.from(result['data'] ?? const {});
+    return (data['treks'] as List? ?? const [])
+        .whereType<Map>()
+        .map((trek) => Map<String, dynamic>.from(trek))
+        .toList();
+  }
+
+  String get selectedTrekLabel {
+    if (_selectedtrek_name == null) return 'None';
+    for (final trek in availableTreks) {
+      if (trek['trek_name'] == _selectedtrek_name) {
+        return trek['name']?.toString() ??
+            _readableTrekName(_selectedtrek_name!);
+      }
+    }
+    return _readableTrekName(_selectedtrek_name!);
+  }
+
   // Context retention for trek assistant
-  final Map<String, String> _lastSelectedTrekIds = {};
+  final Map<String, String> _lastSelectedTrekNames = {};
 
   // Startup loading state
   bool _isLoading = true;
@@ -264,7 +289,6 @@ class AppState extends ChangeNotifier {
       await modelManager.init();
 
       // 2. Detect device hardware.
-      // 2. Detect device hardware.
       await _detectDeviceHardware();
 
       // 3. Load persisted conversations.
@@ -278,6 +302,27 @@ class AppState extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  void selectTrek(String trekName) {
+    if (!_trekKnowledgeService.isValidTrekName(trekName)) return;
+    _selectedtrek_name = trekName;
+    notifyListeners();
+  }
+
+  void clearSelectedTrek() {
+    _selectedtrek_name = null;
+    notifyListeners();
+  }
+
+  String _readableTrekName(String id) {
+    return id
+        .split('_')
+        .map(
+          (word) =>
+              word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1),
+        )
+        .join(' ');
   }
 
   Future<void> _detectDeviceHardware() async {
@@ -518,194 +563,14 @@ class AppState extends ChangeNotifier {
     }
     notifyListeners();
 
-    // 1. Ask the local LLM to select Trek tools, then validate in Dart.
+    // Native local agent loop: messages + tool schemas -> tool calls -> tool
+    // results -> final answer. The registry validates every requested call.
     final convId = _activeConversation?.id;
-    final lastTrekId = convId != null ? _lastSelectedTrekIds[convId] : null;
-
-    String getShortTrekName(String id) {
-      if (id == 'annapurna_base_camp') return 'Annapurna Base Camp';
-      if (id == 'everest_base_camp') return 'Everest Base Camp';
-      if (id == 'langtang_valley') return 'Langtang Valley';
-      return id
-          .split('_')
-          .map(
-            (word) =>
-                word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1),
-          )
-          .join(' ');
-    }
+    final lasttrekName = convId != null
+        ? _lastSelectedTrekNames[convId]
+        : null;
 
     final model = activeModel;
-    var toolCalls = <ToolCall>[];
-    var detectedIntent = _trekKnowledgeService.detectIntent(
-      text,
-      lastTrekId: lastTrekId,
-    );
-
-    if (detectedIntent != null && detectedIntent['ambiguous'] == true) {
-      _isStreaming = false;
-      _streamingToken = '';
-      final matches = List<String>.from(detectedIntent['matches']);
-      final names = matches.map(getShortTrekName).toList();
-      final namesString = names.length > 2
-          ? '${names.sublist(0, names.length - 1).join(", ")}, or ${names.last}'
-          : names.join(" or ");
-      _finishStreamingWithMessage(
-        "Did you mean $namesString?",
-        modelName: 'Trek System',
-      );
-      return;
-    }
-
-    if (detectedIntent != null &&
-        detectedIntent['fallback'] == 'trek_missing') {
-      _isStreaming = false;
-      _streamingToken = '';
-      _finishStreamingWithMessage(
-        "I couldn't find a matching trek. I currently support Annapurna Base Camp (ABC), Everest Base Camp (EBC), and Langtang Valley. Which one are you interested in?",
-        modelName: 'Trek System',
-      );
-      return;
-    }
-
-    if (detectedIntent != null &&
-        detectedIntent['fallback'] == 'intent_unclear') {
-      _isStreaming = false;
-      _streamingToken = '';
-      final trekId = detectedIntent['trekId'] as String;
-      final trekName = getShortTrekName(trekId);
-      _finishStreamingWithMessage(
-        "What do you want to know about $trekName?\n- Route / Itinerary\n- Difficulty & Info\n- Landmarks & Peaks\n- Villages & Tea Houses\n- Health Posts & Rescue\n- Transport / How to reach\n- Emergency & Safety",
-        modelName: 'Trek System',
-      );
-      return;
-    }
-
-    if (model != null && _modelLoadState == ModelLoadState.loaded) {
-      final selectionPrompt = _llmService.buildToolSelectionPrompt(
-        userQuery: text,
-        availableTools: _toolRegistryService.availableToolNames,
-        lastTrekId: lastTrekId,
-      );
-      try {
-        final selectionText = await _llmService.generateText(
-          selectionPrompt,
-          maxTokens: 180,
-        );
-        toolCalls = _toolRegistryService.parseToolSelection(selectionText);
-      } catch (e) {
-        debugPrint('[AppState] Tool selection prompt failed: $e');
-      }
-    }
-
-    if (toolCalls.isEmpty) {
-      final fallbackCall = _toolRegistryService.callFromDetectedIntent(
-        detectedIntent,
-        text,
-      );
-      if (fallbackCall != null) {
-        toolCalls = [fallbackCall];
-      }
-    }
-
-    if (toolCalls.isNotEmpty) {
-      _toolRegistryService.beginResponseTrace();
-      final firstTrekId = toolCalls.first.arguments['trekId']?.toString();
-      final readableTrek = firstTrekId == null || firstTrekId == 'all'
-          ? 'trek knowledge'
-          : getShortTrekName(firstTrekId);
-      _streamingToken = '*(Retrieving $readableTrek offline data...)*\n\n';
-      notifyListeners();
-
-      final results = _toolRegistryService.executeAll(toolCalls);
-      final trace = _toolRegistryService.currentTrace;
-      debugPrint('--- [Trek Tool Execution] ---');
-      debugPrint('Query: $text');
-      debugPrint('Matched Trek: ${trace.matchedTrek}');
-      debugPrint('Tools Used: ${trace.toolsUsed.join(", ")}');
-      debugPrint('Source Files: ${trace.sourceFiles.join(", ")}');
-      debugPrint('Execution Time: ${trace.executionTimeMs}ms');
-      debugPrint('-----------------------------');
-
-      final matchedTrek = trace.matchedTrek;
-      if (matchedTrek.isNotEmpty &&
-          matchedTrek != 'none' &&
-          matchedTrek != 'response' &&
-          convId != null) {
-        _lastSelectedTrekIds[convId] = matchedTrek;
-      }
-
-      if (model == null) {
-        _finishStreamingWithMessage(
-          "*(No Active Model Selected)*\n\nTo format the offline results:\n1. Open **Local Models** from the menu.\n2. Download a model that fits your device.\n3. Tap **Set Active** to load it.",
-          modelName: 'System',
-          reasoningTrace: trace,
-        );
-        return;
-      }
-
-      if (_modelLoadState != ModelLoadState.loaded) {
-        _finishStreamingWithMessage(
-          '*(Model Not Loaded)*\n\nThe local model is required to format the offline Trek Knowledge results into natural language. Please activate a model first.',
-          modelName: 'System',
-          reasoningTrace: trace,
-        );
-        return;
-      }
-
-      final synthesisPrompt = _llmService.buildToolSynthesisPrompt(
-        userQuery: text,
-        toolResultsJson: jsonEncode(
-          results.map((result) => result.payload).toList(),
-        ),
-      );
-
-      _streamingToken = '';
-      _sentenceQueue.clear();
-      _sentenceBuffer = '';
-      _isSentenceTtsSpeaking = false;
-      _isLiveStreamingTtsEnabled = false;
-      _currentStreamingMessage = null;
-
-      final tokenStream = _llmService.generate(
-        synthesisPrompt,
-        maxTokens: model.maxOutputTokens > 0 ? model.maxOutputTokens : 512,
-      );
-      _llmStreamSub = tokenStream.listen(
-        (token) {
-          _streamingToken += token;
-          if (_ttsSessionId == currentSessionId && _isTtsEnabled) {
-            _processSentenceBuffer(token);
-          }
-          notifyListeners();
-        },
-        onError: (err) {
-          _finishStreamingWithMessage(
-            '*(Inference Error during formatting)*\n\n${err.toString()}',
-            modelName: model.name,
-            reasoningTrace: trace,
-          );
-        },
-        onDone: () {
-          if (_ttsSessionId == currentSessionId && _isTtsEnabled) {
-            _flushSentenceBuffer();
-          }
-          final finalText = _streamingToken.isEmpty
-              ? '*(No response generated)*'
-              : _streamingToken;
-          _finishStreamingWithMessage(
-            finalText,
-            modelName: model.name,
-            reasoningTrace: trace,
-          );
-        },
-        cancelOnError: true,
-      );
-      return;
-    }
-
-    // E. General/Fallback Chat: Normal General Assistant LLM Generation
-    // Guard: no model selected
     if (model == null) {
       _finishStreamingWithMessage(
         "*(No Active Model Selected)*\n\nTo start chatting:\n1. Open **Local Models** from the menu.\n2. Download a model that fits your device.\n3. Tap **Set Active** to load it into memory.",
@@ -735,16 +600,199 @@ class AppState extends ChangeNotifier {
       return;
     }
 
-    // Build context-aware ChatML prompt
     final allMessages = _activeConversation?.messages ?? [];
-    final contextMessages = _contextWindowManager.getContextMessages(
+    final contextMessages = _contextWindowManager.getRecentRoleMessages(
       allMessages,
-      model.contextWindow,
     );
-    final prompt = _contextWindowManager.buildChatMLPrompt(
-      contextMessages,
-      'You are a helpful, concise AI assistant running entirely offline on this device.',
-    );
+    final agentMessages = <Map<String, dynamic>>[
+      ...contextMessages.map(
+        (message) => {
+          'role': message.sender == 'user' ? 'user' : 'assistant',
+          'content': message.text,
+        },
+      ),
+    ];
+    final toolSchemas = _toolRegistryService.toolSchemas;
+    final maxTokens = model.maxOutputTokens > 0 ? model.maxOutputTokens : 512;
+    final bypassToolCalling = _shouldBypassToolCalling(text);
+
+    debugPrint('[Agent] Selected trekName: ${_selectedtrek_name ?? "none"}');
+    debugPrint('[Agent] Last trekName: ${lasttrekName ?? "none"}');
+    debugPrint('[Agent] Context messages sent: ${agentMessages.length}');
+    debugPrint('[Agent] Tool-calling bypass: $bypassToolCalling');
+
+    _toolRegistryService.beginResponseTrace();
+    ReasoningTrace? trace;
+    var finalResponse = '';
+    var forceFinalAnswer = false;
+    var retriedMalformedToolCall = false;
+
+    try {
+      if (bypassToolCalling) {
+        debugPrint('[Agent] General-chat bypass active. Generating final answer.');
+        final prompt = _llmService.buildAgentPrompt(
+          messages: agentMessages,
+          toolSchemas: toolSchemas,
+          selectedTrekName: _selectedtrek_name,
+          lastTrekName: _selectedtrek_name ?? lasttrekName,
+          allowTools: false,
+        );
+        finalResponse = (await _llmService.generateText(
+          prompt,
+          maxTokens: maxTokens,
+        )).trim();
+        debugPrint('[Agent] Final response generated via bypass.');
+      }
+
+      for (var round = 0; round < 5; round++) {
+        if (finalResponse.isNotEmpty) break;
+        _streamingToken = trace == null
+            ? 'Thinking locally...\n'
+            : 'Using offline trek knowledge...\n';
+        notifyListeners();
+
+        final prompt = _llmService.buildAgentPrompt(
+          messages: agentMessages,
+          toolSchemas: toolSchemas,
+          selectedTrekName: _selectedtrek_name,
+          lastTrekName: _selectedtrek_name ?? lasttrekName,
+          allowTools: !forceFinalAnswer,
+        );
+        final responseText = await _llmService.generateText(
+          prompt,
+          maxTokens: maxTokens,
+        );
+
+        debugPrint('[Agent] Round $round — raw LLM output:\n$responseText');
+
+        final parseResult = forceFinalAnswer
+            ? const ToolParseResult(
+                calls: [],
+                lookedLikeToolCall: false,
+                parseFailed: false,
+              )
+            : _toolRegistryService.parseToolCallsDetailed(responseText);
+        debugPrint(
+          '[Agent] Round $round classification: '
+          'lookedLikeToolCall=${parseResult.lookedLikeToolCall}, '
+          'parseFailed=${parseResult.parseFailed}',
+        );
+
+        if (parseResult.parseFailed) {
+          debugPrint('[Agent] Tool parsing failed; not treating output as final answer.');
+          if (!retriedMalformedToolCall) {
+            retriedMalformedToolCall = true;
+            agentMessages.add({
+              'role': 'assistant',
+              'content': responseText,
+            });
+            agentMessages.add({
+              'role': 'user',
+              'content':
+                  'Your previous response looked like a tool call but was not valid JSON. Retry once with only valid JSON in this exact shape: {"tool_calls":[{"id":"call_1","type":"function","function":{"name":"TOOL_NAME","arguments":"{}"}}]}. Do not include prose.',
+            });
+            debugPrint('[Agent] Added repair prompt for malformed tool call.');
+            continue;
+          }
+          forceFinalAnswer = true;
+          agentMessages.add({
+            'role': 'user',
+            'content':
+                'Tool-call JSON repair failed. Do not call tools now. Give the best concise final answer from the available context, and say if trek data could not be verified.',
+          });
+          debugPrint('[Agent] Repair already attempted; forcing final answer.');
+          continue;
+        }
+
+        final toolCalls = _applySelectedTrekDefaults(
+          parseResult.calls,
+          fallbackTrekName: lasttrekName,
+        );
+        debugPrint(
+          '[Agent] Parsed ${toolCalls.length} tool call(s): '
+          '${toolCalls.map((c) => c.name).join(", ")}',
+        );
+        if (toolCalls.isEmpty) {
+          final isFinalAnswer = !parseResult.lookedLikeToolCall;
+          debugPrint('[Agent] Classified output as final answer: $isFinalAnswer');
+          finalResponse = responseText.trim();
+          break;
+        }
+
+        agentMessages.add(<String, dynamic>{
+          'role': 'assistant',
+          'content': '',
+          'tool_calls': toolCalls
+              .map(
+                (call) => {
+                  'id': call.id,
+                  'type': 'function',
+                  'function': {
+                    'name': call.name,
+                    'arguments': jsonEncode(call.arguments),
+                  },
+                },
+              )
+              .toList(),
+        });
+
+        final results = _toolRegistryService.executeAll(toolCalls);
+        debugPrint(
+          '[Agent] Executed tools: ${results.map((r) => r.toolName).join(", ")}',
+        );
+        trace = _toolRegistryService.currentTrace;
+        for (var i = 0; i < results.length; i++) {
+          final result = results[i];
+          agentMessages.add({
+            'role': 'tool',
+            'tool_call_id': toolCalls[i].id,
+            'name': result.toolName,
+            'content': jsonEncode(result.payload),
+          });
+        }
+
+        debugPrint('--- [Native Tool Execution] ---');
+        debugPrint('Query: $text');
+        debugPrint('Tools Used: ${trace.toolsUsed.join(", ")}');
+        debugPrint('Source Files: ${trace.sourceFiles.join(", ")}');
+        debugPrint('Execution Time: ${trace.executionTimeMs}ms');
+        debugPrint('-------------------------------');
+
+        final matchedTrek = trace.matchedTrek;
+        if (matchedTrek.isNotEmpty && matchedTrek != 'none' && convId != null) {
+          _lastSelectedTrekNames[convId] = matchedTrek;
+        }
+
+        forceFinalAnswer = round == 3;
+      }
+
+      if (finalResponse.isEmpty) {
+        debugPrint('[Agent] Generating final response after tool results.');
+        final prompt = _llmService.buildAgentPrompt(
+          messages: agentMessages,
+          toolSchemas: toolSchemas,
+          selectedTrekName: _selectedtrek_name,
+          lastTrekName: _selectedtrek_name ?? lasttrekName,
+          allowTools: false,
+        );
+        finalResponse = (await _llmService.generateText(
+          prompt,
+          maxTokens: maxTokens,
+        )).trim();
+        debugPrint('[Agent] Final response generated after tool loop.');
+      }
+    } catch (e) {
+      _finishStreamingWithMessage(
+        '*(Inference Error)*\n\n${e.toString()}',
+        modelName: model.name,
+        reasoningTrace: trace,
+      );
+      return;
+    }
+
+    trace = _toolRegistryService.currentTrace.hasToolExecution
+        ? _toolRegistryService.currentTrace
+        : null;
 
     // Clear buffer, queue, and speaking state for the new stream
     _sentenceQueue.clear();
@@ -753,36 +801,76 @@ class AppState extends ChangeNotifier {
     _isLiveStreamingTtsEnabled = false;
     _currentStreamingMessage = null;
 
-    // Stream tokens from LLM engine
-    final tokenStream = _llmService.generate(
-      prompt,
-      maxTokens: model.maxOutputTokens > 0 ? model.maxOutputTokens : 512,
+    _streamingToken = finalResponse.isEmpty
+        ? '*(No response generated)*'
+        : finalResponse;
+    if (_ttsSessionId == currentSessionId && _isTtsEnabled) {
+      _processSentenceBuffer(_streamingToken);
+      _flushSentenceBuffer();
+    }
+    _finishStreamingWithMessage(
+      _streamingToken,
+      modelName: model.name,
+      reasoningTrace: trace,
     );
-    _llmStreamSub = tokenStream.listen(
-      (token) {
-        _streamingToken += token;
-        if (_ttsSessionId == currentSessionId && _isTtsEnabled) {
-          _processSentenceBuffer(token);
-        }
-        notifyListeners();
-      },
-      onError: (err) {
-        _finishStreamingWithMessage(
-          '*(Inference Error)*\n\n${err.toString()}',
-          modelName: model.name,
+  }
+
+  bool _shouldBypassToolCalling(String text) {
+    final normalized = text.toLowerCase().trim();
+    final compact = normalized.replaceAll(RegExp(r'[^\w\s]'), '').trim();
+    if (compact.isEmpty) return true;
+
+    const exactBypass = {
+      'hello',
+      'hi',
+      'hey',
+      'how are you',
+      'thanks',
+      'thank you',
+      'good morning',
+      'good afternoon',
+      'good evening',
+      'good night',
+      'tell me a joke',
+      'joke',
+    };
+    if (exactBypass.contains(compact)) return true;
+
+    if (RegExp(r'^(hi|hello|hey)\b').hasMatch(compact) &&
+        compact.split(RegExp(r'\s+')).length <= 4) {
+      return true;
+    }
+    if (compact.startsWith('tell me a joke')) return true;
+    return false;
+  }
+
+  List<ToolCall> _applySelectedTrekDefaults(
+    List<ToolCall> calls, {
+    String? fallbackTrekName,
+  }) {
+    // Use the explicitly selected trek first; fall back to the last detected
+    // trek for this conversation so that small models that omit trekName still
+    // get the correct data without needing another round-trip.
+    final selected = _selectedtrek_name ?? fallbackTrekName;
+    if (selected == null) return calls;
+    return calls.map((call) {
+      if (!_toolRegistryService.requiresTrekName(call.name)) return call;
+      final trekName = call.arguments['trek_name']?.toString().trim() ?? '';
+      if (trekName.isNotEmpty) {
+        debugPrint(
+          '[Agent] trekName already present in ${call.name}: "$trekName"',
         );
-      },
-      onDone: () {
-        if (_ttsSessionId == currentSessionId && _isTtsEnabled) {
-          _flushSentenceBuffer();
-        }
-        final finalText = _streamingToken.isEmpty
-            ? '*(No response generated)*'
-            : _streamingToken;
-        _finishStreamingWithMessage(finalText, modelName: model.name);
-      },
-      cancelOnError: true,
-    );
+        return call;
+      }
+      debugPrint(
+        '[Agent] Injecting trekName="$selected" into ${call.name} (was missing).',
+      );
+      return ToolCall(
+        id: call.id,
+        name: call.name,
+        arguments: {...call.arguments, 'trek_name': selected},
+      );
+    }).toList();
   }
 
   /// Commits the streamed text as a completed AI message and persists.

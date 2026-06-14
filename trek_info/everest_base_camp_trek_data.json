@@ -1,10 +1,14 @@
 {
   "id": "everest_base_camp",
-  "aliases": ["ebc", "everest base camp", "everest"],
-  "gps_points": [],
-  "offline_maps": [],
-  "weather_notes": [],
-  "basic_trek_information": {
+  "aliases": [
+    "ebc",
+    "everest base camp",
+    "everest",
+    "EBC",
+    "EBC Trek",
+    "ebc trek"
+  ],
+  "overview": {
     "trek_name": "Everest Base Camp Trek (EBC Trek)",
     "overview": "The Everest Base Camp Trek is the ultimate Himalayan adventure, taking trekkers to the base of the world's highest mountain at 5,364m. This classic 14-day trek traverses the Khumbu region through ancient Sherpa villages, crosses high suspension bridges over the Dudh Koshi River, passes through Sagarmatha National Park (UNESCO World Heritage Site), and culminates at the South Base Camp of Mount Everest. The trek offers unparalleled views of Everest, Lhotse, Nuptse, and Makalu, with the option to hike Kala Patthar (5,545m) for the best Everest viewpoint.",
     "region": "Sagarmatha National Park, Khumbu Pasang Lhamu Rural Municipality, Gandaki Province",
@@ -28,1296 +32,1328 @@
       "one_way_km": "65-70",
       "round_trip_km": "130-140",
       "note": "From Lukla to EBC and back to Lukla"
-    },
-    "best_seasons": [
-      {
-        "season": "Autumn",
-        "months": "September - November",
-        "advantages": "Best visibility, stable weather, post-monsoon clear skies, peak season"
-      },
-      {
-        "season": "Spring",
-        "months": "March - May",
-        "advantages": "Clear skies, rhododendron blooms, moderate temperatures, climbing season"
-      },
-      {
-        "season": "Winter",
-        "months": "December - February",
-        "advantages": "Less crowded, Crystal clear views",
-        "challenges": "Very cold temperatures (-15°C to -25°C at EBC), possible snow"
-      },
-      {
-        "season": "Monsoon",
-        "months": "June - August",
-        "advantages": "Fewer trekkers",
-        "challenges": "Rain, leeches, poor visibility, flight cancellations, not recommended"
-      }
-    ],
-    "required_permits": [
-      {
-        "name": "Sagarmatha National Park Entry Permit",
-        "fee_npr_foreigners": 3000,
-        "fee_npr_saarc": 1500,
-        "fee_npr_nepali": 100,
-        "fee_usd": "Not applicable (NPR only)",
-        "obtained_at": [
-          "Nepal Tourism Board, Bhrikuti Mandap, Kathmandu",
-          "Sagarmatha National Park Entry Gate, Monjo"
-        ],
-        "requirements": [
-          "Passport",
-          "Passport copy",
-          "NP 3,000 in cash"
-        ],
-        "note": "TIMS card NOT required for EBC - replaced by Khumbu permit"
-      },
-      {
-        "name": "Khumbu Pasang Lhamu Rural Municipality Permit",
-        "fee_npr_foreigners": 3000,
-        "fee_npr_saarc": 2000,
-        "fee_npr_nepali": "Not applicable",
-        "obtained_at": [
-          "Lukla (after flight arrival)",
-          "Monjo (Sagarmatha National Park Counter)",
-          "Through registered trekking agency"
-        ],
-        "requirements": [
-          "Passport copy",
-          "NPR 3,000 in cash"
-        ],
-        "note": "Local entry fee introduced 2018, mandatory for all foreigners. No online booking"
-      }
-    ]
+    }
   },
-  "route_information": {
-    "starting_point": {
-      "name": "Lukla",
-      "altitude_meters": 2840,
-      "altitude_feet": 9317,
-      "latitude": 27.6867,
-      "longitude": 86.7297,
-      "note": "Gateway to Everest via flight from Kathmandu"
-    },
-    "ending_point": {
-      "\"name\": \"Lukla\" (return) or \"Kathmandu\",altitude_meters": 2840,
-      "note": "Most trekkers return to Lukla and fly back to Kathmandu"
-    },
-    "major_villages_and_settlements_in_order": [
-      {
+  "details": {
+    "route": {
+      "starting_point": {
         "name": "Lukla",
-        "altitude_meters": 2840
+        "altitude_meters": 2840,
+        "altitude_feet": 9317,
+        "latitude": 27.6867,
+        "longitude": 86.7297,
+        "note": "Gateway to Everest via flight from Kathmandu"
       },
-      {
-        "name": "Phakding",
-        "altitude_meters": 2610
+      "ending_point": {
+        "\"name\": \"Lukla\" (return) or \"Kathmandu\",altitude_meters": 2840,
+        "note": "Most trekkers return to Lukla and fly back to Kathmandu"
       },
-      {
-        "name": "Monjo",
-        "altitude_meters": 2835
-      },
-      {
-        "name": "Jorsale",
-        "altitude_meters": 2820
-      },
-      {
-        "name": "Namche Bazaar",
-        "altitude_meters": 3440
-      },
-      {
-        "name": "Tengboche",
-        "altitude_meters": 3860
-      },
-      {
-        "name": "Dingboche",
-        "altitude_meters": 4360
-      },
-      {
-        "name": "Pheriche",
-        "altitude_meters": 4243
-      },
-      {
-        "name": "Lobuche",
-        "altitude_meters": 4930
-      },
-      {
-        "name": "Gorakshep",
-        "altitude_meters": 5140
-      },
-      {
-        "name": "Everest Base Camp",
-        "altitude_meters": 5364
-      },
-      {
-        "name": "Kala Patthar",
-        "altitude_meters": 5545,
-        "note": "Viewpoint (not settlement)"
-      }
-    ],
-    "day_by_day_itinerary_standard_14_day": [
-      {
-        "day": 1,
-        "route": "Kathmandu to Lukla (flight), trek to Phakding",
-        "walking_hours": "3-4",
-        "distance_km": 7,
-        "elevation_gain_meters": 0,
-        "elevation_lost_meters": 230,
-        "elevation_start_meters": 2840,
-        "elevation_end_meters": 2610,
-        "accommodation": "Phakding",
-        "note": "Flight 25-30 min, then gentle descent along Dudh Koshi"
-      },
-      {
-        "day": 2,
-        "route": "Phakding to Namche Bazaar",
-        "walking_hours": "7-8",
-        "distance_km": 12,
-        "elevation_gain_meters": 830,
-        "elevation_lost_meters": 10,
-        "elevation_start_meters": 2610,
-        "elevation_end_meters": 3440,
-        "accommodation": "Namche Bazaar",
-        "note": "Steep climb from Jorsale, enter Sagarmatha National Park"
-      },
-      {
-        "day": 3,
-        "route": "Acclimatization day at Namche Bazaar",
-        "walking_hours": "3-4",
-        "distance_km": 6,
-        "elevation_gain_meters": 300,
-        "elevation_lost_meters": 300,
-        "elevation_start_meters": 3440,
-        "elevation_end_meters": 3440,
-        "accommodation": "Namche Bazaar",
-        "note": "Hike to Chukpo Lingsa (3,800m) or Sherpa Museum, sleep low"
-      },
-      {
-        "day": 4,
-        "route": "Namche Bazaar to Tengboche",
-        "walking_hours": "5-6",
-        "distance_km": 10,
-        "elevation_gain_meters": 420,
-        "elevation_lost_meters": 10,
-        "elevation_start_meters": 3440,
-        "elevation_end_meters": 3860,
-        "accommodation": "Tengboche",
-        "note": "Tengboche Monastery (3,867m), first clear Everest views"
-      },
-      {
-        "day": 5,
-        "route": "Tengboche to Dingboche",
-        "walking_hours": "5-6",
-        "distance_km": 11,
-        "elevation_gain_meters": 500,
-        "elevation_lost_meters": 100,
-        "elevation_start_meters": 3860,
-        "elevation_end_meters": 4360,
-        "accommodation": "Dingboche",
-        "note": "Pass Thukla Pass, enter high alpine terrain"
-      },
-      {
-        "day": 6,
-        "route": "Acclimatization day at Dingboche",
-        "walking_hours": "4-5",
-        "distance_km": 7,
-        "elevation_gain_meters": 400,
-        "elevation_lost_meters": 400,
-        "elevation_start_meters": 4360,
-        "elevation_end_meters": 4360,
-        "accommodation": "Dingboche",
-        "note": "Hike to Nuptse face (4,800m), practice 'trek high, sleep low'"
-      },
-      {
-        "day": 7,
-        "route": "Dingboche to Lobuche",
-        "walking_hours": "4-5",
-        "distance_km": 8,
-        "elevation_gain_meters": 570,
-        "elevation_lost_meters": 10,
-        "elevation_start_meters": 4360,
-        "elevation_end_meters": 4930,
-        "accommodation": "Lobuche",
-        "note": "Cross Chola Pass (5,368m) option, walk along Khumbu Glacier"
-      },
-      {
-        "day": 8,
-        "route": "Lobuche to Everest Base Camp to Gorakshep",
-        "walking_hours": "7-8",
-        "distance_km": 12,
-        "elevation_gain_meters": 434,
-        "elevation_lost_meters": 434,
-        "elevation_start_meters": 4930,
-        "elevation_end_meters": 5140,
-        "accommodation": "Gorakshep",
-        "note": "Trek to EBC (5,364m), 3-4 hours round trip, then back to Gorakshep"
-      },
-      {
-        "day": 9,
-        "route": "Gorakshep to Kala Patthar to Pheriche",
-        "walking_hours": "6-7",
-        "distance_km": 10,
-        "elevation_gain_meters": 405,
-        "elevation_lost_meters": 600,
-        "elevation_start_meters": 5140,
-        "elevation_end_meters": 4243,
-        "accommodation": "Pheriche",
-        "note": "Sunrise hike Kala Patthar (5,545m), best Everest viewpoint"
-      },
-      {
-        "day": 10,
-        "route": "Pheriche to Namche Bazaar",
-        "walking_hours": "7-8",
-        "distance_km": 16,
-        "elevation_gain_meters": 20,
-        "elevation_lost_meters": 1000,
-        "elevation_start_meters": 4243,
-        "elevation_end_meters": 3440,
-        "accommodation": "Namche Bazaar",
-        "note": "Long descent day, cross Thukla Pass"
-      },
-      {
-        "day": 11,
-        "route": "Namche Bazaar to Lukla",
-        "walking_hours": "7-8",
-        "distance_km": 19,
-        "elevation_gain_meters": 0,
-        "elevation_lost_meters": 600,
-        "elevation_start_meters": 3440,
-        "elevation_end_meters": 2840,
-        "accommodation": "Lukla",
-        "note": "Continuous descent to Lukla"
-      },
-      {
-        "day": 12,
-        "route": "Lukla to Kathmandu (flight)",
-        "walking_hours": "0",
-        "distance_km": 0,
-        "elevation_gain_meters": 0,
-        "elevation_lost_meters": 0,
-        "elevation_start_meters": 2840,
-        "elevation_end_meters": 1400,
-        "accommodation": "Kathmandu",
-        "note": "Flight 25-30 min. Weather dependent"
-      },
-      {
-        "day": 13,
-        "route": "Kathmandu rest day",
-        "walking_hours": "0",
-        "distance_km": 0,
-        "elevation_gain_meters": 0,
-        "elevation_lost_meters": 0,
-        "elevation_start_meters": 1400,
-        "elevation_end_meters": 1400,
-        "accommodation": "Kathmandu",
-        "note": "Buffer day for flight delays"
-      },
-      {
-        "day": 14,
-        "route": "Departure from Kathmandu",
-        "walking_hours": "0",
-        "distance_km": 0,
-        "elevation_gain_meters": 0,
-        "elevation_lost_meters": 0,
-        "elevation_start_meters": 1400,
-        "elevation_end_meters": 1400,
-        "accommodation": "N/A",
-        "note": "Final departure"
-      }
-    ],
-    "elevation_profile_summary": {
-      "lowest_point_meters": 2610,
-      "lowest_point_location": "Phakding",
-      "highest_point_meters": 5545,
-      "highest_point_location": "Kala Patthar",
-      "total_ascent_meters": "~5200 (cumulative)",
-      "total_descent_meters": "~5200 (cumulative)",
-      "key_elevation_milestones": [
+      "villages_in_order": [
         {
-          "location": "Lukla",
+          "name": "Lukla",
           "altitude_meters": 2840
         },
         {
-          "location": "Phakding",
+          "name": "Phakding",
           "altitude_meters": 2610
         },
         {
-          "location": "Namche Bazaar",
+          "name": "Monjo",
+          "altitude_meters": 2835
+        },
+        {
+          "name": "Jorsale",
+          "altitude_meters": 2820
+        },
+        {
+          "name": "Namche Bazaar",
           "altitude_meters": 3440
         },
         {
-          "location": "Tengboche",
+          "name": "Tengboche",
           "altitude_meters": 3860
         },
         {
-          "location": "Dingboche",
+          "name": "Dingboche",
           "altitude_meters": 4360
         },
         {
-          "location": "Pheriche",
+          "name": "Pheriche",
           "altitude_meters": 4243
         },
         {
-          "location": "Lobuche",
+          "name": "Lobuche",
           "altitude_meters": 4930
         },
         {
-          "location": "Gorakshep",
+          "name": "Gorakshep",
           "altitude_meters": 5140
         },
         {
-          "location": "Everest Base Camp",
+          "name": "Everest Base Camp",
           "altitude_meters": 5364
         },
         {
-          "location": "Kala Patthar",
-          "altitude_meters": 5545
+          "name": "Kala Patthar",
+          "altitude_meters": 5545,
+          "note": "Viewpoint (not settlement)"
         }
+      ],
+      "itinerary": [
+        {
+          "day": 1,
+          "route": "Kathmandu to Lukla (flight), trek to Phakding",
+          "walking_hours": "3-4",
+          "distance_km": 7,
+          "elevation_gain_meters": 0,
+          "elevation_lost_meters": 230,
+          "elevation_start_meters": 2840,
+          "elevation_end_meters": 2610,
+          "accommodation": "Phakding",
+          "note": "Flight 25-30 min, then gentle descent along Dudh Koshi"
+        },
+        {
+          "day": 2,
+          "route": "Phakding to Namche Bazaar",
+          "walking_hours": "7-8",
+          "distance_km": 12,
+          "elevation_gain_meters": 830,
+          "elevation_lost_meters": 10,
+          "elevation_start_meters": 2610,
+          "elevation_end_meters": 3440,
+          "accommodation": "Namche Bazaar",
+          "note": "Steep climb from Jorsale, enter Sagarmatha National Park"
+        },
+        {
+          "day": 3,
+          "route": "Acclimatization day at Namche Bazaar",
+          "walking_hours": "3-4",
+          "distance_km": 6,
+          "elevation_gain_meters": 300,
+          "elevation_lost_meters": 300,
+          "elevation_start_meters": 3440,
+          "elevation_end_meters": 3440,
+          "accommodation": "Namche Bazaar",
+          "note": "Hike to Chukpo Lingsa (3,800m) or Sherpa Museum, sleep low"
+        },
+        {
+          "day": 4,
+          "route": "Namche Bazaar to Tengboche",
+          "walking_hours": "5-6",
+          "distance_km": 10,
+          "elevation_gain_meters": 420,
+          "elevation_lost_meters": 10,
+          "elevation_start_meters": 3440,
+          "elevation_end_meters": 3860,
+          "accommodation": "Tengboche",
+          "note": "Tengboche Monastery (3,867m), first clear Everest views"
+        },
+        {
+          "day": 5,
+          "route": "Tengboche to Dingboche",
+          "walking_hours": "5-6",
+          "distance_km": 11,
+          "elevation_gain_meters": 500,
+          "elevation_lost_meters": 100,
+          "elevation_start_meters": 3860,
+          "elevation_end_meters": 4360,
+          "accommodation": "Dingboche",
+          "note": "Pass Thukla Pass, enter high alpine terrain"
+        },
+        {
+          "day": 6,
+          "route": "Acclimatization day at Dingboche",
+          "walking_hours": "4-5",
+          "distance_km": 7,
+          "elevation_gain_meters": 400,
+          "elevation_lost_meters": 400,
+          "elevation_start_meters": 4360,
+          "elevation_end_meters": 4360,
+          "accommodation": "Dingboche",
+          "note": "Hike to Nuptse face (4,800m), practice 'trek high, sleep low'"
+        },
+        {
+          "day": 7,
+          "route": "Dingboche to Lobuche",
+          "walking_hours": "4-5",
+          "distance_km": 8,
+          "elevation_gain_meters": 570,
+          "elevation_lost_meters": 10,
+          "elevation_start_meters": 4360,
+          "elevation_end_meters": 4930,
+          "accommodation": "Lobuche",
+          "note": "Cross Chola Pass (5,368m) option, walk along Khumbu Glacier"
+        },
+        {
+          "day": 8,
+          "route": "Lobuche to Everest Base Camp to Gorakshep",
+          "walking_hours": "7-8",
+          "distance_km": 12,
+          "elevation_gain_meters": 434,
+          "elevation_lost_meters": 434,
+          "elevation_start_meters": 4930,
+          "elevation_end_meters": 5140,
+          "accommodation": "Gorakshep",
+          "note": "Trek to EBC (5,364m), 3-4 hours round trip, then back to Gorakshep"
+        },
+        {
+          "day": 9,
+          "route": "Gorakshep to Kala Patthar to Pheriche",
+          "walking_hours": "6-7",
+          "distance_km": 10,
+          "elevation_gain_meters": 405,
+          "elevation_lost_meters": 600,
+          "elevation_start_meters": 5140,
+          "elevation_end_meters": 4243,
+          "accommodation": "Pheriche",
+          "note": "Sunrise hike Kala Patthar (5,545m), best Everest viewpoint"
+        },
+        {
+          "day": 10,
+          "route": "Pheriche to Namche Bazaar",
+          "walking_hours": "7-8",
+          "distance_km": 16,
+          "elevation_gain_meters": 20,
+          "elevation_lost_meters": 1000,
+          "elevation_start_meters": 4243,
+          "elevation_end_meters": 3440,
+          "accommodation": "Namche Bazaar",
+          "note": "Long descent day, cross Thukla Pass"
+        },
+        {
+          "day": 11,
+          "route": "Namche Bazaar to Lukla",
+          "walking_hours": "7-8",
+          "distance_km": 19,
+          "elevation_gain_meters": 0,
+          "elevation_lost_meters": 600,
+          "elevation_start_meters": 3440,
+          "elevation_end_meters": 2840,
+          "accommodation": "Lukla",
+          "note": "Continuous descent to Lukla"
+        },
+        {
+          "day": 12,
+          "route": "Lukla to Kathmandu (flight)",
+          "walking_hours": "0",
+          "distance_km": 0,
+          "elevation_gain_meters": 0,
+          "elevation_lost_meters": 0,
+          "elevation_start_meters": 2840,
+          "elevation_end_meters": 1400,
+          "accommodation": "Kathmandu",
+          "note": "Flight 25-30 min. Weather dependent"
+        },
+        {
+          "day": 13,
+          "route": "Kathmandu rest day",
+          "walking_hours": "0",
+          "distance_km": 0,
+          "elevation_gain_meters": 0,
+          "elevation_lost_meters": 0,
+          "elevation_start_meters": 1400,
+          "elevation_end_meters": 1400,
+          "accommodation": "Kathmandu",
+          "note": "Buffer day for flight delays"
+        },
+        {
+          "day": 14,
+          "route": "Departure from Kathmandu",
+          "walking_hours": "0",
+          "distance_km": 0,
+          "elevation_gain_meters": 0,
+          "elevation_lost_meters": 0,
+          "elevation_start_meters": 1400,
+          "elevation_end_meters": 1400,
+          "accommodation": "N/A",
+          "note": "Final departure"
+        }
+      ],
+      "elevation_profile_summary": {
+        "lowest_point_meters": 2610,
+        "lowest_point_location": "Phakding",
+        "highest_point_meters": 5545,
+        "highest_point_location": "Kala Patthar",
+        "total_ascent_meters": "~5200 (cumulative)",
+        "total_descent_meters": "~5200 (cumulative)",
+        "key_elevation_milestones": [
+          {
+            "location": "Lukla",
+            "altitude_meters": 2840
+          },
+          {
+            "location": "Phakding",
+            "altitude_meters": 2610
+          },
+          {
+            "location": "Namche Bazaar",
+            "altitude_meters": 3440
+          },
+          {
+            "location": "Tengboche",
+            "altitude_meters": 3860
+          },
+          {
+            "location": "Dingboche",
+            "altitude_meters": 4360
+          },
+          {
+            "location": "Pheriche",
+            "altitude_meters": 4243
+          },
+          {
+            "location": "Lobuche",
+            "altitude_meters": 4930
+          },
+          {
+            "location": "Gorakshep",
+            "altitude_meters": 5140
+          },
+          {
+            "location": "Everest Base Camp",
+            "altitude_meters": 5364
+          },
+          {
+            "location": "Kala Patthar",
+            "altitude_meters": 5545
+          }
+        ]
+      }
+    },
+    "hospitals": {
+      "health_posts": [
+        {
+          "name": "Himalayan Rescue Association (HRA) Clinic",
+          "location": "Pheriche",
+          "altitude_meters": 4243,
+          "type": "Altitude medicine clinic",
+          "services": [
+            "Altitude sickness diagnosis",
+            "Pulse oximeter",
+            "Basic first aid",
+            "Medical advice"
+          ],
+          "season": "Open during spring and autumn climbing seasons",
+          "note": "Volunteer doctors, pulse oximetry available"
+        },
+        {
+          "name": "Everest Base Camp Emergency Room",
+          "location": "Everest Base Camp",
+          "altitude_meters": 5364,
+          "type": "Emergency medical tent",
+          "services": [
+            "Emergency care",
+            "Oxygen therapy",
+            "Altitude sickness treatment"
+          ],
+          "season": "Spring climbing season only (March-May)",
+          "note": "4 doctors stationed during spring season"
+        }
+      ],
+      "medical_centers": [
+        {
+          "name": "No hospitals/clinics on EBC route above Lukla",
+          "note": "Basic clinics only at Pheriche and EBC (seasonal); serious cases require helicopter evacuation"
+        },
+        {
+          "name": "Kathmandu Hospitals",
+          "location": "Kathmandu",
+          "altitude_meters": 1400,
+          "type": "Full medical facilities",
+          "note": "Primary destination for helicopter evacuation"
+        }
+      ]
+    },
+    "villages": {
+      "major_settlements": [
+        {
+          "name": "Lukla",
+          "altitude_meters": 2840,
+          "latitude": 27.6867,
+          "longitude": 86.7297,
+          "facilities": [
+            "Airport (Tenzing Hillary Airport)",
+            "Multiple tea houses",
+            "Hotels",
+            "Wi-Fi (fee)",
+            "Mobile network (NTC, Ncell)",
+            "Electricity charging",
+            "Shops",
+            "Restaurants",
+            "Banks (limited)"
+          ],
+          "lodging": "Many tea houses and hotels",
+          "lodging_type": "Standard to comfortable rooms"
+        },
+        {
+          "name": "Phakding",
+          "altitude_meters": 2610,
+          "latitude": 27.7333,
+          "longitude": 86.75,
+          "facilities": [
+            "Tea houses",
+            "Small shops",
+            "Electricity"
+          ],
+          "lodging": "Tea houses available",
+          "lodging_type": "Basic"
+        },
+        {
+          "name": "Monjo",
+          "altitude_meters": 2835,
+          "latitude": 27.7833,
+          "longitude": 86.7667,
+          "facilities": [
+            "Tea houses",
+            "Sagarmatha National Park gate",
+            "Permit checkpoint",
+            "Shops"
+          ],
+          "lodging": "Tea houses available",
+          "lodging_type": "Basic"
+        },
+        {
+          "name": "Jorsale",
+          "altitude_meters": 2820,
+          "latitude": 27.8,
+          "longitude": 86.7833,
+          "facilities": [
+            "Few tea houses",
+            "National park entry point"
+          ],
+          "lodging": "Limited tea houses",
+          "lodging_type": "Basic"
+        },
+        {
+          "name": "Namche Bazaar",
+          "altitude_meters": 3440,
+          "latitude": 27.8333,
+          "longitude": 86.7167,
+          "facilities": [
+            "Multiple tea houses",
+            "Hotels",
+            "Wi-Fi (fee, Everest Link)",
+            "Mobile network (NTC)",
+            "Electricity",
+            "Shops",
+            "Restaurants",
+            "Sherpa Museum",
+            "Banks",
+            "Post office"
+          ],
+          "lodging": "Many tea houses with twin-sharing rooms",
+          "lodging_type": "Standard tea house",
+          "note": "Main Sherpa town, shopping hub, acclimatization point"
+        },
+        {
+          "name": "Tengboche",
+          "altitude_meters": 3860,
+          "latitude": 27.8333,
+          "longitude": 86.7667,
+          "facilities": [
+            "Tea houses",
+            "Tengboche Monastery",
+            "Wi-Fi (fee)",
+            "Electricity",
+            "Small shops",
+            "Restaurant"
+          ],
+          "lodging": "Tea houses available",
+          "lodging_type": "Standard"
+        },
+        {
+          "name": "Dingboche",
+          "altitude_meters": 4360,
+          "latitude": 27.8833,
+          "longitude": 86.8333,
+          "facilities": [
+            "Multiple tea houses",
+            "Wi-Fi (fee, limited)",
+            "Electricity",
+            "Small shops"
+          ],
+          "lodging": "Several tea houses",
+          "lodging_type": "High-altitude basic",
+          "note": "Acclimatization point, valley surrounded by peaks"
+        },
+        {
+          "name": "Pheriche",
+          "altitude_meters": 4243,
+          "latitude": 27.8667,
+          "longitude": 86.8167,
+          "facilities": [
+            "Tea houses",
+            "Himalayan Rescue Association clinic",
+            "Electricity",
+            "Limited Wi-Fi"
+          ],
+          "lodging": "Tea houses available",
+          "lodging_type": "High-altitude basic",
+          "note": "Medical clinic, acclimatization point"
+        },
+        {
+          "name": "Lobuche",
+          "altitude_meters": 4930,
+          "latitude": 27.9167,
+          "longitude": 86.85,
+          "facilities": [
+            "Tea houses",
+            "Electricity (limited)",
+            "Limited Wi-Fi"
+          ],
+          "lodging": "Few tea houses",
+          "lodging_type": "High-altitude basic",
+          "note": "On Khumbu Glacier lateral moraine, last village before EBC"
+        },
+        {
+          "name": "Gorakshep",
+          "altitude_meters": 5140,
+          "latitude": 27.9833,
+          "longitude": 86.85,
+          "facilities": [
+            "Tea houses",
+            "Limited electricity",
+            "No Wi-Fi"
+          ],
+          "lodging": "Few tea houses (limited rooms)",
+          "lodging_type": "Extreme high-altitude basic",
+          "note": "Last settlement before EBC, only vegetarian food"
+        },
+        {
+          "name": "Everest Base Camp",
+          "altitude_meters": 5364,
+          "latitude": 28.0044,
+          "longitude": 86.8561,
+          "facilities": [
+            "Climbing tents",
+            "Emergency room tent (spring season)",
+            "No permanent tea houses"
+          ],
+          "lodging": "No lodging - climbers only, temporary tents",
+          "lodging_type": "Climbing base (no trekker accommodation)",
+          "note": "Only for climbers during season, trekkers visit then return to Gorakshep"
+        }
+      ]
+    },
+    "accommodation": {
+      "tea_houses": {
+        "availability": "Throughout entire route from Lukla to Gorakshep",
+        "number_estimate": "50-60 tea houses along route",
+        "facilities_common": [
+          "Twin-sharing rooms with beds and blankets",
+          "Dining room with wood stove",
+          "Toilets (western below, squat above)",
+          "Electricity charging (fee $2-5/device)",
+          "Wi-Fi (fee, Everest Link NPR 300-500)"
+        ],
+        "hot_shower_availability": {
+          "below_3500m": "Gas/solar heated, available (fee NPR 300-500)",
+          "above_3500m": "Limited, may be lukewarm or cold",
+          "above_4500m": "Rare, mostly cold water only, not recommended"
+        }
+      }
+    },
+    "landmarks": {
+      "mountains_visible": [
+        {
+          "name": "Mount Everest",
+          "altitude_meters": 8848,
+          "note": "World's highest mountain, visible from EBC, Kala Patthar, Tengboche"
+        },
+        {
+          "name": "Lhotse",
+          "altitude_meters": 8516,
+          "note": "4th highest mountain, visible from EBC, Lobuche"
+        },
+        {
+          "name": "Nuptse",
+          "altitude_meters": 7861,
+          "note": "Visible from EBC, Gorakshep, Kala Patthar"
+        },
+        {
+          "name": "Makalu",
+          "altitude_meters": 8485,
+          "note": "5th highest, visible from Namche, Tengboche"
+        },
+        {
+          "name": "Changtse",
+          "altitude_meters": 7580,
+          "note": "Visible from EBC"
+        },
+        {
+          "name": "Pumori",
+          "altitude_meters": 7161,
+          "note": "Visible from Gorakshep, Kala Patthar"
+        },
+        {
+          "name": "Khumjung Himal",
+          "altitude_meters": 7116,
+          "note": "Visible from Namche"
+        },
+        {
+          "name": "Tawache",
+          "altitude_meters": 6550,
+          "note": "Visible from Dingboche"
+        },
+        {
+          "name": "Island Peak",
+          "altitude_meters": 6189,
+          "note": "Visible from Dingboche"
+        },
+        {
+          "name": "Ama Dablam",
+          "altitude_meters": 6812,
+          "note": "Iconic peak, visible from Tengboche, Dingboche"
+        },
+        {
+          "name": "KhumbутOc",
+          "altitude_meters": 7081,
+          "note": "Visible from Lobuche"
+        },
+        {
+          "name": "Thamserku",
+          "altitude_meters": 6623,
+          "note": "Visible from Tengboche, Namche"
+        }
+      ],
+      "rivers": [
+        {
+          "name": "Dudh Koshi River (Milk River)",
+          "note": "Main river along trek route, glacial-fed, flows from Everest region",
+          "type": "Glacier-fed perennial river",
+          "catchment_area_km2": 1900,
+          "length_km": "~150"
+        },
+        {
+          "name": "Imja Khola",
+          "note": "Confluence with Dudh Koshi near Namche",
+          "type": "Glacier stream"
+        },
+        {
+          "name": "Khumbu Glacier",
+          "note": "Largest glacier in Nepal, flows from Everest to Lobuche",
+          "type": "Valley glacier",
+          "length_km": "~15"
+        }
+      ],
+      "waterfalls": [
+        {
+          "name": "Waterfalls along Dudh Koshi",
+          "location": "Multiple sections between Phakding and Jorsale",
+          "note": "Seasonal waterfalls visible along river valley"
+        }
+      ],
+      "lakes": [
+        {
+          "name": "No major lakes on standard EBC route",
+          "note": "Gokyo Lakes are on alternative Gokyo-EBC route"
+        }
+      ],
+      "viewpoints": [
+        {
+          "name": "Kala Patthar",
+          "altitude_meters": 5545,
+          "latitude": 27.995833,
+          "longitude": 86.828417,
+          "best_for": "Sunrise views of Everest",
+          "mountains_visible": [
+            "Everest",
+            "Lhotse",
+            "Nuptse",
+            "Pumori"
+          ],
+          "note": "Highest viewpoint trekkers climb to, best Everest panorama"
+        },
+        {
+          "name": "Everest Base Camp",
+          "altitude_meters": 5364,
+          "latitude": 28.0044,
+          "longitude": 86.8561,
+          "best_for": "Khumbu Icefall and Camp 1 views",
+          "mountains_visible": [
+            "Lhotse",
+            "Nuptse",
+            "Khumbu Icefall"
+          ]
+        },
+        {
+          "name": "Tengboche Monastery Viewpoint",
+          "altitude_meters": 3867,
+          "latitude": 27.8333,
+          "longitude": 86.7667,
+          "best_for": "First clear Everest views",
+          "mountains_visible": [
+            "Everest",
+            "Lhotse",
+            "Makalu",
+            "Ama Dablam"
+          ]
+        },
+        {
+          "name": "Namche Bazaar",
+          "altitude_meters": 3440,
+          "best_for": "Panoramic Everest range views",
+          "mountains_visible": [
+            "Everest",
+            "Makalu",
+            "Ama Dablam",
+            "Khumjung Himal"
+          ]
+        }
+      ],
+      "forest_types": [
+        {
+          "type": "Pine Forest",
+          "altitude_range": "2500-3000m",
+          "locations": [
+            "Phakding to Monjo"
+          ]
+        },
+        {
+          "type": "Rhododendron Forest",
+          "altitude_range": "3000-4000m",
+          "locations": [
+            "Monjo to Tengboche"
+          ],
+          "note": "Blooms in spring (March-May)"
+        },
+        {
+          "type": "Birch and Juniper Forest",
+          "altitude_range": "3500-4500m",
+          "locations": [
+            "Tengboche to Dingboche"
+          ]
+        },
+        {
+          "type": "Alpine Pasture",
+          "altitude_range": "4500-5545m",
+          "locations": [
+            "Dingboche to Kala Patthar"
+          ],
+          "note": "Rocky terrain with sparse vegetation, snowfies"
+        }
+      ],
+      "base_camps": [
+        {
+          "name": "Everest South Base Camp (Nepal)",
+          "altitude_meters": 5364,
+          "latitude": 28.0044,
+          "longitude": 86.8561,
+          "note": "Final destination, at foot of Khumbu Glacier, climbing season (March-May) active"
+        },
+        {
+          "name": "Everest North Base Camp (Tibet)",
+          "altitude_meters": 5150,
+          "note": "Alternative base camp in Tibet, not accessible from Nepal"
+        }
+      ],
+      "cultural_sites": [
+        {
+          "name": "Tengboche Monastery",
+          "type": "Buddhist monastery",
+          "altitude_meters": 3867,
+          "latitude": 27.8333,
+          "longitude": 86.7667,
+          "note": "Oldest monastery in Khumbu, built 1916, daily prayers"
+        },
+        {
+          "name": "Sherpa Museum",
+          "type": "Cultural museum",
+          "location": "Namche Bazaar",
+          "altitude_meters": 3440,
+          "note": "Sherpa culture, history, and mountaineering exhibits"
+        },
+        {
+          "name": "Chortens and Prayer Flags",
+          "locations": [
+            "Throughout trek route"
+          ],
+          "note": "Buddhist shrines at every village, Thukla Pass (5,368m)"
+        },
+        {
+          "name": "Khumbu Icefall",
+          "type": "Glacial feature",
+          "altitude_meters": "5364-5500",
+          "note": "Dynamic glacier feature, climbers' route to Camp 1"
+        }
+      ]
+    },
+    "transport": {
+      "how_to_reach_starting_point": {
+        "starting_point": "Lukla",
+        "from_kathmandu": {
+          "option_1": {
+            "method": "Direct flight Kathmandu to Lukla",
+            "flight_duration": "25-30 minutes",
+            "total_time": "3-4 hours (includes airport time)",
+            "cost_usd": "225 per person one way",
+            "airlines": [
+              "Tara Airlines",
+              "Sita Air",
+              "Summit Airlines"
+            ],
+            "note": "Weather dependent, book in advance, 10kg free baggage + 5kg hand carry"
+          },
+          "option_2": {
+            "method": "Flight Ramechhap to Lukla",
+            "drive_to_ramechhap": "4-5 hours from Kathmandu",
+            "flight_duration": "20-25 minutes",
+            "total_time": "7-8 hours",
+            "cost_usd": "186 per person one way",
+            "note": "More reliable than Kathmandu flights, less crowded"
+          }
+        }
+      },
+      "transportation_options": [
+        {
+          "type": "Direct Flight",
+          "from": "Kathmandu to Lukla",
+          "duration": "25-30 minutes",
+          "cost_usd": "225 one way",
+          "return_cost_usd": "225",
+          "note": "Weather dependent, best option"
+        },
+        {
+          "type": "Flight via Ramechhap",
+          "from": "Ramechhap to Lukla",
+          "duration": "20-25 minutes",
+          "cost_usd": "186 one way",
+          "note": "More reliable, requires 4-5 hour drive from Kathmandu"
+        },
+        {
+          "type": "Helicopter (Emergency/Return)",
+          "from": "EBC to Lukla",
+          "duration": "30-40 minutes",
+          "cost_usd": "600 per person shared, 1500-2000 private",
+          "note": "Weight limit 2 persons at EBC altitude"
+        }
+      ],
+      "estimated_travel_times": [
+        {
+          "route": "Kathmandu to Lukla (flight)",
+          "time": "25-30 minutes"
+        },
+        {
+          "route": "Kathmandu to Lukla (via Ramechhap)",
+          "time": "7-8 hours total"
+        },
+        {
+          "route": "Lukla to Phakding (trek)",
+          "time": "3-4 hours walking"
+        },
+        {
+          "route": "Phakding to Namche (trek)",
+          "time": "7-8 hours walking"
+        },
+        {
+          "route": "Namche to EBC (trek)",
+          "time": "6 days"
+        },
+        {
+          "route": "EBC to Lukla (return trek)",
+          "time": "3-4 days"
+        },
+        {
+          "route": "Lukla to Kathmandu (flight)",
+          "time": "25-30 minutes"
+        }
+      ]
+    },
+    "emergency": {
+      "rescue_points": [
+        {
+          "name": "Lobuche",
+          "altitude_meters": 4930,
+          "type": "Rescue coordination point"
+        },
+        {
+          "name": "Gorakshep",
+          "altitude_meters": 5140,
+          "type": "High-altitude rescue point"
+        },
+        {
+          "name": "Everest Base Camp",
+          "altitude_meters": 5364,
+          "type": "Emergency evacuation point"
+        }
+      ],
+      "helicopter_evacuation_locations": [
+        {
+          "name": "Kala Patthar",
+          "altitude_meters": 5545,
+          "coordinates": {
+            "latitude": 27.995833,
+            "longitude": 86.828417
+          },
+          "note": "Helicopters can land in good weather conditions"
+        },
+        {
+          "name": "Everest Base Camp (EBC)",
+          "altitude_meters": 5364,
+          "coordinates": {
+            "latitude": 28.0044,
+            "longitude": 86.8561
+          },
+          "note": "Helicopters can land at EBC in good weather, 90-minute response time"
+        },
+        {
+          "name": "Gorakshep",
+          "altitude_meters": 5140,
+          "note": "Good helicopter landing point"
+        },
+        {
+          "name": "Lobuche",
+          "altitude_meters": 4930,
+          "note": "Helicopter evacuation point"
+        },
+        {
+          "name": "Dingboche",
+          "altitude_meters": 4360,
+          "note": "Helicopter landing possible"
+        },
+        {
+          "name": "Namche Bazaar",
+          "altitude_meters": 3440,
+          "note": "Open area suitable for helicopter landing"
+        }
+      ],
+      "emergency_contact_numbers": [
+        {
+          "service": "Nepal Police Emergency",
+          "number": "100",
+          "note": "National emergency"
+        },
+        {
+          "service": "Tourist Police (Kathmandu)",
+          "number": "1144",
+          "alternative": "+977-1-4247041"
+        },
+        {
+          "service": "Tourist Police (Bhrikuti Mandap)",
+          "number": "+977-1-4226359 / 4226403"
+        },
+        {
+          "service": "Nepal Tourism Board",
+          "number": "+977-1-5356909 / 4256229",
+          "email": "info@ntb.org.np"
+        },
+        {
+          "service": "Emergency Police",
+          "number": "+977-1-4228435"
+        },
+        {
+          "service": "Everest Experience and Assistance (Helicopter Rescue)",
+          "number": "+977 9801360911 / 9801366911 / 9851060902",
+          "email": "info@everestassistance.com"
+        },
+        {
+          "service": "Heli On Call (24/7 Rescue)",
+          "number": "+977 9851017030 / 9851417030 / 01-4547103",
+          "email": "rescue@helioncall.com"
+        },
+        {
+          "service": "Himalayan Rescue Association",
+          "number": "Contact via trekking agency",
+          "note": "Pheriche clinic during seasons"
+        }
+      ],
+      "common_trekking_risks": [
+        {
+          "risk": "Altitude Sickness (AMS/HAPE/HACE)",
+          "severity": "Severe",
+          "prevention": "Gradual ascent, acclimatization days, stay hydrated, pulse oximeter monitoring"
+        },
+        {
+          "risk": "Falls on icy/glacier terrain",
+          "severity": "Moderate to Severe",
+          "prevention": "Use trekking poles, wear proper boots, crampons above Lobuche, be cautious"
+        },
+        {
+          "risk": "Dehydration",
+          "severity": "Moderate",
+          "prevention": "Drink 3-4 liters daily, carry water purification"
+        },
+        {
+          "risk": "Extreme cold exposure",
+          "severity": "Moderate to Severe",
+          "prevention": "Warm layers, down jacket, proper gear, avoid trekking in extreme cold"
+        },
+        {
+          "risk": "Weather changes",
+          "severity": "Moderate",
+          "prevention": "Check weather, carry rain gear, wind protection"
+        },
+        {
+          "risk": "Blister and foot injuries",
+          "severity": "Minor",
+          "prevention": "Proper boots, blister prevention, rest breaks"
+        },
+        {
+          "risk": "Flight cancellations to Lukla",
+          "severity": "Moderate",
+          "prevention": "Book buffer days, consider Ramechhap flight (more reliable)"
+        }
+      ],
+      "altitude_sickness_information": {
+        "maximum_altitude": 5545,
+        "risk_level": "High risk - above 3000m, extreme above 5000m",
+        "symptoms_ams": [
+          "Shortness of breath or rapid breathing",
+          "Fatigue",
+          "Nausea (and sometimes vomiting)",
+          "Dizziness",
+          "Headaches",
+          "Loss of appetite",
+          "Erratic sleep",
+          "Insomnia",
+          "Vivid dreams"
+        ],
+        "symptoms_severe_hape_hace": [
+          "Severe headache unrelieved by medication",
+          "Confusion",
+          "Loss of coordination",
+          "Difficulty breathing at rest",
+          "Cough with pink/frothy mucus (HAPE)",
+          "Unconsciousness",
+          "Cyanosis (bluish lips and nails)"
+        ],
+        "prevention": [
+          "Ascend gradually (max 300-500m per day above 3000m)",
+          "Include 2 acclimatization days (Namche, Dingboche)",
+          "Stay hydrated (3-4 liters daily)",
+          "Avoid alcohol and smoking",
+          "Consider Diamox (with doctor's prescription)",
+          "Sleep at lower altitude when possible ('trek high, sleep low')",
+          "Monitor with pulse oximeter above 3500m",
+          "Do not ascend if feeling sick"
+        ],
+        "treatment": [
+          "Rest and rehydration for mild AMS",
+          "Descend immediately if symptoms worsen (most effective treatment)",
+          "Pulse oximeter monitoring above 3500m",
+          "Oxygen therapy for moderate-severe cases",
+          "Nifedipine for HAPE",
+          "Dexamethasone for HACE",
+          "Helicopter evacuation for severe cases (HAPE/HACE)"
+        ],
+        "note": "EBC trek max altitude 5,545m (Kala Patthar) - high altitude conditions HAPE/HACE common, descent critical"
+      }
+    },
+    "food_water": {
+      "reliable_water_sources": [
+        {
+          "source": "Spring water",
+          "locations": [
+            "All villages along route"
+          ],
+          "safety": "Not safe untreated - must boil/purify"
+        },
+        {
+          "source": "Dudh Koshi River water",
+          "locations": [
+            "Along river valley (Phakding to Namche)"
+          ],
+          "safety": "Not safe - glacial water, must purify"
+        },
+        {
+          "source": "Boiled water (tea houses)",
+          "cost_per_liter_usd": "2-4",
+          "note": "Cost increases with altitude",
+          "safety": "Safe"
+        },
+        {
+          "source": "Hot water (for drinking)",
+          "cost": "Included with some meals",
+          "safety": "Safe"
+        }
+      ],
+      "food_availability": {
+        "menu_regulation": "Fixed menu, varies by altitude",
+        "common_items": [
+          {
+            "item": "Dal Bhat",
+            "description": "Nepali rice and lentils",
+            "price_npr": "600-1000"
+          },
+          {
+            "item": "Momos",
+            "description": "Dumplings (vegetable/mutton)",
+            "price_npr": "400-600"
+          },
+          {
+            "item": "Thukpa",
+            "description": "Noodle soup",
+            "price_npr": "500-700"
+          },
+          {
+            "item": "Chapati",
+            "description": "Flatbread",
+            "price_npr": "250-400"
+          },
+          {
+            "item": "Pasta",
+            "description": "Various pasta dishes",
+            "price_npr": "500-800"
+          },
+          {
+            "item": "Pancakes",
+            "description": "With honey/jam",
+            "price_npr": "400-600"
+          },
+          {
+            "item": "Fried Rice",
+            "description": "Vegetable fried rice",
+            "price_npr": "500-800"
+          },
+          {
+            "item": "Tsampa",
+            "description": "Roasted barley flour",
+            "price_npr": "300-500"
+          },
+          {
+            "item": "Butter Tea",
+            "description": "Traditional Sherpa tea",
+            "price_npr": "200-400"
+          },
+          {
+            "item": "Tea",
+            "description": "Various types (black, milk, ginger)",
+            "price_npr": "100-300"
+          },
+          {
+            "item": "Coffee",
+            "description": "Black/milk coffee",
+            "price_npr": "250-400"
+          }
+        ],
+        "meat_availability": {
+          "below_tengboche": "Available (vegetable, mutton, chicken)",
+          "above_tengboche": "Not recommended/available - no refrigeration",
+          "ebc_gorakshep": "Only vegetarian food"
+        },
+        "price_trend": "Increases significantly with altitude (3-4x at EBC vs Lukla)",
+        "special_note": "Dal Bhat often unlimited/free for trekkers ('food for infinity'), carry energy bars"
+      },
+      "refill_points": [
+        {
+          "location": "All tea houses",
+          "service": "Water boiling/purification",
+          "cost": "NPR 200-500 per liter (increases with altitude)"
+        },
+        {
+          "location": "Villages (Namche, Dingboche, Lobuche)",
+          "service": "Small shops with bottled water",
+          "note": "Bring refillable bottle to reduce plastic"
+        },
+        {
+          "recommendation": "Carry UV SteriPen or water purification tablets",
+          "note": "Reduce plastic waste with refillable bottles, Everest Link Wi-Fi cards available"
+        }
+      ]
+    },
+    "geography": {
+      "important_locations_with_coordinates": [
+        {
+          "name": "Lukla",
+          "category": "Village (starting point)",
+          "latitude": 27.6867,
+          "longitude": 86.7297,
+          "altitude_meters": 2840
+        },
+        {
+          "name": "Phakding",
+          "category": "Village",
+          "latitude": 27.7333,
+          "longitude": 86.75,
+          "altitude_meters": 2610
+        },
+        {
+          "name": "Monjo",
+          "category": "Village",
+          "latitude": 27.7833,
+          "longitude": 86.7667,
+          "altitude_meters": 2835
+        },
+        {
+          "name": "Jorsale",
+          "category": "Village",
+          "latitude": 27.8,
+          "longitude": 86.7833,
+          "altitude_meters": 2820
+        },
+        {
+          "name": "Namche Bazaar",
+          "category": "Village",
+          "latitude": 27.8333,
+          "longitude": 86.7167,
+          "altitude_meters": 3440
+        },
+        {
+          "name": "Tengboche",
+          "category": "Village",
+          "latitude": 27.8333,
+          "longitude": 86.7667,
+          "altitude_meters": 3860
+        },
+        {
+          "name": "Dingboche",
+          "category": "Village",
+          "latitude": 27.8833,
+          "longitude": 86.8333,
+          "altitude_meters": 4360
+        },
+        {
+          "name": "Pheriche",
+          "category": "Village",
+          "latitude": 27.8667,
+          "longitude": 86.8167,
+          "altitude_meters": 4243
+        },
+        {
+          "name": "Lobuche",
+          "category": "Village",
+          "latitude": 27.9167,
+          "longitude": 86.85,
+          "altitude_meters": 4930
+        },
+        {
+          "name": "Gorakshep",
+          "category": "Village",
+          "latitude": 27.9833,
+          "longitude": 86.85,
+          "altitude_meters": 5140
+        },
+        {
+          "name": "Everest Base Camp",
+          "category": "Base Camp",
+          "latitude": 28.0044,
+          "longitude": 86.8561,
+          "altitude_meters": 5364
+        },
+        {
+          "name": "Kala Patthar",
+          "category": "Viewpoint",
+          "latitude": 27.995833,
+          "longitude": 86.828417,
+          "altitude_meters": 5545
+        },
+        {
+          "name": "Mount Everest",
+          "category": "Mountain",
+          "latitude": 28.0111,
+          "longitude": 86.8511,
+          "altitude_meters": 8848
+        },
+        {
+          "name": "Dudh Koshi River",
+          "category": "River",
+          "latitude": 27.75,
+          "longitude": 86.76,
+          "altitude_meters": "2610-3440 (along route)"
+        },
+        {
+          "name": "HRA Clinic Pheriche",
+          "category": "Health Post",
+          "latitude": 27.8667,
+          "longitude": 86.8167,
+          "altitude_meters": 4243
+        },
+        {
+          "name": "Tengboche Monastery",
+          "category": "Cultural Site",
+          "latitude": 27.8333,
+          "longitude": 86.7667,
+          "altitude_meters": 3867
+        }
+      ]
+    },
+    "permits": {
+      "required_permits": [
+        {
+          "name": "Sagarmatha National Park Entry Permit",
+          "fee_npr_foreigners": 3000,
+          "fee_npr_saarc": 1500,
+          "fee_npr_nepali": 100,
+          "fee_usd": "Not applicable (NPR only)",
+          "obtained_at": [
+            "Nepal Tourism Board, Bhrikuti Mandap, Kathmandu",
+            "Sagarmatha National Park Entry Gate, Monjo"
+          ],
+          "requirements": [
+            "Passport",
+            "Passport copy",
+            "NP 3,000 in cash"
+          ],
+          "note": "TIMS card NOT required for EBC - replaced by Khumbu permit"
+        },
+        {
+          "name": "Khumbu Pasang Lhamu Rural Municipality Permit",
+          "fee_npr_foreigners": 3000,
+          "fee_npr_saarc": 2000,
+          "fee_npr_nepali": "Not applicable",
+          "obtained_at": [
+            "Lukla (after flight arrival)",
+            "Monjo (Sagarmatha National Park Counter)",
+            "Through registered trekking agency"
+          ],
+          "requirements": [
+            "Passport copy",
+            "NPR 3,000 in cash"
+          ],
+          "note": "Local entry fee introduced 2018, mandatory for all foreigners. No online booking"
+        }
+      ]
+    },
+    "internet": {
+      "mobile_networks": [
+        "NTC",
+        "Ncell"
+      ],
+      "wifi_availability": "Available at major tea houses / villages for a fee, limited at higher altitudes.",
+      "charging_facilities": "Electricity charging available at most tea houses for a fee."
+    },
+    "weather": {
+      "best_seasons": [
+        {
+          "season": "Autumn",
+          "months": "September - November",
+          "advantages": "Best visibility, stable weather, post-monsoon clear skies, peak season"
+        },
+        {
+          "season": "Spring",
+          "months": "March - May",
+          "advantages": "Clear skies, rhododendron blooms, moderate temperatures, climbing season"
+        },
+        {
+          "season": "Winter",
+          "months": "December - February",
+          "advantages": "Less crowded, Crystal clear views",
+          "challenges": "Very cold temperatures (-15°C to -25°C at EBC), possible snow"
+        },
+        {
+          "season": "Monsoon",
+          "months": "June - August",
+          "advantages": "Fewer trekkers",
+          "challenges": "Rain, leeches, poor visibility, flight cancellations, not recommended"
+        }
+      ],
+      "temperature_notes": "Weather changes rapidly. High altitude brings extreme cold and snow, especially in winter."
+    },
+    "wildlife": {
+      "fauna": [
+        "Langur monkeys",
+        "Himalayan thar",
+        "Snow leopards (rare)"
+      ],
+      "flora": [
+        "Pine Forest",
+        "Rhododendron Forest",
+        "Birch and Juniper Forest",
+        "Alpine Pasture"
       ]
     }
   },
-  "landmarks_and_attractions": {
-    "mountains_visible": [
-      {
-        "name": "Mount Everest",
-        "altitude_meters": 8848,
-        "note": "World's highest mountain, visible from EBC, Kala Patthar, Tengboche"
-      },
-      {
-        "name": "Lhotse",
-        "altitude_meters": 8516,
-        "note": "4th highest mountain, visible from EBC, Lobuche"
-      },
-      {
-        "name": "Nuptse",
-        "altitude_meters": 7861,
-        "note": "Visible from EBC, Gorakshep, Kala Patthar"
-      },
-      {
-        "name": "Makalu",
-        "altitude_meters": 8485,
-        "note": "5th highest, visible from Namche, Tengboche"
-      },
-      {
-        "name": "Changtse",
-        "altitude_meters": 7580,
-        "note": "Visible from EBC"
-      },
-      {
-        "name": "Pumori",
-        "altitude_meters": 7161,
-        "note": "Visible from Gorakshep, Kala Patthar"
-      },
-      {
-        "name": "Khumjung Himal",
-        "altitude_meters": 7116,
-        "note": "Visible from Namche"
-      },
-      {
-        "name": "Tawache",
-        "altitude_meters": 6550,
-        "note": "Visible from Dingboche"
-      },
-      {
-        "name": "Island Peak",
-        "altitude_meters": 6189,
-        "note": "Visible from Dingboche"
-      },
-      {
-        "name": "Ama Dablam",
-        "altitude_meters": 6812,
-        "note": "Iconic peak, visible from Tengboche, Dingboche"
-      },
-      {
-        "name": "KhumbутOc",
-        "altitude_meters": 7081,
-        "note": "Visible from Lobuche"
-      },
-      {
-        "name": "Thamserku",
-        "altitude_meters": 6623,
-        "note": "Visible from Tengboche, Namche"
-      }
-    ],
-    "rivers": [
-      {
-        "name": "Dudh Koshi River (Milk River)",
-        "note": "Main river along trek route, glacial-fed, flows from Everest region",
-        "type": "Glacier-fed perennial river",
-        "catchment_area_km2": 1900,
-        "length_km": "~150"
-      },
-      {
-        "name": "Imja Khola",
-        "note": "Confluence with Dudh Koshi near Namche",
-        "type": "Glacier stream"
-      },
-      {
-        "name": "Khumbu Glacier",
-        "note": "Largest glacier in Nepal, flows from Everest to Lobuche",
-        "type": "Valley glacier",
-        "length_km": "~15"
-      }
-    ],
-    "waterfalls": [
-      {
-        "name": "Waterfalls along Dudh Koshi",
-        "location": "Multiple sections between Phakding and Jorsale",
-        "note": "Seasonal waterfalls visible along river valley"
-      }
-    ],
-    "lakes": [
-      {
-        "name": "No major lakes on standard EBC route",
-        "note": "Gokyo Lakes are on alternative Gokyo-EBC route"
-      }
-    ],
-    "viewpoints": [
-      {
-        "name": "Kala Patthar",
-        "altitude_meters": 5545,
-        "latitude": 27.995833,
-        "longitude": 86.828417,
-        "best_for": "Sunrise views of Everest",
-        "mountains_visible": [
-          "Everest",
-          "Lhotse",
-          "Nuptse",
-          "Pumori"
-        ],
-        "note": "Highest viewpoint trekkers climb to, best Everest panorama"
-      },
-      {
-        "name": "Everest Base Camp",
-        "altitude_meters": 5364,
-        "latitude": 28.0044,
-        "longitude": 86.8561,
-        "best_for": "Khumbu Icefall and Camp 1 views",
-        "mountains_visible": [
-          "Lhotse",
-          "Nuptse",
-          "Khumbu Icefall"
-        ]
-      },
-      {
-        "name": "Tengboche Monastery Viewpoint",
-        "altitude_meters": 3867,
-        "latitude": 27.8333,
-        "longitude": 86.7667,
-        "best_for": "First clear Everest views",
-        "mountains_visible": [
-          "Everest",
-          "Lhotse",
-          "Makalu",
-          "Ama Dablam"
-        ]
-      },
-      {
-        "name": "Namche Bazaar",
-        "altitude_meters": 3440,
-        "best_for": "Panoramic Everest range views",
-        "mountains_visible": [
-          "Everest",
-          "Makalu",
-          "Ama Dablam",
-          "Khumjung Himal"
-        ]
-      }
-    ],
-    "forest_types": [
-      {
-        "type": "Pine Forest",
-        "altitude_range": "2500-3000m",
-        "locations": [
-          "Phakding to Monjo"
-        ]
-      },
-      {
-        "type": "Rhododendron Forest",
-        "altitude_range": "3000-4000m",
-        "locations": [
-          "Monjo to Tengboche"
-        ],
-        "note": "Blooms in spring (March-May)"
-      },
-      {
-        "type": "Birch and Juniper Forest",
-        "altitude_range": "3500-4500m",
-        "locations": [
-          "Tengboche to Dingboche"
-        ]
-      },
-      {
-        "type": "Alpine Pasture",
-        "altitude_range": "4500-5545m",
-        "locations": [
-          "Dingboche to Kala Patthar"
-        ],
-        "note": "Rocky terrain with sparse vegetation, snowfies"
-      }
-    ],
-    "base_camps": [
-      {
-        "name": "Everest South Base Camp (Nepal)",
-        "altitude_meters": 5364,
-        "latitude": 28.0044,
-        "longitude": 86.8561,
-        "note": "Final destination, at foot of Khumbu Glacier, climbing season (March-May) active"
-      },
-      {
-        "name": "Everest North Base Camp (Tibet)",
-        "altitude_meters": 5150,
-        "note": "Alternative base camp in Tibet, not accessible from Nepal"
-      }
-    ],
-    "cultural_sites": [
-      {
-        "name": "Tengboche Monastery",
-        "type": "Buddhist monastery",
-        "altitude_meters": 3867,
-        "latitude": 27.8333,
-        "longitude": 86.7667,
-        "note": "Oldest monastery in Khumbu, built 1916, daily prayers"
-      },
-      {
-        "name": "Sherpa Museum",
-        "type": "Cultural museum",
-        "location": "Namche Bazaar",
-        "altitude_meters": 3440,
-        "note": "Sherpa culture, history, and mountaineering exhibits"
-      },
-      {
-        "name": "Chortens and Prayer Flags",
-        "locations": [
-          "Throughout trek route"
-        ],
-        "note": "Buddhist shrines at every village, Thukla Pass (5,368m)"
-      },
-      {
-        "name": "Khumbu Icefall",
-        "type": "Glacial feature",
-        "altitude_meters": "5364-5500",
-        "note": "Dynamic glacier feature, climbers' route to Camp 1"
-      }
-    ]
-  },
-  "villages_and_settlements": {
-    "major_villages_detailed": [
-      {
-        "name": "Lukla",
-        "altitude_meters": 2840,
-        "latitude": 27.6867,
-        "longitude": 86.7297,
-        "facilities": [
-          "Airport (Tenzing Hillary Airport)",
-          "Multiple tea houses",
-          "Hotels",
-          "Wi-Fi (fee)",
-          "Mobile network (NTC, Ncell)",
-          "Electricity charging",
-          "Shops",
-          "Restaurants",
-          "Banks (limited)"
-        ],
-        "lodging": "Many tea houses and hotels",
-        "lodging_type": "Standard to comfortable rooms"
-      },
-      {
-        "name": "Phakding",
-        "altitude_meters": 2610,
-        "latitude": 27.7333,
-        "longitude": 86.75,
-        "facilities": [
-          "Tea houses",
-          "Small shops",
-          "Electricity"
-        ],
-        "lodging": "Tea houses available",
-        "lodging_type": "Basic"
-      },
-      {
-        "name": "Monjo",
-        "altitude_meters": 2835,
-        "latitude": 27.7833,
-        "longitude": 86.7667,
-        "facilities": [
-          "Tea houses",
-          "Sagarmatha National Park gate",
-          "Permit checkpoint",
-          "Shops"
-        ],
-        "lodging": "Tea houses available",
-        "lodging_type": "Basic"
-      },
-      {
-        "name": "Jorsale",
-        "altitude_meters": 2820,
-        "latitude": 27.8,
-        "longitude": 86.7833,
-        "facilities": [
-          "Few tea houses",
-          "National park entry point"
-        ],
-        "lodging": "Limited tea houses",
-        "lodging_type": "Basic"
-      },
-      {
-        "name": "Namche Bazaar",
-        "altitude_meters": 3440,
-        "latitude": 27.8333,
-        "longitude": 86.7167,
-        "facilities": [
-          "Multiple tea houses",
-          "Hotels",
-          "Wi-Fi (fee, Everest Link)",
-          "Mobile network (NTC)",
-          "Electricity",
-          "Shops",
-          "Restaurants",
-          "Sherpa Museum",
-          "Banks",
-          "Post office"
-        ],
-        "lodging": "Many tea houses with twin-sharing rooms",
-        "lodging_type": "Standard tea house",
-        "note": "Main Sherpa town, shopping hub, acclimatization point"
-      },
-      {
-        "name": "Tengboche",
-        "altitude_meters": 3860,
-        "latitude": 27.8333,
-        "longitude": 86.7667,
-        "facilities": [
-          "Tea houses",
-          "Tengboche Monastery",
-          "Wi-Fi (fee)",
-          "Electricity",
-          "Small shops",
-          "Restaurant"
-        ],
-        "lodging": "Tea houses available",
-        "lodging_type": "Standard"
-      },
-      {
-        "name": "Dingboche",
-        "altitude_meters": 4360,
-        "latitude": 27.8833,
-        "longitude": 86.8333,
-        "facilities": [
-          "Multiple tea houses",
-          "Wi-Fi (fee, limited)",
-          "Electricity",
-          "Small shops"
-        ],
-        "lodging": "Several tea houses",
-        "lodging_type": "High-altitude basic",
-        "note": "Acclimatization point, valley surrounded by peaks"
-      },
-      {
-        "name": "Pheriche",
-        "altitude_meters": 4243,
-        "latitude": 27.8667,
-        "longitude": 86.8167,
-        "facilities": [
-          "Tea houses",
-          "Himalayan Rescue Association clinic",
-          "Electricity",
-          "Limited Wi-Fi"
-        ],
-        "lodging": "Tea houses available",
-        "lodging_type": "High-altitude basic",
-        "note": "Medical clinic, acclimatization point"
-      },
-      {
-        "name": "Lobuche",
-        "altitude_meters": 4930,
-        "latitude": 27.9167,
-        "longitude": 86.85,
-        "facilities": [
-          "Tea houses",
-          "Electricity (limited)",
-          "Limited Wi-Fi"
-        ],
-        "lodging": "Few tea houses",
-        "lodging_type": "High-altitude basic",
-        "note": "On Khumbu Glacier lateral moraine, last village before EBC"
-      },
-      {
-        "name": "Gorakshep",
-        "altitude_meters": 5140,
-        "latitude": 27.9833,
-        "longitude": 86.85,
-        "facilities": [
-          "Tea houses",
-          "Limited electricity",
-          "No Wi-Fi"
-        ],
-        "lodging": "Few tea houses (limited rooms)",
-        "lodging_type": "Extreme high-altitude basic",
-        "note": "Last settlement before EBC, only vegetarian food"
-      },
-      {
-        "name": "Everest Base Camp",
-        "altitude_meters": 5364,
-        "latitude": 28.0044,
-        "longitude": 86.8561,
-        "facilities": [
-          "Climbing tents",
-          "Emergency room tent (spring season)",
-          "No permanent tea houses"
-        ],
-        "lodging": "No lodging - climbers only, temporary tents",
-        "lodging_type": "Climbing base (no trekker accommodation)",
-        "note": "Only for climbers during season, trekkers visit then return to Gorakshep"
-      }
-    ]
-  },
-  "health_and_emergency_information": {
-    "health_posts": [
-      {
-        "name": "Himalayan Rescue Association (HRA) Clinic",
-        "location": "Pheriche",
-        "altitude_meters": 4243,
-        "type": "Altitude medicine clinic",
-        "services": [
-          "Altitude sickness diagnosis",
-          "Pulse oximeter",
-          "Basic first aid",
-          "Medical advice"
-        ],
-        "season": "Open during spring and autumn climbing seasons",
-        "note": "Volunteer doctors, pulse oximetry available"
-      },
-      {
-        "name": "Everest Base Camp Emergency Room",
-        "location": "Everest Base Camp",
-        "altitude_meters": 5364,
-        "type": "Emergency medical tent",
-        "services": [
-          "Emergency care",
-          "Oxygen therapy",
-          "Altitude sickness treatment"
-        ],
-        "season": "Spring climbing season only (March-May)",
-        "note": "4 doctors stationed during spring season"
-      }
-    ],
-    "medical_centers": [
-      {
-        "name": "No hospitals/clinics on EBC route above Lukla",
-        "note": "Basic clinics only at Pheriche and EBC (seasonal); serious cases require helicopter evacuation"
-      },
-      {
-        "name": "Kathmandu Hospitals",
-        "location": "Kathmandu",
-        "altitude_meters": 1400,
-        "type": "Full medical facilities",
-        "note": "Primary destination for helicopter evacuation"
-      }
-    ],
-    "rescue_points": [
-      {
-        "name": "Lobuche",
-        "altitude_meters": 4930,
-        "type": "Rescue coordination point"
-      },
-      {
-        "name": "Gorakshep",
-        "altitude_meters": 5140,
-        "type": "High-altitude rescue point"
-      },
-      {
-        "name": "Everest Base Camp",
-        "altitude_meters": 5364,
-        "type": "Emergency evacuation point"
-      }
-    ],
-    "helicopter_evacuation_locations": [
-      {
-        "name": "Kala Patthar",
-        "altitude_meters": 5545,
-        "coordinates": {
-          "latitude": 27.995833,
-          "longitude": 86.828417
-        },
-        "note": "Helicopters can land in good weather conditions"
-      },
-      {
-        "name": "Everest Base Camp (EBC)",
-        "altitude_meters": 5364,
-        "coordinates": {
-          "latitude": 28.0044,
-          "longitude": 86.8561
-        },
-        "note": "Helicopters can land at EBC in good weather, 90-minute response time"
-      },
-      {
-        "name": "Gorakshep",
-        "altitude_meters": 5140,
-        "note": "Good helicopter landing point"
-      },
-      {
-        "name": "Lobuche",
-        "altitude_meters": 4930,
-        "note": "Helicopter evacuation point"
-      },
-      {
-        "name": "Dingboche",
-        "altitude_meters": 4360,
-        "note": "Helicopter landing possible"
-      },
-      {
-        "name": "Namche Bazaar",
-        "altitude_meters": 3440,
-        "note": "Open area suitable for helicopter landing"
-      }
-    ],
-    "emergency_contact_numbers": [
-      {
-        "service": "Nepal Police Emergency",
-        "number": "100",
-        "note": "National emergency"
-      },
-      {
-        "service": "Tourist Police (Kathmandu)",
-        "number": "1144",
-        "alternative": "+977-1-4247041"
-      },
-      {
-        "service": "Tourist Police (Bhrikuti Mandap)",
-        "number": "+977-1-4226359 / 4226403"
-      },
-      {
-        "service": "Nepal Tourism Board",
-        "number": "+977-1-5356909 / 4256229",
-        "email": "info@ntb.org.np"
-      },
-      {
-        "service": "Emergency Police",
-        "number": "+977-1-4228435"
-      },
-      {
-        "service": "Everest Experience and Assistance (Helicopter Rescue)",
-        "number": "+977 9801360911 / 9801366911 / 9851060902",
-        "email": "info@everestassistance.com"
-      },
-      {
-        "service": "Heli On Call (24/7 Rescue)",
-        "number": "+977 9851017030 / 9851417030 / 01-4547103",
-        "email": "rescue@helioncall.com"
-      },
-      {
-        "service": "Himalayan Rescue Association",
-        "number": "Contact via trekking agency",
-        "note": "Pheriche clinic during seasons"
-      }
-    ],
-    "common_trekking_risks": [
-      {
-        "risk": "Altitude Sickness (AMS/HAPE/HACE)",
-        "severity": "Severe",
-        "prevention": "Gradual ascent, acclimatization days, stay hydrated, pulse oximeter monitoring"
-      },
-      {
-        "risk": "Falls on icy/glacier terrain",
-        "severity": "Moderate to Severe",
-        "prevention": "Use trekking poles, wear proper boots, crampons above Lobuche, be cautious"
-      },
-      {
-        "risk": "Dehydration",
-        "severity": "Moderate",
-        "prevention": "Drink 3-4 liters daily, carry water purification"
-      },
-      {
-        "risk": "Extreme cold exposure",
-        "severity": "Moderate to Severe",
-        "prevention": "Warm layers, down jacket, proper gear, avoid trekking in extreme cold"
-      },
-      {
-        "risk": "Weather changes",
-        "severity": "Moderate",
-        "prevention": "Check weather, carry rain gear, wind protection"
-      },
-      {
-        "risk": "Blister and foot injuries",
-        "severity": "Minor",
-        "prevention": "Proper boots, blister prevention, rest breaks"
-      },
-      {
-        "risk": "Flight cancellations to Lukla",
-        "severity": "Moderate",
-        "prevention": "Book buffer days, consider Ramechhap flight (more reliable)"
-      }
-    ],
-    "altitude_sickness_information": {
-      "maximum_altitude": 5545,
-      "risk_level": "High risk - above 3000m, extreme above 5000m",
-      "symptoms_ams": [
-        "Shortness of breath or rapid breathing",
-        "Fatigue",
-        "Nausea (and sometimes vomiting)",
-        "Dizziness",
-        "Headaches",
-        "Loss of appetite",
-        "Erratic sleep",
-        "Insomnia",
-        "Vivid dreams"
-      ],
-      "symptoms_severe_hape_hace": [
-        "Severe headache unrelieved by medication",
-        "Confusion",
-        "Loss of coordination",
-        "Difficulty breathing at rest",
-        "Cough with pink/frothy mucus (HAPE)",
-        "Unconsciousness",
-        "Cyanosis (bluish lips and nails)"
-      ],
-      "prevention": [
-        "Ascend gradually (max 300-500m per day above 3000m)",
-        "Include 2 acclimatization days (Namche, Dingboche)",
-        "Stay hydrated (3-4 liters daily)",
-        "Avoid alcohol and smoking",
-        "Consider Diamox (with doctor's prescription)",
-        "Sleep at lower altitude when possible ('trek high, sleep low')",
-        "Monitor with pulse oximeter above 3500m",
-        "Do not ascend if feeling sick"
-      ],
-      "treatment": [
-        "Rest and rehydration for mild AMS",
-        "Descend immediately if symptoms worsen (most effective treatment)",
-        "Pulse oximeter monitoring above 3500m",
-        "Oxygen therapy for moderate-severe cases",
-        "Nifedipine for HAPE",
-        "Dexamethasone for HACE",
-        "Helicopter evacuation for severe cases (HAPE/HACE)"
-      ],
-      "note": "EBC trek max altitude 5,545m (Kala Patthar) - high altitude conditions HAPE/HACE common, descent critical"
-    }
-  },
-  "water_and_food_information": {
-    "reliable_water_sources": [
-      {
-        "source": "Spring water",
-        "locations": [
-          "All villages along route"
-        ],
-        "safety": "Not safe untreated - must boil/purify"
-      },
-      {
-        "source": "Dudh Koshi River water",
-        "locations": [
-          "Along river valley (Phakding to Namche)"
-        ],
-        "safety": "Not safe - glacial water, must purify"
-      },
-      {
-        "source": "Boiled water (tea houses)",
-        "cost_per_liter_usd": "2-4",
-        "note": "Cost increases with altitude",
-        "safety": "Safe"
-      },
-      {
-        "source": "Hot water (for drinking)",
-        "cost": "Included with some meals",
-        "safety": "Safe"
-      }
-    ],
-    "tea_houses": {
-      "availability": "Throughout entire route from Lukla to Gorakshep",
-      "number_estimate": "50-60 tea houses along route",
-      "facilities_common": [
-        "Twin-sharing rooms with beds and blankets",
-        "Dining room with wood stove",
-        "Toilets (western below, squat above)",
-        "Electricity charging (fee $2-5/device)",
-        "Wi-Fi (fee, Everest Link NPR 300-500)"
-      ],
-      "hot_shower_availability": {
-        "below_3500m": "Gas/solar heated, available (fee NPR 300-500)",
-        "above_3500m": "Limited, may be lukewarm or cold",
-        "above_4500m": "Rare, mostly cold water only, not recommended"
-      }
-    },
-    "food_availability": {
-      "menu_regulation": "Fixed menu, varies by altitude",
-      "common_items": [
-        {
-          "item": "Dal Bhat",
-          "description": "Nepali rice and lentils",
-          "price_npr": "600-1000"
-        },
-        {
-          "item": "Momos",
-          "description": "Dumplings (vegetable/mutton)",
-          "price_npr": "400-600"
-        },
-        {
-          "item": "Thukpa",
-          "description": "Noodle soup",
-          "price_npr": "500-700"
-        },
-        {
-          "item": "Chapati",
-          "description": "Flatbread",
-          "price_npr": "250-400"
-        },
-        {
-          "item": "Pasta",
-          "description": "Various pasta dishes",
-          "price_npr": "500-800"
-        },
-        {
-          "item": "Pancakes",
-          "description": "With honey/jam",
-          "price_npr": "400-600"
-        },
-        {
-          "item": "Fried Rice",
-          "description": "Vegetable fried rice",
-          "price_npr": "500-800"
-        },
-        {
-          "item": "Tsampa",
-          "description": "Roasted barley flour",
-          "price_npr": "300-500"
-        },
-        {
-          "item": "Butter Tea",
-          "description": "Traditional Sherpa tea",
-          "price_npr": "200-400"
-        },
-        {
-          "item": "Tea",
-          "description": "Various types (black, milk, ginger)",
-          "price_npr": "100-300"
-        },
-        {
-          "item": "Coffee",
-          "description": "Black/milk coffee",
-          "price_npr": "250-400"
-        }
-      ],
-      "meat_availability": {
-        "below_tengboche": "Available (vegetable, mutton, chicken)",
-        "above_tengboche": "Not recommended/available - no refrigeration",
-        "ebc_gorakshep": "Only vegetarian food"
-      },
-      "price_trend": "Increases significantly with altitude (3-4x at EBC vs Lukla)",
-      "special_note": "Dal Bhat often unlimited/free for trekkers ('food for infinity'), carry energy bars"
-    },
-    "refill_points": [
-      {
-        "location": "All tea houses",
-        "service": "Water boiling/purification",
-        "cost": "NPR 200-500 per liter (increases with altitude)"
-      },
-      {
-        "location": "Villages (Namche, Dingboche, Lobuche)",
-        "service": "Small shops with bottled water",
-        "note": "Bring refillable bottle to reduce plastic"
-      },
-      {
-        "recommendation": "Carry UV SteriPen or water purification tablets",
-        "note": "Reduce plastic waste with refillable bottles, Everest Link Wi-Fi cards available"
-      }
-    ]
-  },
-  "transportation_information": {
-    "how_to_reach_starting_point": {
-      "starting_point": "Lukla",
-      "from_kathmandu": {
-        "option_1": {
-          "method": "Direct flight Kathmandu to Lukla",
-          "flight_duration": "25-30 minutes",
-          "total_time": "3-4 hours (includes airport time)",
-          "cost_usd": "225 per person one way",
-          "airlines": [
-            "Tara Airlines",
-            "Sita Air",
-            "Summit Airlines"
-          ],
-          "note": "Weather dependent, book in advance, 10kg free baggage + 5kg hand carry"
-        },
-        "option_2": {
-          "method": "Flight Ramechhap to Lukla",
-          "drive_to_ramechhap": "4-5 hours from Kathmandu",
-          "flight_duration": "20-25 minutes",
-          "total_time": "7-8 hours",
-          "cost_usd": "186 per person one way",
-          "note": "More reliable than Kathmandu flights, less crowded"
-        }
-      }
-    },
-    "transportation_options": [
-      {
-        "type": "Direct Flight",
-        "from": "Kathmandu to Lukla",
-        "duration": "25-30 minutes",
-        "cost_usd": "225 one way",
-        "return_cost_usd": "225",
-        "note": "Weather dependent, best option"
-      },
-      {
-        "type": "Flight via Ramechhap",
-        "from": "Ramechhap to Lukla",
-        "duration": "20-25 minutes",
-        "cost_usd": "186 one way",
-        "note": "More reliable, requires 4-5 hour drive from Kathmandu"
-      },
-      {
-        "type": "Helicopter (Emergency/Return)",
-        "from": "EBC to Lukla",
-        "duration": "30-40 minutes",
-        "cost_usd": "600 per person shared, 1500-2000 private",
-        "note": "Weight limit 2 persons at EBC altitude"
-      }
-    ],
-    "estimated_travel_times": [
-      {
-        "route": "Kathmandu to Lukla (flight)",
-        "time": "25-30 minutes"
-      },
-      {
-        "route": "Kathmandu to Lukla (via Ramechhap)",
-        "time": "7-8 hours total"
-      },
-      {
-        "route": "Lukla to Phakding (trek)",
-        "time": "3-4 hours walking"
-      },
-      {
-        "route": "Phakding to Namche (trek)",
-        "time": "7-8 hours walking"
-      },
-      {
-        "route": "Namche to EBC (trek)",
-        "time": "6 days"
-      },
-      {
-        "route": "EBC to Lukla (return trek)",
-        "time": "3-4 days"
-      },
-      {
-        "route": "Lukla to Kathmandu (flight)",
-        "time": "25-30 minutes"
-      }
-    ]
-  },
-  "geographic_information": {
-    "important_locations_with_coordinates": [
-      {
-        "name": "Lukla",
-        "category": "Village (starting point)",
-        "latitude": 27.6867,
-        "longitude": 86.7297,
-        "altitude_meters": 2840
-      },
-      {
-        "name": "Phakding",
-        "category": "Village",
-        "latitude": 27.7333,
-        "longitude": 86.75,
-        "altitude_meters": 2610
-      },
-      {
-        "name": "Monjo",
-        "category": "Village",
-        "latitude": 27.7833,
-        "longitude": 86.7667,
-        "altitude_meters": 2835
-      },
-      {
-        "name": "Jorsale",
-        "category": "Village",
-        "latitude": 27.8,
-        "longitude": 86.7833,
-        "altitude_meters": 2820
-      },
-      {
-        "name": "Namche Bazaar",
-        "category": "Village",
-        "latitude": 27.8333,
-        "longitude": 86.7167,
-        "altitude_meters": 3440
-      },
-      {
-        "name": "Tengboche",
-        "category": "Village",
-        "latitude": 27.8333,
-        "longitude": 86.7667,
-        "altitude_meters": 3860
-      },
-      {
-        "name": "Dingboche",
-        "category": "Village",
-        "latitude": 27.8833,
-        "longitude": 86.8333,
-        "altitude_meters": 4360
-      },
-      {
-        "name": "Pheriche",
-        "category": "Village",
-        "latitude": 27.8667,
-        "longitude": 86.8167,
-        "altitude_meters": 4243
-      },
-      {
-        "name": "Lobuche",
-        "category": "Village",
-        "latitude": 27.9167,
-        "longitude": 86.85,
-        "altitude_meters": 4930
-      },
-      {
-        "name": "Gorakshep",
-        "category": "Village",
-        "latitude": 27.9833,
-        "longitude": 86.85,
-        "altitude_meters": 5140
-      },
-      {
-        "name": "Everest Base Camp",
-        "category": "Base Camp",
-        "latitude": 28.0044,
-        "longitude": 86.8561,
-        "altitude_meters": 5364
-      },
-      {
-        "name": "Kala Patthar",
-        "category": "Viewpoint",
-        "latitude": 27.995833,
-        "longitude": 86.828417,
-        "altitude_meters": 5545
-      },
-      {
-        "name": "Mount Everest",
-        "category": "Mountain",
-        "latitude": 28.0111,
-        "longitude": 86.8511,
-        "altitude_meters": 8848
-      },
-      {
-        "name": "Dudh Koshi River",
-        "category": "River",
-        "latitude": 27.75,
-        "longitude": 86.76,
-        "altitude_meters": "2610-3440 (along route)"
-      },
-      {
-        "name": "HRA Clinic Pheriche",
-        "category": "Health Post",
-        "latitude": 27.8667,
-        "longitude": 86.8167,
-        "altitude_meters": 4243
-      },
-      {
-        "name": "Tengboche Monastery",
-        "category": "Cultural Site",
-        "latitude": 27.8333,
-        "longitude": 86.7667,
-        "altitude_meters": 3867
-      }
-    ]
-  },
-  "facts_frequently_asked_by_trekkers": [
+  "faq": [
     {
       "question": "What is the maximum altitude on EBC Trek?",
       "answer": "5,364 meters (17,598 feet) at Everest Base Camp. Kala Patthar at 5,545m is highest point trekkers climb"
@@ -1530,5 +1566,9 @@
       "question": "Can babies/children do EBC Trek?",
       "answer": "Not recommended below 12-14 years. Altitude 5,545m dangerous for young children"
     }
-  ]
+  ],
+  "gps_points": [],
+  "offline_maps": [],
+  "weather_notes": [],
+  "nearby_locations": []
 }

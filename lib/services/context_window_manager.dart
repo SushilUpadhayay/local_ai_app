@@ -1,33 +1,61 @@
 import '../models/conversation.dart';
 
 class ContextWindowManager {
-  // Approximate token count based on typical character length (~4 chars per token)
+  static const int defaultTurnLimit = 3; // Three previous chats
+
+  // Approximate token count based on typical character length (~4 chars per token).
+  // Kept for diagnostics and future budgeting; prompt memory is turn-limited.
   int estimateTokenCount(String text) {
     return (text.length / 4.0).ceil();
   }
 
-  // Construct a history payload that fits within the model's context window.
-  // Starting from the latest message, it prepends history until the token limit is reached.
-  List<Message> getContextMessages(List<Message> fullHistory, int contextLimit) {
-    if (fullHistory.isEmpty) return [];
+  String buildRecentTurnContext(
+    List<Message> fullHistory, {
+    int turnLimit = defaultTurnLimit,
+  }) {
+    final currentUserMessage = _currentUserMessage(fullHistory);
+    final previousMessages = currentUserMessage == null
+        ? fullHistory
+        : fullHistory.take(fullHistory.length - 1).toList();
+    final turns = _completeTurns(previousMessages);
+    final recentTurns = turns.length <= turnLimit
+        ? turns
+        : turns.sublist(turns.length - turnLimit);
 
-    final List<Message> contextList = [];
-    int currentTokens = 0;
-
-    // Iterate backwards from latest to oldest
-    for (int i = fullHistory.length - 1; i >= 0; i--) {
-      final msg = fullHistory[i];
-      final estimatedTokens = estimateTokenCount(msg.text) + 20; // adding 20 tokens margin for structure/role tokens
-
-      if (currentTokens + estimatedTokens > contextLimit) {
-        break; // Stop including older history if it overflows context window
-      }
-
-      contextList.insert(0, msg);
-      currentTokens += estimatedTokens;
+    final buffer = StringBuffer();
+    for (final turn in recentTurns) {
+      buffer
+        ..writeln('User: ${turn.user.text}')
+        ..writeln('Assistant: ${turn.assistant.text}')
+        ..writeln();
     }
 
-    return contextList;
+    if (currentUserMessage != null) {
+      buffer
+        ..writeln('Current User:')
+        ..write(currentUserMessage.text);
+    }
+
+    return buffer.toString().trimRight();
+  }
+
+  List<Message> getRecentRoleMessages(
+    List<Message> fullHistory, {
+    int turnLimit = defaultTurnLimit,
+  }) {
+    final currentUserMessage = _currentUserMessage(fullHistory);
+    final previousMessages = currentUserMessage == null
+        ? fullHistory
+        : fullHistory.take(fullHistory.length - 1).toList();
+    final turns = _completeTurns(previousMessages);
+    final recentTurns = turns.length <= turnLimit
+        ? turns
+        : turns.sublist(turns.length - turnLimit);
+
+    return [
+      for (final turn in recentTurns) ...[turn.user, turn.assistant],
+      ?currentUserMessage,
+    ];
   }
 
   // Build a standard prompt using ChatML format for the llama.cpp engine
@@ -46,4 +74,30 @@ class ContextWindowManager {
     buffer.write('<|im_start|>assistant\n');
     return buffer.toString();
   }
+
+  Message? _currentUserMessage(List<Message> fullHistory) {
+    if (fullHistory.isEmpty) return null;
+    final latest = fullHistory.last;
+    return latest.sender == 'user' ? latest : null;
+  }
+
+  List<_ConversationTurn> _completeTurns(List<Message> messages) {
+    final turns = <_ConversationTurn>[];
+    for (var i = 0; i < messages.length - 1; i++) {
+      final user = messages[i];
+      final assistant = messages[i + 1];
+      if (user.sender == 'user' && assistant.sender != 'user') {
+        turns.add(_ConversationTurn(user: user, assistant: assistant));
+        i++;
+      }
+    }
+    return turns;
+  }
+}
+
+class _ConversationTurn {
+  final Message user;
+  final Message assistant;
+
+  const _ConversationTurn({required this.user, required this.assistant});
 }

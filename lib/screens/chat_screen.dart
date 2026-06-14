@@ -551,6 +551,18 @@ class _ChatScreenState extends State<ChatScreen>
             trace.toolsUsed.isEmpty ? 'None' : trace.toolsUsed.join(', '),
           ),
           _buildTraceRow(
+            'Arguments',
+            trace.toolCalls.isEmpty
+                ? 'None'
+                : trace.toolCalls
+                      .map((call) {
+                        final name = call['name'] ?? 'tool';
+                        final args = call['arguments'] ?? const {};
+                        return '$name: $args';
+                      })
+                      .join('\n'),
+          ),
+          _buildTraceRow(
             'Source Files',
             trace.sourceFiles.isEmpty ? 'None' : trace.sourceFiles.join(', '),
           ),
@@ -750,11 +762,6 @@ class _ChatScreenState extends State<ChatScreen>
                       onSubmitted: canSend ? (_) => _sendMessage() : null,
                     ),
                   ),
-                  // PUSH-TO-TALK: Microphone button
-                  // Tap 1: Start recording (state = listening, icon = stop circle)
-                  // Tap 2: Stop recording and transcribe (state = processing)
-                  // Result: Text appears in input field (NOT automatically sent)
-                  // User can edit and manually press Send to trigger LLM
                   IconButton(
                     icon: Icon(
                       appState.voiceState == VoiceState.listening

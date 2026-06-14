@@ -30,7 +30,7 @@ class ModelCatalogService {
         name: 'Qwen 1.5B',
         fullName: 'Qwen 2.5 1.5B Instruct (Q4_K_M)',
         size: '1.2 GB',
-        ram: 'Needs 6GB+ RAM',
+        ram: 'Needs 6GB RAM',
         status: 'available',
         active: false,
         category: 'Reasoning',

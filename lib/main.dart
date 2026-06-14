@@ -24,9 +24,7 @@ class LocalAiApp extends StatelessWidget {
         useMaterial3: true,
         brightness: Brightness.dark,
         scaffoldBackgroundColor: const Color(0xFF0B0F19),
-        textTheme: GoogleFonts.outfitTextTheme(
-          ThemeData.dark().textTheme,
-        ),
+        textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
         appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xFF0B0F19),
           elevation: 0,
@@ -72,7 +70,7 @@ class _MainScaffoldState extends State<MainScaffold> {
         return Scaffold(
           key: _scaffoldKey,
           backgroundColor: const Color(0xFF0B0F19),
-          
+
           // Header App Bar
           appBar: AppBar(
             leading: IconButton(
@@ -113,6 +111,54 @@ class _MainScaffoldState extends State<MainScaffold> {
               ],
             ),
             actions: [
+              GestureDetector(
+                onTap: _showTrekSelectionDialog,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 190),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF151E2E),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: _appState.hasSelectedTrek
+                            ? const Color(0xFF10B981).withAlpha(120)
+                            : const Color(0xFF1E293B),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.hiking_rounded,
+                          size: 13,
+                          color: _appState.hasSelectedTrek
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFF94A3B8),
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            _appState.hasSelectedTrek
+                                ? _appState.selectedTrekLabel
+                                : 'Select Trek',
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
               // Active Model Pill
               GestureDetector(
                 onTap: () {
@@ -121,7 +167,10 @@ class _MainScaffoldState extends State<MainScaffold> {
                 child: Padding(
                   padding: const EdgeInsets.only(right: 16.0),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF151E2E),
                       borderRadius: BorderRadius.circular(16),
@@ -138,12 +187,18 @@ class _MainScaffoldState extends State<MainScaffold> {
                           Icons.circle,
                           size: 6,
                           color: () {
-                            if (_appState.activeModel == null) return const Color(0xFFF59E0B);
+                            if (_appState.activeModel == null) {
+                              return const Color(0xFFF59E0B);
+                            }
                             switch (_appState.modelLoadState) {
-                              case ModelLoadState.loaded: return const Color(0xFF10B981);
-                              case ModelLoadState.loading: return const Color(0xFFF59E0B);
-                              case ModelLoadState.failed: return const Color(0xFFEF4444);
-                              case ModelLoadState.unloaded: return const Color(0xFF94A3B8);
+                              case ModelLoadState.loaded:
+                                return const Color(0xFF10B981);
+                              case ModelLoadState.loading:
+                                return const Color(0xFFF59E0B);
+                              case ModelLoadState.failed:
+                                return const Color(0xFFEF4444);
+                              case ModelLoadState.unloaded:
+                                return const Color(0xFF94A3B8);
                             }
                           }(),
                         ),
@@ -172,17 +227,106 @@ class _MainScaffoldState extends State<MainScaffold> {
             children: [
               // Divider separating header from main body
               const Divider(color: Color(0xFF1E293B), height: 1),
-              
+
               // Active screen display area
-              Expanded(
-                child: _buildActiveScreen(),
-              ),
+              Expanded(child: _buildActiveScreen()),
 
               // Voice overlay sheets (displays automatically when voice is activated)
               if (_appState.voiceState != VoiceState.idle)
                 VoiceWaveformSheet(appState: _appState),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showTrekSelectionDialog() async {
+    final treks = _appState.availableTreks;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF151E2E),
+          title: const Text('Trek Selection'),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (treks.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Text(
+                      'No offline treks are loaded yet.',
+                      style: TextStyle(color: Color(0xFF94A3B8)),
+                    ),
+                  )
+                else
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: treks.length,
+                      separatorBuilder: (context, index) =>
+                          const Divider(color: Color(0xFF1E293B), height: 1),
+                      itemBuilder: (context, index) {
+                        final trek = treks[index];
+                        final trekName = trek['trek_name']?.toString() ?? '';
+                        final selected =
+                            trekName == _appState.selectedTrekName;
+                        return ListTile(
+                          leading: Icon(
+                            selected
+                                ? Icons.check_circle_rounded
+                                : Icons.landscape_rounded,
+                            color: selected
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFF94A3B8),
+                          ),
+                          title: Text(
+                            trek['name']?.toString() ?? trekName,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          subtitle: Text(
+                            [
+                              if (trek['difficulty'] != null)
+                                trek['difficulty'].toString(),
+                              if (trek['duration_days'] != null)
+                                '${trek['duration_days']} days',
+                            ].join(' - '),
+                            style: const TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 11,
+                            ),
+                          ),
+                          onTap: trekName.isEmpty
+                              ? null
+                              : () {
+                                  _appState.selectTrek(trekName);
+                                  Navigator.pop(dialogContext);
+                                },
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: _appState.hasSelectedTrek
+                  ? () {
+                      _appState.clearSelectedTrek();
+                      Navigator.pop(dialogContext);
+                    }
+                  : null,
+              child: const Text('Clear'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Close'),
+            ),
+          ],
         );
       },
     );

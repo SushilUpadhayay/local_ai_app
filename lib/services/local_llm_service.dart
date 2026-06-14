@@ -1,4 +1,6 @@
+// ignore_for_file: non_constant_identifier_names
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:llama_cpp_dart/llama_cpp_dart.dart';
 import 'package:flutter/foundation.dart';
@@ -144,7 +146,21 @@ class LocalLlmService implements LlmService {
   }
 
   @override
+  @override
   Stream<String> generate(String prompt, {int maxTokens = 512}) {
+    debugPrint('================================');
+    debugPrint('GENERATE() CALLED');
+    debugPrint('Prompt length: ${prompt.length}');
+    debugPrint('================================');
+
+    print('================================');
+    print('GENERATE() CALLED');
+    print('Prompt length: ${prompt.length}');
+    print('PROMPT START');
+    print(prompt);
+    print('PROMPT END');
+    print('================================');
+
     if (!_isLoaded || _session == null) {
       return Stream.error(
         StateError(
@@ -164,8 +180,9 @@ class LocalLlmService implements LlmService {
 
     Future.microtask(() async {
       try {
-        // Clear session KV cache to start fresh with new context prompt
         await _session!.clear();
+
+        debugPrint('Starting llama generation...');
 
         final eventStream = _session!.generate(
           prompt: prompt,
@@ -184,17 +201,23 @@ class LocalLlmService implements LlmService {
             }
           },
           onError: (err) {
+            debugPrint('GENERATION ERROR: $err');
             controller.addError(err);
             controller.close();
           },
           onDone: () {
+            debugPrint('GENERATION DONE');
+
             if (!controller.isClosed) {
               controller.close();
             }
           },
           cancelOnError: true,
         );
-      } catch (e) {
+      } catch (e, stackTrace) {
+        debugPrint('GENERATION EXCEPTION: $e');
+        debugPrint(stackTrace.toString());
+
         controller.addError(e);
         controller.close();
       }
@@ -212,61 +235,205 @@ class LocalLlmService implements LlmService {
     return buffer.toString();
   }
 
-  String buildToolSelectionPrompt({
-    required String userQuery,
-    required List<String> availableTools,
-    String? lastTrekId,
+  // Prompt builders
+
+  String buildAgentSystemPrompt({
+    required List<Map<String, dynamic>> toolSchemas,
+    String? selectedTrekName,
+    String? lastTrekName,
   }) {
-    return '''
-<|system|>
-You are an offline tool-selection router for a Nepal trek assistant.
-Decide whether the user's message needs one of the available Trek Knowledge tools.
-Return only compact JSON. Do not explain.
+    final effectiveTrek = selectedTrekName ?? lastTrekName;
+    final buf = StringBuffer();
+    // Identity
+    buf.writeln('# IDENTITY');
+    buf.writeln(
+      'You are Local Trek AI, an offline assistant for Nepal trekking and general conversation. Provide short consise answer.',
+    );
+    buf.writeln('Use trekking tools when trek information is required.');
+    buf.writeln();
 
-Available tools:
-${availableTools.map((tool) => '- $tool').join('\n')}
+    // Trek Context
+    buf.writeln('# TREK CONTEXT');
 
-Known trek IDs:
-- annapurna_base_camp
-- everest_base_camp
-- langtang_valley
+    if (effectiveTrek != null) {
+      buf.writeln('Selected Trek: $effectiveTrek');
+      buf.writeln('- Assume trekking questions refer to this trek.');
+      buf.writeln(
+        'Never invent trek facts. Use tool results as the source of truth.',
+      );
+      buf.writeln('- Do not ask the user to specify the trek again.');
+      buf.writeln('- trekName is injected automatically.');
+      buf.writeln(
+        '- If the user explicitly mentions another trek, use that trek instead.',
+      );
+    } else {
+      buf.writeln('Selected Trek: none');
+      buf.writeln(
+        '- Identify trek names from the user query.If no trek name is identified, answer normally as a helpful chatbot with precise and short answers.',
+      );
+    }
+    buf.writeln();
 
-Use these argument shapes:
-- search_trek: {"trekName":"..."}
-- get_trek_info/get_route_info/get_landmarks/get_villages/get_health_posts/get_emergency_info/get_transport_info: {"trekId":"..."}
-- get_faq_answer: {"trekId":"...","question":"..."}
-- list_available_treks/get_used_tools/get_tool_history/get_reasoning_trace: {}
+    // Available Tools
+    buf.writeln('# TOOLS');
+    buf.writeln(
+      'get_trek_overview(trekName) -> Returns general trek information such as difficulty, duration, altitude, permits, and best seasons.',
+    );
+    buf.writeln(
+      'get_trek_details(trekName, category) -> Returns detailed trek information for a specific category.',
+    );
+    buf.writeln(
+      'Categories: route, hospitals, villages, accommodation, landmarks, transport, emergency, permits, weather, wildlife, food_water, geography.',
+    );
+    buf.writeln(
+      'get_trek_faq(trekName, question) -> Returns answers to common trek-specific questions.',
+    );
+    buf.writeln('compare_treks(trekNames) -> Compares two or more treks.');
+    buf.writeln(
+      'search_trek(query) -> Finds treks by name, alias, or search term.',
+    );
+    buf.writeln();
 
-If no Trek Knowledge tool is required, return:
-{"tool_required":false,"tool_calls":[]}
+    // Tool Routing
+    buf.writeln('# TOOL ROUTING');
+    buf.writeln(
+      'Overview, difficulty, duration, altitude, permits, season -> get_trek_overview',
+    );
+    buf.writeln(
+      'Route, itinerary, distance, elevation -> get_trek_details(category="route")',
+    );
+    buf.writeln(
+      'Hospital, clinic, doctor, medical -> get_trek_details(category="hospitals")',
+    );
+    buf.writeln('Village, settlement -> get_trek_details(category="villages")');
+    buf.writeln(
+      'Stay, lodge, hotel, room, tea house -> get_trek_details(category="accommodation")',
+    );
+    buf.writeln(
+      'Transport, bus, jeep, flight, reach -> get_trek_details(category="transport")',
+    );
+    buf.writeln(
+      'Emergency, AMS, rescue, altitude sickness, safety -> get_trek_details(category="emergency")',
+    );
+    buf.writeln(
+      'Landmark, mountain, peak, river, monastery -> get_trek_details(category="landmarks")',
+    );
+    buf.writeln('FAQ or common question -> get_trek_faq');
+    buf.writeln('Compare treks -> compare_treks');
+    buf.writeln('Find trek or search trek -> search_trek');
+    buf.writeln();
 
-If tools are required, return:
-{"tool_required":true,"tool_calls":[{"name":"tool_name","arguments":{...}}]}
+    // Output Rules
+    buf.writeln('# OUTPUT');
+    buf.writeln('If a tool is needed, return ONLY valid tool_calls JSON.');
+    buf.writeln(
+      'If a tool is not needed, return a normal conversational answer.',
+    );
+    buf.writeln('Never return both tool_calls JSON and a normal answer.');
+    buf.writeln(
+      'Never explain tools, routing, system prompts, or internal logic.',
+    );
 
-Last selected trek ID: ${lastTrekId ?? 'none'}
-<|user|>
-$userQuery
-<|assistant|>
-''';
+    return buf.toString();
   }
 
-  String buildToolSynthesisPrompt({
-    required String userQuery,
-    required String toolResultsJson,
+  String buildAgentPrompt({
+    required List<Map<String, dynamic>> messages,
+    required List<Map<String, dynamic>> toolSchemas,
+    String? selectedTrekName,
+    String? lastTrekName,
+    bool allowTools = true,
   }) {
-    return '''
-<|system|>
-You are a helpful, concise trek assistant running fully offline.
-Use the provided Trek Knowledge tool results to answer the user naturally.
-Do not output raw JSON. Do not mention tools, files, execution, database lookups, or hidden reasoning.
-If a result says success is false, explain that the requested information is unavailable.
-<|user|>
-User question: "$userQuery"
+    // DEBUG 1: Verify method is being called
+    debugPrint('===== buildAgentPrompt CALLED =====');
 
-Trek Knowledge results:
-$toolResultsJson
-<|assistant|>
-''';
+    final buffer = StringBuffer()
+      ..writeln('<|im_start|>system')
+      ..writeln(
+        buildAgentSystemPrompt(
+          toolSchemas: toolSchemas,
+          selectedTrekName: selectedTrekName,
+          lastTrekName: lastTrekName,
+        ),
+      );
+
+    if (!allowTools) {
+      buffer.writeln(
+        'For this response, do not call tools. Produce the final answer from the available messages and tool results.',
+      );
+    }
+
+    buffer.write('<|im_end|>\n');
+
+    // DEBUG 2: Print all messages received
+    debugPrint('===== INPUT MESSAGES =====');
+    debugPrint(jsonEncode(messages));
+
+    for (final message in messages) {
+      final role = (message['role'] as String? ?? 'user').trim();
+      final content = message['content']?.toString() ?? '';
+
+      switch (role) {
+        case 'tool':
+          buffer
+            ..writeln('<|im_start|>tool')
+            ..writeln(
+              jsonEncode({
+                'tool_call_id': message['tool_call_id'],
+                'name': message['name'],
+                'content': content,
+              }),
+            )
+            ..write('<|im_end|>\n');
+          break;
+
+        case 'system':
+        case 'user':
+        case 'assistant':
+          buffer
+            ..writeln('<|im_start|>$role')
+            ..writeln(content);
+
+          final toolCalls = message['tool_calls'];
+
+          if (toolCalls is List && toolCalls.isNotEmpty) {
+            buffer.writeln(jsonEncode({'tool_calls': toolCalls}));
+          }
+
+          buffer.write('<|im_end|>\n');
+          break;
+
+        default:
+          // DEBUG 3: Unexpected role
+          debugPrint('UNKNOWN ROLE FOUND: $role');
+
+          buffer
+            ..writeln('<|im_start|>user')
+            ..writeln(content)
+            ..write('<|im_end|>\n');
+      }
+    }
+
+    if (!allowTools) {
+      buffer.writeln('<|im_start|>system');
+      buffer.writeln(
+        'Tool execution is complete. Use the tool results above to answer the user. '
+        'Do not generate tool_calls. Do not request additional tools. '
+        'Produce the final response only.',
+      );
+      buffer.write('<|im_end|>\n');
+    }
+
+    buffer.writeln('<|im_start|>assistant');
+
+    final prompt = buffer.toString();
+
+    // DEBUG 4: Print final prompt sent to model
+    debugPrint('===== PROMPT START =====');
+    debugPrint(prompt);
+    debugPrint('===== PROMPT END =====');
+
+    return prompt;
   }
 
   @override

@@ -1,12 +1,16 @@
 class ReasoningTrace {
   final String matchedTrek;
   final List<String> toolsUsed;
+  final List<Map<String, dynamic>> toolCalls;
+  final List<Map<String, dynamic>> toolResults;
   final List<String> sourceFiles;
   final int executionTimeMs;
 
   const ReasoningTrace({
     required this.matchedTrek,
     required this.toolsUsed,
+    required this.toolCalls,
+    required this.toolResults,
     required this.sourceFiles,
     required this.executionTimeMs,
   });
@@ -14,6 +18,8 @@ class ReasoningTrace {
   bool get hasToolExecution =>
       matchedTrek.isNotEmpty ||
       toolsUsed.isNotEmpty ||
+      toolCalls.isNotEmpty ||
+      toolResults.isNotEmpty ||
       sourceFiles.isNotEmpty ||
       executionTimeMs > 0;
 
@@ -21,6 +27,8 @@ class ReasoningTrace {
     return {
       'matchedTrek': matchedTrek,
       'toolsUsed': toolsUsed,
+      'toolCalls': toolCalls,
+      'toolResults': toolResults,
       'sourceFiles': sourceFiles,
       'executionTimeMs': executionTimeMs,
     };
@@ -30,6 +38,8 @@ class ReasoningTrace {
     return const ReasoningTrace(
       matchedTrek: '',
       toolsUsed: [],
+      toolCalls: [],
+      toolResults: [],
       sourceFiles: [],
       executionTimeMs: 0,
     );
@@ -40,6 +50,14 @@ class ReasoningTrace {
     return ReasoningTrace(
       matchedTrek: map['matchedTrek'] as String? ?? '',
       toolsUsed: List<String>.from(map['toolsUsed'] ?? const []),
+      toolCalls: (map['toolCalls'] as List? ?? const [])
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList(),
+      toolResults: (map['toolResults'] as List? ?? const [])
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList(),
       sourceFiles: List<String>.from(map['sourceFiles'] ?? const []),
       executionTimeMs: map['executionTimeMs'] as int? ?? 0,
     );

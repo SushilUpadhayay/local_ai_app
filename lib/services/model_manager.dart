@@ -45,17 +45,63 @@ class ModelManager {
     return _repository.getLocalPathForModel(id);
   }
 
-  // Load metadata from repository
   Future<void> loadMetadata() async {
     final loadedModels = await _repository.loadModels();
     _activeModelId = await _repository.loadActiveModelId();
     _activeWhisperModelId = await _repository.loadActiveWhisperModelId();
 
+    final defaultModels = await _catalogService.getAvailableModels();
+    // Build a lookup map from catalog for quick access
+    final catalogMap = {for (final m in defaultModels) m.id: m};
+
     if (loadedModels != null && loadedModels.isNotEmpty) {
-      _models = loadedModels;
+      final loadedModelIds = loadedModels.map((m) => m.id).toSet();
+      bool dirty = false;
+
+      // 1. Refresh immutable catalog fields for existing cached models.
+      //    This ensures fixes (e.g. contextWindow changes) take effect without
+      //    requiring users to wipe their cache.
+      final refreshedModels = loadedModels.map((cached) {
+        final catalog = catalogMap[cached.id];
+        if (catalog == null) return cached; // custom/sideloaded model — keep as-is
+        final updated = cached.copyWith(
+          contextWindow: catalog.contextWindow,
+          url: catalog.url,
+          ram: catalog.ram,
+          size: catalog.size,
+          fullName: catalog.fullName,
+          category: catalog.category,
+          quantization: catalog.quantization,
+          modelFamily: catalog.modelFamily,
+        );
+        // Detect if anything actually changed so we know whether to re-save
+        if (updated.contextWindow != cached.contextWindow ||
+            updated.url != cached.url ||
+            updated.ram != cached.ram) {
+          dirty = true;
+        }
+        return updated;
+      }).toList();
+
+      // 2. Append any brand-new catalog models not yet in the cache
+      for (final catalogModel in defaultModels) {
+        if (!loadedModelIds.contains(catalogModel.id)) {
+          refreshedModels.add(catalogModel);
+          dirty = true;
+        }
+      }
+
+      _models = refreshedModels;
       await _verifyAndHealFiles();
+
+      if (dirty) {
+        await saveMetadata();
+      }
     } else {
-      await _loadDefaultRegistry();
+      _activeModelId = null;
+      _activeWhisperModelId = null;
+      _models = defaultModels;
+      await saveMetadata();
     }
   }
 
@@ -226,9 +272,12 @@ class ModelManager {
     } else if (model.id == 'qwen-1.5b') {
       if (deviceRamGb >= 6) return 'recommended';
       return 'slow';
-    } else if (model.id == 'gemma-2b') {
+    } else if (model.id == 'gemma-2b' || model.id == 'qwen-3b') {
       if (deviceRamGb >= 8) return 'recommended';
       if (deviceRamGb >= 6) return 'slow';
+      return 'not_recommended';
+    } else if (model.id == 'qwen-7b') {
+      if (deviceRamGb >= 8) return 'slow';
       return 'not_recommended';
     }
     return 'recommended';

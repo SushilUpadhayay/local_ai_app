@@ -243,66 +243,43 @@ class LocalLlmService implements LlmService {
 
   // Prompt builders
 
-  String buildAgentSystemPrompt({
-    required List<Map<String, dynamic>> toolSchemas,
-    String? selectedTrekName,
-    String? lastTrekName,
-  }) {
-    final effectiveTrek = selectedTrekName ?? lastTrekName;
+  String buildAgentSystemPrompt(String selectedTrekName, List<Map<String, dynamic>> toolSchemas) {
     final buf = StringBuffer();
 
-    buf.writeln('# IDENTITY');
-    buf.writeln(
-      'You are a dual-mode assistant for a Nepal Trekking App. Depending on the CONTEXT block below, you will operate as either a friendly conversational chatbot OR a strict, headless JSON API router.',
-    );
-    buf.writeln();
-
-    buf.writeln('# CONTEXT');
-    if (effectiveTrek != null) {
-      buf.writeln('Selected Trek: $effectiveTrek');
+    if (selectedTrekName == 'none') {
+      buf.writeln('<|im_start|>system');
+      buf.writeln('You are a helpful, general conversational AI.');
+      buf.writeln('You do NOT have access to trekking data right now.');
       buf.writeln(
-        '- Use this trek for implicit questions. If a different trek is named, use that instead.',
+        'If the user asks ANY question specifically about a Nepal trek, route, itinerary, or trekking advice, you MUST decline and reply EXACTLY with:',
       );
       buf.writeln(
-        '- You have NO native knowledge. Rely ONLY on provided tool results for facts.',
+        '"Please select a trek to access trek-specific information."',
       );
-    } else {
-      buf.writeln('Selected Trek: none');
-      buf.writeln(
-        '- Identify trek names from the user query. If no trek name is identified, answer normally as a helpful chatbot.',
-      );
-      buf.writeln(
-        '- You have NO native knowledge. Rely ONLY on provided tool results for facts.',
-      );
+      buf.writeln('Answer all other general questions normally.');
+      buf.writeln('<|im_end|>');
+      return buf.toString();
     }
-    buf.writeln();
+    debugPrint('DEBUG: selected trek name: $selectedTrekName');
 
+    buf.writeln('<|im_start|>system');
+    buf.writeln(
+      'You are the official offline assistant for the $selectedTrekName.',
+    );
+    buf.writeln(
+      'You have NO native geographic knowledge. You must use the provided tools to answer questions about this trek.',
+    );
+    buf.writeln(
+      'If the user asks about a different trek, tell them they must change their selected trek in the app first.',
+    );
+    buf.writeln('');
     buf.writeln('# TOOLS');
-    buf.writeln(
-      'get_trek_overview(trekName): difficulty, duration, altitude, permits, season',
-    );
-    buf.writeln(
-      'get_trek_details(trekName, category): category in [route, hospitals, villages, accommodation, landmarks, transport, emergency, permits, weather, wildlife, food_water, geography]',
-    );
-    buf.writeln('get_trek_faq(trekName, question): FAQ answers');
-    buf.writeln('compare_treks(trekNames): compare treks');
-    buf.writeln('search_trek(query): find treks');
-    buf.writeln();
-
-    buf.writeln('# RULES');
-
-    buf.writeln(
-      '1. **TREK IDENTIFIED BUT NO DATA:**If a trek is identified but no tool data is present in history, you MUST execute a tool. Output ONLY the JSON block. Do not write prose or explain your logic.',
-    );
-    buf.writeln(
-      '2. **DATA IS PRESENT:** If a `<|im_start|>tool` message or tool result is present in the history, use that data to answer the user directly in 1-2 concise sentences. Do not generate a tool call.',
-    );
-    buf.writeln();
-
-    buf.writeln('# OUTPUT FORMAT FOR TOOLS');
-    buf.writeln(
-      'To call a tool, return ONLY valid JSON matching this schema. Replace ID_STRING with a unique identifier:',
-    );
+    buf.writeln('You have access to the following tools:');
+    buf.writeln('```json');
+    buf.writeln(jsonEncode(toolSchemas));
+    buf.writeln('```');
+    buf.writeln('');
+    buf.writeln('# TOOL SCHEMA REFERENCE');
     buf.writeln('```json');
     buf.writeln('{');
     buf.writeln('  "tool_calls": [');
@@ -317,6 +294,7 @@ class LocalLlmService implements LlmService {
     buf.writeln('  ]');
     buf.writeln('}');
     buf.writeln('```');
+    buf.writeln('<|im_end|>');
 
     return buf.toString();
   }
@@ -337,24 +315,19 @@ class LocalLlmService implements LlmService {
     debugPrint('==============================\n');
 
     final buffer = StringBuffer()
-      ..writeln('<|im_start|>system')
       ..writeln(
-        buildAgentSystemPrompt(
-          toolSchemas: toolSchemas,
-          selectedTrekName: selectedTrekName,
-          lastTrekName: lastTrekName,
-        ),
+        buildAgentSystemPrompt(selectedTrekName ?? lastTrekName ?? 'none', toolSchemas),
       );
 
     if (!allowTools) {
       debugPrint('TOOLS DISABLED FOR THIS GENERATION');
 
+      buffer.writeln('<|im_start|>system');
       buffer.writeln(
         'For this response, do not call tools. Produce the final answer from the available messages and tool results.',
       );
+      buffer.write('<|im_end|>\n');
     }
-
-    buffer.write('<|im_end|>\n');
 
     debugPrint('\n===== RAW INPUT MESSAGES =====');
     debugPrint(const JsonEncoder.withIndent('  ').convert(messages));

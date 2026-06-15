@@ -584,22 +584,20 @@ class _ModelsScreenState extends State<ModelsScreen> {
             ),
           ),
           const SizedBox(height: 6),
-          Row(
+          Wrap(
+            spacing: 10,
+            runSpacing: 6,
             children: [
               _buildActiveMeta(
                 Icons.memory,
                 active.ram.replaceAll('Needs ', ''),
               ),
-              const SizedBox(width: 10),
               _buildActiveMeta(Icons.storage_rounded, active.size),
-              const SizedBox(width: 10),
               _buildActiveMeta(Icons.layers_rounded, active.quantization),
-              const SizedBox(width: 10),
               _buildActiveMeta(
                 Icons.wrap_text_rounded,
                 '${active.contextWindow} ctx',
               ),
-              const SizedBox(width: 10),
               _buildActiveMeta(
                 Icons.output_rounded,
                 '${active.maxOutputTokens} max tkns',
@@ -695,20 +693,19 @@ class _ModelsScreenState extends State<ModelsScreen> {
             ),
           ),
           const SizedBox(height: 6),
-          Row(
+          Wrap(
+            spacing: 10,
+            runSpacing: 6,
             children: [
               _buildActiveMeta(
                 Icons.memory_rounded,
                 activeWhisper.ram.replaceAll('Needs ', ''),
               ),
-              const SizedBox(width: 10),
               _buildActiveMeta(Icons.storage_rounded, activeWhisper.size),
-              const SizedBox(width: 10),
               _buildActiveMeta(
                 Icons.layers_rounded,
                 activeWhisper.quantization,
               ),
-              const SizedBox(width: 10),
               _buildActiveMeta(
                 Icons.language_rounded,
                 activeWhisper.modelFamily,

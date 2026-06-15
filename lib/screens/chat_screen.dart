@@ -339,11 +339,7 @@ class _ChatScreenState extends State<ChatScreen>
               ),
             ),
             const SizedBox(height: 32),
-            ...[
-              'Draft an email to schedule a sync',
-              'Explain quantum physics simply',
-              'Write a clean JavaScript utility',
-            ].map(
+            ...['What is trekking?', 'What is altitude sickness?'].map(
               (s) => Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: _buildSuggestionCard(s),

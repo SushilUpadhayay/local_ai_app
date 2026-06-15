@@ -40,7 +40,9 @@ class CompatibilityService {
       return 4 * 1024 * 1024 * 1024;
     } else if (model.id == 'qwen-1.5b') {
       return 6 * 1024 * 1024 * 1024;
-    } else if (model.id == 'gemma-2b') {
+    } else if (model.id == 'gemma-2b' || model.id == 'qwen-3b') {
+      return 6 * 1024 * 1024 * 1024; // Lowered to 6GB for 2B/3B models to work on 6GB phones
+    } else if (model.id == 'qwen-7b') {
       return 8 * 1024 * 1024 * 1024;
     }
     return 4 * 1024 * 1024 * 1024; // default to 4GB
@@ -54,6 +56,10 @@ class CompatibilityService {
       return 1200 * 1024 * 1024; // ~1.2 GB
     } else if (model.id == 'gemma-2b') {
       return 1600 * 1024 * 1024; // ~1.6 GB
+    } else if (model.id == 'qwen-3b') {
+      return 1900 * 1024 * 1024; // ~1.9 GB
+    } else if (model.id == 'qwen-7b') {
+      return 4400 * 1024 * 1024; // ~4.4 GB
     }
     return 500 * 1024 * 1024;
   }

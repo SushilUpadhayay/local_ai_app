@@ -189,7 +189,15 @@ class ToolRegistryService {
 
     final category = _stringArg(call.arguments, 'category');
     if (category.isNotEmpty) {
-      final allowed = ['route', 'landmarks', 'villages', 'hospitals', 'emergency', 'transport'];
+      final allowed = [
+        'route',
+        'landmarks',
+        'villages',
+        'hospitals',
+        'emergency',
+        'transport',
+        'itinerary',
+      ];
       if (!allowed.contains(category)) {
         final result = ToolValidationResult.invalid(
           'Invalid category: $category. Allowed: ${allowed.join(', ')}',
@@ -356,30 +364,10 @@ class ToolRegistryService {
   void _registerTrekTools() {
     final tools = <ToolDefinition>[
       ToolDefinition(
-        name: 'search_trek',
-        description:
-            'Searches supported offline Trek JSON databases by trek name, alias, or query.',
-        parametersSchema: _objectSchema(
-          {
-            'trekName': {
-              'type': 'string',
-              'description': 'Trek name, alias, or search query.',
-            },
-          },
-          const ['trekName'],
-        ),
-        executor: (args) => _trekKnowledgeService.search_trek(
-          _stringArg(args, 'trekName', fallbackKey: 'query'),
-        ),
-      ),
-      ToolDefinition(
         name: 'get_trek_overview',
         description:
             'Returns trek overview, difficulty, altitude, permits, seasons, and duration.',
-        parametersSchema: _objectSchema(
-          {'trek_name': _trek_nameProperty()},
-          const ['trek_name'],
-        ),
+        parametersSchema: _objectSchema(const {}, const []),
         executor: (args) => _trekKnowledgeService.get_trek_overview(
           _stringArg(args, 'trek_name'),
         ),
@@ -387,10 +375,9 @@ class ToolRegistryService {
       ToolDefinition(
         name: 'get_trek_details',
         description:
-            'Returns specific details for a trek like route, landmarks, villages, hospitals, emergency, or transport.',
+            'Returns specific details for a trek like route, landmarks, villages, hospitals, emergency, transport or itinerary.',
         parametersSchema: _objectSchema(
           {
-            'trek_name': _trek_nameProperty(),
             'category': {
               'type': 'string',
               'enum': [
@@ -400,11 +387,12 @@ class ToolRegistryService {
                 'hospitals',
                 'emergency',
                 'transport',
+                'itinerary',
               ],
               'description': 'The category of details to retrieve.',
             },
           },
-          const ['trek_name', 'category'],
+          const ['category'],
         ),
         executor: (args) => _trekKnowledgeService.get_trek_details(
           _stringArg(args, 'trek_name'),
@@ -413,48 +401,21 @@ class ToolRegistryService {
       ),
       ToolDefinition(
         name: 'get_trek_faq',
-        description:
-            'Returns the closest FAQ answer for a trek and user question.',
+        description: 'Returns the closest FAQ answer for a user question.',
         parametersSchema: _objectSchema(
           {
-            'trek_name': _trek_nameProperty(),
             'question': {
               'type': 'string',
               'description':
                   'The user question to match against offline trek FAQs.',
             },
           },
-          const ['trek_name', 'question'],
+          const ['question'],
         ),
         executor: (args) => _trekKnowledgeService.get_trek_faq(
           _stringArg(args, 'trek_name'),
           _stringArg(args, 'question'),
         ),
-      ),
-      ToolDefinition(
-        name: 'compare_treks',
-        description:
-            'Compares two or more treks side-by-side (difficulty, altitude, duration).',
-        parametersSchema: _objectSchema(
-          {
-            'trek_names': {
-              'type': 'array',
-              'items': _trek_nameProperty(),
-              'description': 'A list of trek names to compare.',
-            },
-          },
-          const ['trek_names'],
-        ),
-        executor: (args) {
-          final rawList = args['trek_names'];
-          final names = <String>[];
-          if (rawList is List) {
-            names.addAll(rawList.map((e) => e.toString()));
-          } else if (rawList is String) {
-            names.add(rawList);
-          }
-          return _trekKnowledgeService.compare_treks(names);
-        },
       ),
       ToolDefinition(
         name: 'list_available_treks',
@@ -507,28 +468,6 @@ class ToolRegistryService {
       _register(tool);
     }
   }
-
-  ToolDefinition _trekByIdTool({
-    required String name,
-    required String description,
-    required Map<String, dynamic> Function(String trekName) executor,
-  }) {
-    return ToolDefinition(
-      name: name,
-      description: description,
-      parametersSchema: _objectSchema(
-        {'trek_name': _trek_nameProperty()},
-        const ['trek_name'],
-      ),
-      executor: (args) => executor(_stringArg(args, 'trek_name')),
-    );
-  }
-
-  Map<String, dynamic> _trek_nameProperty() => {
-    'type': 'string',
-    'description': 'One of the supported offline trek IDs.',
-    'enum': _trekKnowledgeService.availableTrekNames,
-  };
 
   Map<String, dynamic> _objectSchema(
     Map<String, dynamic> properties,

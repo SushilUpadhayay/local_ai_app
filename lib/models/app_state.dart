@@ -633,9 +633,9 @@ class AppState extends ChangeNotifier {
         debugPrint('[Agent] General-chat bypass active. Generating final answer.');
         final prompt = _llmService.buildAgentPrompt(
           messages: agentMessages,
-          toolSchemas: toolSchemas,
+          toolSchemas: (_selectedtrek_name ?? lasttrekName) == null ? [] : toolSchemas,
           selectedTrekName: _selectedtrek_name,
-          lastTrekName: _selectedtrek_name ?? lasttrekName,
+          lastTrekName: lasttrekName,
           allowTools: false,
         );
         finalResponse = await _streamResponse(
@@ -656,10 +656,10 @@ class AppState extends ChangeNotifier {
 
         final prompt = _llmService.buildAgentPrompt(
           messages: agentMessages,
-          toolSchemas: toolSchemas,
+          toolSchemas: (_selectedtrek_name ?? lasttrekName) == null ? [] : toolSchemas,
           selectedTrekName: _selectedtrek_name,
-          lastTrekName: _selectedtrek_name ?? lasttrekName,
-          allowTools: !forceFinalAnswer,
+          lastTrekName: lasttrekName,
+          allowTools: (_selectedtrek_name ?? lasttrekName) != null && !forceFinalAnswer,
         );
         final responseText = await _llmService.generateText(
           prompt,
@@ -773,9 +773,9 @@ class AppState extends ChangeNotifier {
         debugPrint('[Agent] Generating final response after tool results.');
         final prompt = _llmService.buildAgentPrompt(
           messages: agentMessages,
-          toolSchemas: toolSchemas,
+          toolSchemas: (_selectedtrek_name ?? lasttrekName) == null ? [] : toolSchemas,
           selectedTrekName: _selectedtrek_name,
-          lastTrekName: _selectedtrek_name ?? lasttrekName,
+          lastTrekName: lasttrekName,
           allowTools: false,
         );
         finalResponse = await _streamResponse(
@@ -902,7 +902,7 @@ class AppState extends ChangeNotifier {
     final selected = _selectedtrek_name ?? fallbackTrekName;
     if (selected == null) return calls;
     return calls.map((call) {
-      if (!_toolRegistryService.requiresTrekName(call.name)) return call;
+      if (['get_used_tools', 'get_tool_history', 'get_reasoning_trace', 'list_available_treks'].contains(call.name)) return call;
       final trekName = call.arguments['trek_name']?.toString().trim() ?? '';
       if (trekName.isNotEmpty) {
         debugPrint(

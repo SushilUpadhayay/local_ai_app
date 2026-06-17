@@ -1,6 +1,5 @@
 // ignore_for_file: non_constant_identifier_names
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'package:llama_cpp_dart/llama_cpp_dart.dart';
 import 'package:flutter/foundation.dart';
@@ -243,191 +242,88 @@ class LocalLlmService implements LlmService {
 
   // Prompt builders
 
-  String buildAgentSystemPrompt(String selectedTrekName, List<Map<String, dynamic>> toolSchemas) {
+  String buildRouterPrompt({
+    required List<Map<String, dynamic>> messages,
+    required List<String> availableTreks,
+  }) {
     final buf = StringBuffer();
-
-    if (selectedTrekName == 'none') {
-      buf.writeln('<|im_start|>system');
-      buf.writeln('You are a helpful, general conversational AI.');
-      buf.writeln('You do NOT have access to trekking data right now.');
-      buf.writeln(
-        'If the user asks ANY question specifically about a Nepal trek, route, itinerary, or trekking advice, you MUST decline and reply EXACTLY with:',
-      );
-      buf.writeln(
-        '"Please select a trek to access trek-specific information."',
-      );
-      buf.writeln('Answer all other general questions normally.');
-      buf.writeln('<|im_end|>');
-      return buf.toString();
-    }
-    debugPrint('DEBUG: selected trek name: $selectedTrekName');
-
     buf.writeln('<|im_start|>system');
-    buf.writeln(
-      'You are the official offline assistant for the $selectedTrekName.',
-    );
-    buf.writeln(
-      'You have NO native geographic knowledge. You must use the provided tools to answer questions about this trek.',
-    );
-    buf.writeln(
-      'If the user asks about a different trek, tell them they must change their selected trek in the app first.',
-    );
+    buf.writeln('You are an offline query router for a Nepal trekking app.');
+    buf.writeln('Your job is to classify the user\'s last query into one of two Types:');
+    buf.writeln('1. "chat": For general greetings, chit-chat, jokes, thanks, or questions unrelated to Nepal treks.');
+    buf.writeln('2. "tool": For specific questions about Nepal treks, difficulty, altitude, itinerary, landmarks, villages, accommodations, medical help, safety, transport, packing, or FAQs.');
     buf.writeln('');
-    buf.writeln('# TOOLS');
-    buf.writeln('You have access to the following tools:');
-    buf.writeln('```json');
-    buf.writeln(jsonEncode(toolSchemas));
-    buf.writeln('```');
+    buf.writeln('Available Trek Names:');
+    for (final trek in availableTreks) {
+      buf.writeln('- "$trek"');
+    }
     buf.writeln('');
-    buf.writeln('# TOOL SCHEMA REFERENCE');
-    buf.writeln('```json');
-    buf.writeln('{');
-    buf.writeln('  "tool_calls": [');
-    buf.writeln('    {');
-    buf.writeln('      "id": "ID_STRING",');
-    buf.writeln('      "type": "function",');
-    buf.writeln('      "function": {');
-    buf.writeln('        "name": "TOOL_NAME",');
-    buf.writeln('        "arguments": {"PARAM_NAME": "VALUE"}');
-    buf.writeln('      }');
-    buf.writeln('    }');
-    buf.writeln('  ]');
-    buf.writeln('}');
-    buf.writeln('```');
+    buf.writeln('If the Type is "tool", specify the ToolName and Category/Question:');
+    buf.writeln('- ToolNames:');
+    buf.writeln('  * "list_available_treks": If the user wants a list of available treks or is comparing treks.');
+    buf.writeln('  * "get_trek_overview": For general description, difficulty, duration, best season, altitude, or general queries about a specific trek.');
+    buf.writeln('  * "get_trek_details": For specific details on a trek. Must specify one of these Categories:');
+    buf.writeln('    - "route": itinerary, route, trail, path, map, distance, days');
+    buf.writeln('    - "landmarks": sights, peaks, viewpoints, highlights, mountains');
+    buf.writeln('    - "villages": tea houses, lodges, accommodation, stays, hotels');
+    buf.writeln('    - "hospitals": clinics, medical aid, doctors, health posts');
+    buf.writeln('    - "emergency": safety, rescue, contacts, evacuation, dangers');
+    buf.writeln('    - "transport": travel, bus, flight, jeep, airport, how to get there');
+    buf.writeln('  * "get_trek_faq": For general questions (food, water, Wi-Fi, electricity, gear, SIM card, permits, costs, ATMs). Specify the Question parameter.');
+    buf.writeln('');
+    buf.writeln('Format your output EXACTLY like one of these two blocks, with no markdown backticks, prose, or introductions:');
+    buf.writeln('=== FORMAT FOR CHAT ===');
+    buf.writeln('Type: chat');
+    buf.writeln('ChatResponse: [Write a friendly direct reply to the user\'s message here]');
+    buf.writeln('=======================');
+    buf.writeln('');
+    buf.writeln('=== FORMAT FOR TOOL ===');
+    buf.writeln('Type: tool');
+    buf.writeln('TrekName: [Name of the trek, e.g. annapurna_base_camp, everest_base_camp, langtang_valley_base, or "none"]');
+    buf.writeln('ToolName: [Name of the tool, e.g. get_trek_details]');
+    buf.writeln('Category: [Category string for get_trek_details, or "none"]');
+    buf.writeln('Question: [User\'s specific query for get_trek_faq, or "none"]');
+    buf.writeln('=======================');
     buf.writeln('<|im_end|>');
 
+    for (final msg in messages) {
+      final role = (msg['role'] as String? ?? 'user').trim();
+      final content = msg['content']?.toString() ?? '';
+      buf.writeln('<|im_start|>$role');
+      buf.writeln(content);
+      buf.write('<|im_end|>\n');
+    }
+
+    buf.writeln('<|im_start|>assistant');
     return buf.toString();
   }
 
-  String buildAgentPrompt({
+  String buildRephrasePrompt({
+    required String context,
     required List<Map<String, dynamic>> messages,
-    required List<Map<String, dynamic>> toolSchemas,
-    String? selectedTrekName,
-    String? lastTrekName,
-    bool allowTools = true,
   }) {
-    debugPrint('\n==============================');
-    debugPrint('BUILD AGENT PROMPT');
-    debugPrint('allowTools: $allowTools');
-    debugPrint('selectedTrekName: $selectedTrekName');
-    debugPrint('lastTrekName: $lastTrekName');
-    debugPrint('messageCount: ${messages.length}');
-    debugPrint('==============================\n');
+    final buf = StringBuffer();
+    buf.writeln('<|im_start|>system');
+    buf.writeln('You are a helpful Nepal trekking assistant.');
+    buf.writeln('Answer the user\'s question ONLY using the verified offline information in the CONTEXT block below.');
+    buf.writeln('Be direct, concise, and accurate. Do NOT make up any facts or details not present in the CONTEXT.');
+    buf.writeln('If the CONTEXT says no data was found or doesn\'t have the details, politely say: "I don\'t have that information in my offline database."');
+    buf.writeln('');
+    buf.writeln('=== CONTEXT ===');
+    buf.writeln(context);
+    buf.writeln('===============');
+    buf.writeln('<|im_end|>');
 
-    final buffer = StringBuffer()
-      ..writeln(
-        buildAgentSystemPrompt(selectedTrekName ?? lastTrekName ?? 'none', toolSchemas),
-      );
-
-    if (!allowTools) {
-      debugPrint('TOOLS DISABLED FOR THIS GENERATION');
-
-      buffer.writeln('<|im_start|>system');
-      buffer.writeln(
-        'For this response, do not call tools. Produce the final answer from the available messages and tool results.',
-      );
-      buffer.write('<|im_end|>\n');
+    for (final msg in messages) {
+      final role = (msg['role'] as String? ?? 'user').trim();
+      final content = msg['content']?.toString() ?? '';
+      buf.writeln('<|im_start|>$role');
+      buf.writeln(content);
+      buf.write('<|im_end|>\n');
     }
 
-    debugPrint('\n===== RAW INPUT MESSAGES =====');
-    debugPrint(const JsonEncoder.withIndent('  ').convert(messages));
-    debugPrint('==============================\n');
-
-    for (int i = 0; i < messages.length; i++) {
-      final message = messages[i];
-
-      final role = (message['role'] as String? ?? 'user').trim();
-      final content = message['content']?.toString() ?? '';
-
-      debugPrint('\n----- MESSAGE $i -----');
-      debugPrint('ROLE: $role');
-      debugPrint('CONTENT: $content');
-
-      switch (role) {
-        case 'tool':
-          debugPrint('TOOL MESSAGE FOUND');
-          debugPrint('tool_call_id: ${message['tool_call_id']}');
-          debugPrint('tool_name: ${message['name']}');
-          debugPrint('tool_content: $content');
-
-          buffer
-            ..writeln('<|im_start|>tool')
-            ..writeln(
-              jsonEncode({
-                'tool_call_id': message['tool_call_id'],
-                'name': message['name'],
-                'content': content,
-              }),
-            )
-            ..write('<|im_end|>\n');
-
-          break;
-
-        case 'system':
-        case 'user':
-        case 'assistant':
-          final toolCalls = message['tool_calls'];
-
-          if (toolCalls != null) {
-            debugPrint('TOOL CALLS PRESENT');
-            debugPrint(jsonEncode(toolCalls));
-          }
-
-          // Detect suspicious assistant messages
-          if (role == 'assistant' &&
-              content.contains('Tool execution is complete')) {
-            debugPrint(
-              'WARNING: INTERNAL TOOL INSTRUCTION FOUND IN CHAT HISTORY',
-            );
-          }
-
-          buffer
-            ..writeln('<|im_start|>$role')
-            ..writeln(content);
-
-          if (toolCalls is List && toolCalls.isNotEmpty) {
-            buffer.writeln(jsonEncode({'tool_calls': toolCalls}));
-          }
-
-          buffer.write('<|im_end|>\n');
-          break;
-
-        default:
-          debugPrint('UNKNOWN ROLE: $role');
-
-          buffer
-            ..writeln('<|im_start|>user')
-            ..writeln(content)
-            ..write('<|im_end|>\n');
-      }
-    }
-
-    if (!allowTools) {
-      debugPrint('ADDING FINAL NO-TOOLS SYSTEM MESSAGE');
-
-      buffer.writeln('<|im_start|>system');
-      buffer.writeln(
-        'Tool execution is complete. Use the tool results above to answer the user. '
-        'Do not generate tool_calls. Do not request additional tools. '
-        'Produce the final response only.',
-      );
-      buffer.write('<|im_end|>\n');
-    }
-
-    buffer.writeln('<|im_start|>assistant');
-
-    final prompt = buffer.toString();
-
-    debugPrint('\n===== PROMPT STATS =====');
-    debugPrint('Prompt length: ${prompt.length}');
-    debugPrint('Tool schemas count: ${toolSchemas.length}');
-    debugPrint('========================\n');
-
-    debugPrint('\n===== FINAL PROMPT =====');
-    debugPrint(prompt);
-    debugPrint('===== END PROMPT =====\n');
-
-    return prompt;
+    buf.writeln('<|im_start|>assistant');
+    return buf.toString();
   }
 
   @override

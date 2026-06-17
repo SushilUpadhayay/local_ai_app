@@ -9,7 +9,7 @@ class ModelRepository {
   late File _metadataFile;
 
   Future<void> init() async {
-    final appDocDir = await getApplicationDocumentsDirectory();
+    final appDocDir = await getApplicationSupportDirectory();
     _modelsDir = Directory('${appDocDir.path}/models');
     if (!await _modelsDir.exists()) {
       await _modelsDir.create(recursive: true);
@@ -18,6 +18,53 @@ class ModelRepository {
       '[ModelRepository] Initialized models directory: ${_modelsDir.path}',
     );
     _metadataFile = File('${_modelsDir.path}/metadata_v2.json');
+
+    // One-time migration: move any files downloaded into the old
+    // app_flutter/models/ path (getApplicationDocumentsDirectory) into the new
+    // files/models/ path (getApplicationSupportDirectory) so that the native
+    // llama.cpp library can open them.
+    await _migrateFromLegacyPath();
+  }
+
+  /// Migrates model files from the legacy documents directory to the current
+  /// support directory. Safe to call on every launch — exits immediately if the
+  /// old directory does not exist.
+  Future<void> _migrateFromLegacyPath() async {
+    try {
+      final oldBase = await getApplicationDocumentsDirectory();
+      final oldModelsDir = Directory('${oldBase.path}/models');
+      if (!await oldModelsDir.exists()) return;
+
+      debugPrint(
+        '[ModelRepository] Legacy models dir found at ${oldModelsDir.path}, migrating…',
+      );
+
+      await for (final entity in oldModelsDir.list(recursive: true)) {
+        if (entity is! File) continue;
+        final relativePath = entity.path
+            .substring(oldModelsDir.path.length)
+            .replaceAll('\\', '/');
+        final newFile = File('${_modelsDir.path}$relativePath');
+
+        if (!await newFile.exists()) {
+          await newFile.parent.create(recursive: true);
+          await entity.copy(newFile.path);
+          debugPrint(
+            '[ModelRepository] Migrated: ${entity.path} → ${newFile.path}',
+          );
+        }
+        await entity.delete();
+      }
+
+      // Remove the now-empty legacy directory tree
+      try {
+        await oldModelsDir.delete(recursive: true);
+      } catch (_) {}
+
+      debugPrint('[ModelRepository] Migration complete.');
+    } catch (e) {
+      debugPrint('[ModelRepository] Migration warning (non-fatal): $e');
+    }
   }
 
   String getLocalPathForModel(String id) {

@@ -84,8 +84,6 @@ class TrekKnowledgeService {
     return q;
   }
 
-
-
   Map<String, String>? _findMatchingFaq(
     String trekName,
     String preprocessedQuery,
@@ -212,12 +210,10 @@ class TrekKnowledgeService {
     return response;
   }
 
-
-
   Map<String, dynamic> get_trek_overview(String trekName) {
     return _executeWithCache('get_trek_overview', trekName, () {
       final trek = _trekData[trekName];
-      if (trek == null)
+      if (trek == null) {
         return _standardResponse(
           success: false,
           tool: 'get_trek_overview',
@@ -225,6 +221,7 @@ class TrekKnowledgeService {
           error: 'Trek not found',
           data: {},
         );
+      }
       return _standardResponse(
         success: true,
         tool: 'get_trek_overview',
@@ -238,7 +235,7 @@ class TrekKnowledgeService {
     final cacheKey = '${trekName}_$categoryVal';
     return _executeWithCache('get_trek_details', cacheKey, () {
       final trek = _trekData[trekName];
-      if (trek == null)
+      if (trek == null) {
         return _standardResponse(
           success: false,
           tool: 'get_trek_details',
@@ -246,12 +243,13 @@ class TrekKnowledgeService {
           error: 'Trek not found',
           data: {},
         );
+      }
 
       String effectiveCategory = categoryVal;
       if (effectiveCategory == 'itinerary') effectiveCategory = 'route';
 
       final category = TrekCategory.fromString(effectiveCategory);
-      if (category == null)
+      if (category == null) {
         return _standardResponse(
           success: false,
           tool: 'get_trek_details',
@@ -259,8 +257,9 @@ class TrekKnowledgeService {
           error: 'Invalid category: $categoryVal',
           data: {},
         );
+      }
       final detailData = trek.details[category];
-      if (detailData == null)
+      if (detailData == null) {
         return _standardResponse(
           success: false,
           tool: 'get_trek_details',
@@ -268,6 +267,7 @@ class TrekKnowledgeService {
           error: 'Category details not found: ${category.name}',
           data: {},
         );
+      }
 
       if (categoryVal == 'itinerary' && detailData.containsKey('itinerary')) {
         return _standardResponse(
@@ -289,7 +289,7 @@ class TrekKnowledgeService {
   Map<String, dynamic> get_trek_faq(String trekName, String question) {
     final cleanQuery = preprocessQuery(question);
     final faqResult = _findMatchingFaq(trekName, cleanQuery);
-    if (faqResult == null)
+    if (faqResult == null) {
       return _standardResponse(
         success: false,
         tool: 'get_trek_faq',
@@ -297,6 +297,7 @@ class TrekKnowledgeService {
         error: 'No matching FAQ answer found.',
         data: {},
       );
+    }
     return _standardResponse(
       success: true,
       tool: 'get_trek_faq',
@@ -304,8 +305,6 @@ class TrekKnowledgeService {
       data: faqResult,
     );
   }
-
-
 
   Map<String, dynamic> list_available_treks() {
     return _executeWithCache('list_available_treks', 'all', () {

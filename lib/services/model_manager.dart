@@ -272,7 +272,7 @@ class ModelManager {
     } else if (model.id == 'qwen-1.5b') {
       if (deviceRamGb >= 6) return 'recommended';
       return 'slow';
-    } else if (model.id == 'gemma-2b' || model.id == 'qwen-3b') {
+    } else if (model.id == 'gemma-2b' || model.id == 'gemma-4-e4b' || model.id == 'qwen-3b') {
       if (deviceRamGb >= 8) return 'recommended';
       if (deviceRamGb >= 6) return 'slow';
       return 'not_recommended';

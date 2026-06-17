@@ -39,9 +39,9 @@ class CompatibilityService {
     if (model.id == 'qwen-0.5b') {
       return 4 * 1024 * 1024 * 1024;
     } else if (model.id == 'qwen-1.5b') {
-      return 6 * 1024 * 1024 * 1024;
-    } else if (model.id == 'gemma-2b' || model.id == 'qwen-3b') {
-      return 6 * 1024 * 1024 * 1024; // Lowered to 6GB for 2B/3B models to work on 6GB phones
+      return 4 * 1024 * 1024 * 1024; // Safe for 1.2GB size model
+    } else if (model.id == 'gemma-2b' || model.id == 'gemma-4-e4b' || model.id == 'qwen-3b') {
+      return 5 * 1024 * 1024 * 1024; // Safe threshold for 6GB devices with OS reservations
     } else if (model.id == 'qwen-7b') {
       return 8 * 1024 * 1024 * 1024;
     }
@@ -56,6 +56,8 @@ class CompatibilityService {
       return 1200 * 1024 * 1024; // ~1.2 GB
     } else if (model.id == 'gemma-2b') {
       return 1600 * 1024 * 1024; // ~1.6 GB
+    } else if (model.id == 'gemma-4-e4b') {
+      return 2500 * 1024 * 1024; // ~2.5 GB
     } else if (model.id == 'qwen-3b') {
       return 1900 * 1024 * 1024; // ~1.9 GB
     } else if (model.id == 'qwen-7b') {

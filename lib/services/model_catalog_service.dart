@@ -56,6 +56,21 @@ class ModelCatalogService {
         modelFamily: 'Gemma',
       ),
       ModelItem(
+        id: 'gemma-4-e4b',
+        name: 'Gemma 4 E4B',
+        fullName: 'Gemma 4 E4B Instruct (Q4_K_M)',
+        size: '2.5 GB',
+        ram: 'Needs 6GB RAM',
+        status: 'available',
+        active: false,
+        category: 'Advanced Text',
+        url:
+            'https://huggingface.co/unsloth/gemma-4-E4B-it-GGUF/resolve/main/gemma-4-E4B-it-Q4_K_M.gguf',
+        quantization: 'Q4_K_M',
+        contextWindow: 4096,
+        modelFamily: 'Gemma',
+      ),
+      ModelItem(
         id: 'qwen-3b',
         name: 'Qwen 3B',
         fullName: 'Qwen 2.5 3B Instruct (Q4_K_M)',

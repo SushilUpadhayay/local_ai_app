@@ -9,6 +9,14 @@ import 'screens/models_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Override debugPrint to print directly to stdout/terminal
+  debugPrint = (String? message, {int? wrapWidth}) {
+    if (message != null) {
+      print(message);
+    }
+  };
+
   runApp(const LocalAiApp());
 }
 
@@ -272,8 +280,7 @@ class _MainScaffoldState extends State<MainScaffold> {
                       itemBuilder: (context, index) {
                         final trek = treks[index];
                         final trekName = trek['trek_name']?.toString() ?? '';
-                        final selected =
-                            trekName == _appState.selectedTrekName;
+                        final selected = trekName == _appState.selectedTrekName;
                         return ListTile(
                           leading: Icon(
                             selected

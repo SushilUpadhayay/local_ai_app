@@ -181,7 +181,7 @@ class ToolRegistryService {
     if (trekName.isNotEmpty &&
         !_trekKnowledgeService.isValidTrekName(trekName)) {
       final result = ToolValidationResult.invalid(
-        'Invalid trekName: $trekName',
+        'Invalid trek_name: $trekName',
       );
       debugPrint('[ToolRegistry] VALIDATE FAIL → ${result.error}');
       return result;
@@ -366,8 +366,16 @@ class ToolRegistryService {
       ToolDefinition(
         name: 'get_trek_overview',
         description:
-            'Returns trek overview, difficulty, altitude, permits, seasons, and duration.',
-        parametersSchema: _objectSchema(const {}, const []),
+            'Use this to get the general overview of the selected trek, including difficulty level, maximum altitude, standard duration (days), permits required, best seasons, and general description.',
+        parametersSchema: _objectSchema(
+          {
+            'trek_name': {
+              'type': 'string',
+              'description': 'The name of the trek.',
+            },
+          },
+          const ['trek_name'],
+        ),
         executor: (args) => _trekKnowledgeService.get_trek_overview(
           _stringArg(args, 'trek_name'),
         ),
@@ -375,7 +383,13 @@ class ToolRegistryService {
       ToolDefinition(
         name: 'get_trek_details',
         description:
-            'Returns specific details for a trek like route, landmarks, villages, hospitals, emergency, transport or itinerary.',
+            'Use this to retrieve specific categorized details about the selected trek. Requires category parameter. Category mappings:\n'
+            '- "route": itinerary, route, trail, path, map, distance, days, itinerary, trek route\n'
+            '- "landmarks": landmarks, places, points of interest, mountains, peaks, sights, viewpoints, highlights\n'
+            '- "villages": villages, settlements, towns, stops, teahouses, lodges, hotels, accommodation, stays\n'
+            '- "hospitals": hospitals, clinics, medical, doctor posts, health aid, pharmacies\n'
+            '- "emergency": emergency, rescue, safety, dangers, risks, evacuation, emergency contact numbers\n'
+            '- "transport": transport, bus, flights, jeep, travel, airport, how to get there',
         parametersSchema: _objectSchema(
           {
             'category': {
@@ -387,12 +401,15 @@ class ToolRegistryService {
                 'hospitals',
                 'emergency',
                 'transport',
-                'itinerary',
               ],
-              'description': 'The category of details to retrieve.',
+              'description': 'The category of details to retrieve. Must be one of the allowed enums.',
+            },
+            'trek_name': {
+              'type': 'string',
+              'description': 'The name of the trek.',
             },
           },
-          const ['category'],
+          const ['category', 'trek_name'],
         ),
         executor: (args) => _trekKnowledgeService.get_trek_details(
           _stringArg(args, 'trek_name'),
@@ -401,16 +418,21 @@ class ToolRegistryService {
       ),
       ToolDefinition(
         name: 'get_trek_faq',
-        description: 'Returns the closest FAQ answer for a user question.',
+        description:
+            'Use this when the user asks a specific question about the trek that is not a simple request for route/village/medical/transport details (e.g. food, water, Wi-Fi, electricity charging, SIM card, gear, packing, clothing, offline mapping, guides/porters, costs, payments, ATM). Requires the exact question.',
         parametersSchema: _objectSchema(
           {
             'question': {
               'type': 'string',
               'description':
-                  'The user question to match against offline trek FAQs.',
+                  'The user question or topic to search within offline FAQs.',
+            },
+            'trek_name': {
+              'type': 'string',
+              'description': 'The name of the trek.',
             },
           },
-          const ['question'],
+          const ['question', 'trek_name'],
         ),
         executor: (args) => _trekKnowledgeService.get_trek_faq(
           _stringArg(args, 'trek_name'),

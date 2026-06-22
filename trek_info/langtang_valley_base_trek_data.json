@@ -8,1125 +8,140 @@
     "langtang valley trek",
     "langtang trek"
   ],
-  "overview": {
-    "trek_name": "Langtang Valley Base Trek (Langtang Valley Trek)",
-    "overview": "The Langtang Valley Base Trek is one of Nepal's most popular short treks, located north of Kathmandu in Langtang National Park. This moderate trek takes you through the beautiful Langtang Valley bound by the Langtang River, offering glorious views of the Langtang Himal range. The trek passes through dense pine and rhododendron forests, alpine pastures, traditional Tamang villages, and ancient monasteries. Langtang Village is a quiet settlement nestled in the foothills of Langtang Lirung (7,234m). The trek culminates at Kyanjin Gompa (3,870m), a spiritual center with panoramic views of Langtang peaks and glaciers. From Kyanjin Gompa, trekkers can hike Kyanjin Ri (4,773m) or Tsergo Ri (5,033m) for spectacular viewpoints.",
-    "region": "Langtang National Park, Northern Nepal, Gandaki Province (formerly Bagmati Province)",
-    "districts": [
-      "Sindhupalchok District"
-    ],
-    "maximum_altitude": {
-      "value_meters": 3900,
-      "value_feet": 12795,
-      "location": "Kyanjin Gompa",
-      "note": "Kyanjin Ri at 4,773m and Tsergo Ri at 5,033m are optional hikes for viewpoints"
-    },
-    "difficulty_level": "Moderate",
-    "trek_duration": {
-      "minimum_days": 7,
-      "standard_days": "8",
-      "maximum_days": 10,
-      "note": "Includes 1 acclimatization day at Kyanjin Gompa"
-    },
-    "total_distance": {
-      "round_trip_km": "50-60",
-      "note": "From Syabrubesi to Kyanjin Gompa and back"
-    }
-  },
   "details": {
-    "route": {
-      "starting_point": {
-        "name": "Syabrubesi",
-        "altitude_meters": 1503,
-        "altitude_feet": 4931,
-        "latitude": 28.1167,
-        "longitude": 85.7833,
-        "note": "Nearest motorable roadhead, 8 hours drive from Kathmandu"
-      },
-      "ending_point": {
-        "\"name\": \"Syabrubesi\" (return) or \"Kathmandu\",altitude_meters": 1503,
-        "note": "Most trekkers return to Syabrubesi and drive back to Kathmandu"
-      },
-      "villages_in_order": [
-        {
-          "name": "Syabrubesi",
-          "altitude_meters": 1503
-        },
-        {
-          "name": "Bamboo",
-          "altitude_meters": 1960
-        },
-        {
-          "name": "Rimche",
-          "altitude_meters": 2400
-        },
-        {
-          "name": "Lama Hotel",
-          "altitude_meters": 2480
-        },
-        {
-          "name": "Ghora Tabela",
-          "altitude_meters": 3000
-        },
-        {
-          "name": "Langtang Village",
-          "altitude_meters": 3430
-        },
-        {
-          "name": "Kyanjin Gompa",
-          "altitude_meters": 3870
-        }
+    "info": {
+      "information": [
+        "Langtang Valley Base Trek is a moderate trek north of Kathmandu in Langtang National Park.",
+        "The maximum altitude reached on the standard trail is 3,870m (12,700ft) at Kyanjin Gompa.",
+        "Optional viewpoint hikes include Kyanjin Ri (4,773m) and Tsergo Ri (5,033m) for panoramic views.",
+        "The standard duration of the trek is 8 days, including 1 acclimatization day at Kyanjin Gompa."
       ],
-      "itinerary": [
-        {
-          "day": 1,
-          "route": "Kathmandu to Syabrubesi (drive)",
-          "walking_hours": "0",
-          "distance_km": 0,
-          "drive_hours": "8",
-          "elevation_gain_meters": 103,
-          "elevation_start_meters": 1400,
-          "elevation_end_meters": 1503,
-          "accommodation": "Syabrubesi",
-          "note": "122 km drive, crosses Bhote Koshi, follows Trishuli River"
-        },
-        {
-          "day": 2,
-          "route": "Syabrubesi to Lama Hotel",
-          "walking_hours": "6-7",
-          "distance_km": 10,
-          "elevation_gain_meters": 977,
-          "elevation_start_meters": 1503,
-          "elevation_end_meters": 2480,
-          "accommodation": "Lama Hotel",
-          "note": "Follows Langtang Khola, dense forest, continuous ups and downs"
-        },
-        {
-          "day": 3,
-          "route": "Lama Hotel to Langtang Village via Ghora Tabela",
-          "walking_hours": "5-6",
-          "distance_km": 12,
-          "elevation_gain_meters": 950,
-          "elevation_start_meters": 2480,
-          "elevation_end_meters": 3430,
-          "accommodation": "Langtang Village",
-          "note": "Pass Ghora Tabela (3,000m), valley opens, yak pastures"
-        },
-        {
-          "day": 4,
-          "route": "Langtang Village to Kyanjin Gompa",
-          "walking_hours": "3-4",
-          "distance_km": 5,
-          "elevation_gain_meters": 440,
-          "elevation_start_meters": 3430,
-          "elevation_end_meters": 3870,
-          "accommodation": "Kyanjin Gompa",
-          "note": "Easy ascent, cheese factory at Kyanjin"
-        },
-        {
-          "day": 5,
-          "route": "Acclimatization day at Kyanjin Gompa - hike Kyanjin Ri",
-          "walking_hours": "4-5",
-          "distance_km": 8,
-          "elevation_gain_meters": 903,
-          "elevation_lost_meters": 903,
-          "elevation_start_meters": 3870,
-          "elevation_end_meters": 3870,
-          "accommodation": "Kyanjin Gompa",
-          "note": "Hike to Kyanjin Ri (4,773m), sunrise views of Langtang peaks"
-        },
-        {
-          "day": 6,
-          "route": "Kyanjin Gompa to Langtang Village",
-          "walking_hours": "3-4",
-          "distance_km": 5,
-          "elevation_gain_meters": 0,
-          "elevation_lost_meters": 440,
-          "elevation_start_meters": 3870,
-          "elevation_end_meters": 3430,
-          "accommodation": "Langtang Village",
-          "note": "Gentle descent"
-        },
-        {
-          "day": 7,
-          "route": "Langtang Village to Lama Hotel",
-          "walking_hours": "5-6",
-          "distance_km": 12,
-          "elevation_gain_meters": 0,
-          "elevation_lost_meters": 950,
-          "elevation_start_meters": 3430,
-          "elevation_end_meters": 2480,
-          "accommodation": "Lama Hotel",
-          "note": "Long descent via Ghora Tabela"
-        },
-        {
-          "day": 8,
-          "route": "Lama Hotel to Syabrubesi to Kathmandu",
-          "walking_hours": "5-6",
-          "distance_km": 10,
-          "drive_hours": "8",
-          "elevation_gain_meters": 0,
-          "elevation_lost_meters": 977,
-          "elevation_start_meters": 2480,
-          "elevation_end_meters": 1400,
-          "accommodation": "Kathmandu",
-          "note": "Trek to Syabrubesi, then drive back to Kathmandu"
-        }
-      ],
-      "elevation_profile_summary": {
-        "lowest_point_meters": 1400,
-        "lowest_point_location": "Kathmandu",
-        "trek_start_meters": 1503,
-        "highest_point_meters": 3870,
-        "highest_point_location": "Kyanjin Gompa",
-        "optional_hike_kyanjin_ri_meters": 4773,
-        "optional_hike_tsergo_ri_meters": 5033,
-        "total_ascent_meters": "~2500 (cumulative)",
-        "total_descent_meters": "~2500 (cumulative)",
-        "key_elevation_milestones": [
-          {
-            "location": "Kathmandu",
-            "altitude_meters": 1400
-          },
-          {
-            "location": "Syabrubesi",
-            "altitude_meters": 1503
-          },
-          {
-            "location": "Bamboo",
-            "altitude_meters": 1960
-          },
-          {
-            "location": "Rimche",
-            "altitude_meters": 2400
-          },
-          {
-            "location": "Lama Hotel",
-            "altitude_meters": 2480
-          },
-          {
-            "location": "Ghora Tabela",
-            "altitude_meters": 3000
-          },
-          {
-            "location": "Langtang Village",
-            "altitude_meters": 3430
-          },
-          {
-            "location": "Kyanjin Gompa",
-            "altitude_meters": 3870
-          },
-          {
-            "location": "Kyanjin Ri",
-            "altitude_meters": 4773
-          },
-          {
-            "location": "Tsergo Ri",
-            "altitude_meters": 5033
-          }
-        ]
-      }
+      "additional_information": [
+        "This is one of the closest trekking regions to Kathmandu, offering spectacular glaciers without extreme altitude risks."
+      ]
     },
-    "hospitals": {
-      "health_posts": [
-        {
-          "name": "No health posts on Langtang route",
-          "note": "Basic facilities only at villages; serious cases require helicopter evacuation to Kathmandu"
-        }
+    "route": {
+      "information": [
+        "The starting trailhead is Syabrubesi (1,503m), reached via an 8-hour drive from Kathmandu.",
+        "The ending point is Syabrubesi, from where trekkers drive back to Kathmandu.",
+        "The total round-trip distance is approximately 50 to 60 kilometers.",
+        "Trekkers walk an average of 5 to 7 hours per day, covering 5 to 12 kilometers daily.",
+        "Day 1: Kathmandu to Syabrubesi (8 hours drive, 122 km).",
+        "Day 2: Syabrubesi to Lama Hotel (6-7 hours, 10km, follow Langtang Khola).",
+        "Day 3: Lama Hotel to Langtang Village via Ghora Tabela (5-6 hours, 12km).",
+        "Day 4: Langtang Village to Kyanjin Gompa (3-4 hours, 5km, easy ascent).",
+        "Day 5: Acclimatization day at Kyanjin Gompa, hike Kyanjin Ri or Tsergo Ri (4-7 hours).",
+        "Day 6: Kyanjin Gompa to Langtang Village (3-4 hours, 5km).",
+        "Day 7: Langtang Village to Lama Hotel (5-6 hours, 12km).",
+        "Day 8: Lama Hotel to Syabrubesi to Kathmandu (5-6 hours walk, 8 hours drive)."
       ],
-      "medical_centers": [
-        {
-          "name": "No hospitals/clinics on Langtang trek route",
-          "note": "Serious cases require helicopter evacuation"
-        },
-        {
-          "name": "Kathmandu Hospitals",
-          "location": "Kathmandu",
-          "altitude_meters": 1400,
-          "type": "Full medical facilities",
-          "note": "Primary destination for helicopter evacuation"
-        }
+      "additional_information": [
+        "The trek is a linear out-and-back trail following the course of the Langtang Khola river."
+      ]
+    },
+    "landmarks": {
+      "information": [
+        "Peaks visible include Langtang Lirung (7,234m), Langtang Ri (7,205m), Dorje Lakpa (6,966m), Loenpo Gang (6,979m), and Yala Peak (5,520m).",
+        "Kyanjin Ri (4,773m) and Tsergo Ri (5,033m) are the key viewpoints overlooking Langtang peaks and glaciers.",
+        "The trail follows the glacial Langtang Khola river and passes through pine and rhododendron forests.",
+        "Kyanjin Gompa is a spiritual Buddhist center featuring an ancient local monastery."
+      ],
+      "additional_information": [
+        "Memorial chortens in Langtang Village commemorate the victims of the devastating 2015 earthquake avalanche."
       ]
     },
     "villages": {
-      "major_settlements": [
-        {
-          "name": "Syabrubesi",
-          "altitude_meters": 1503,
-          "latitude": 28.1167,
-          "longitude": 85.7833,
-          "facilities": [
-            "Tea houses",
-            "Small shops",
-            "Bus stop",
-            "Tourist information",
-            "Electricity"
-          ],
-          "lodging": "Multiple tea houses",
-          "lodging_type": "Basic rooms"
-        },
-        {
-          "name": "Bamboo",
-          "altitude_meters": 1960,
-          "latitude": 28.15,
-          "longitude": 85.75,
-          "facilities": [
-            "Tea houses",
-            "Small shops",
-            "Electricity"
-          ],
-          "lodging": "Few tea houses",
-          "lodging_type": "Basic"
-        },
-        {
-          "name": "Rimche",
-          "altitude_meters": 2400,
-          "latitude": 28.1833,
-          "longitude": 85.7333,
-          "facilities": [
-            "Tea houses",
-            "Electricity"
-          ],
-          "lodging": "Tea houses available",
-          "lodging_type": "Basic"
-        },
-        {
-          "name": "Lama Hotel",
-          "altitude_meters": 2480,
-          "latitude": 28.2,
-          "longitude": 85.7167,
-          "facilities": [
-            "Multiple tea houses",
-            "Electricity",
-            "Small shops",
-            "Restaurant"
-          ],
-          "lodging": "Several tea houses",
-          "lodging_type": "Standard tea house",
-          "note": "First major settlement, good overnight stop"
-        },
-        {
-          "name": "Ghora Tabela",
-          "altitude_meters": 3000,
-          "latitude": 28.2167,
-          "longitude": 85.6833,
-          "facilities": [
-            "Tea houses",
-            "Electricity",
-            "Open valley views"
-          ],
-          "lodging": "Tea houses available",
-          "lodging_type": "High-altitude basic"
-        },
-        {
-          "name": "Langtang Village",
-          "altitude_meters": 3430,
-          "latitude": 28.2333,
-          "longitude": 85.6167,
-          "facilities": [
-            "Tea houses",
-            "Electricity",
-            "Small shops",
-            "Memorials"
-          ],
-          "lodging": "Several tea houses",
-          "lodging_type": "High-altitude basic",
-          "note": "Quiet village, recovery from 1934 earthquake and 2015 avalanche"
-        },
-        {
-          "name": "Kyanjin Gompa",
-          "altitude_meters": 3870,
-          "latitude": 28.25,
-          "longitude": 85.6,
-          "facilities": [
-            "Multiple tea houses",
-            "Kyanjin Gompa monastery",
-            "Cheese factory",
-            "Wi-Fi (fee, limited)",
-            "Electricity",
-            "Small shops",
-            "Restaurant"
-          ],
-          "lodging": "Multiple tea houses",
-          "lodging_type": "High-altitude standard",
-          "note": "Final destination, spiritual center, acclimatization point"
-        }
+      "information": [
+        "Syabrubesi (1,503m) is the motorable trailhead village with basic shops, electricity, and transport hubs.",
+        "Bamboo (1,960m) and Rimche (2,400m) are small forest settlements with basic teahouses.",
+        "Lama Hotel (2,480m) is a key forest settlement and standard first overnight stop.",
+        "Ghora Tabela (3,000m) is a valley opening point with basic lodges and yak pastures.",
+        "Langtang Village (3,430m) is a quiet rebuilt village nestled in Langtang Lirung foothills.",
+        "Kyanjin Gompa (3,870m) is the final destination, spiritual center, and acclimatization hub."
+      ],
+      "additional_information": [
+        "Langtang Village was completely destroyed by an avalanche in the 2015 earthquake and has since been rebuilt nearby."
       ]
     },
     "accommodation": {
-      "tea_houses": {
-        "availability": "Throughout entire route from Syabrubesi to Kyanjin Gompa",
-        "number_estimate": "20-30 tea houses along route",
-        "facilities_common": [
-          "Twin-sharing rooms with beds",
-          "Dining room with wood stove",
-          "Toilets (western below, squat above)",
-          "Electricity charging (fee)",
-          "Wi-Fi (fee, limited above Lama Hotel)"
-        ],
-        "hot_shower_availability": {
-          "below_2500m": "Solar/gas heated, available (fee NPR 200-400)",
-          "above_2500m": "Limited, may be lukewarm or cold",
-          "above_3500m": "Rare, mostly cold water only"
-        }
-      }
-    },
-    "landmarks": {
-      "mountains_visible": [
-        {
-          "name": "Langtang Lirung",
-          "altitude_meters": 7234,
-          "note": "Highest peak in Langtang range, dominates views from Kyanjin Gompa"
-        },
-        {
-          "name": "Langtang Ri",
-          "altitude_meters": 7205,
-          "note": "Visible from Kyanjin Ri"
-        },
-        {
-          "name": "Dorje Lakpa (Dorje Lhakpa)",
-          "altitude_meters": 6966,
-          "note": "Visible from Kyanjin Ri"
-        },
-        {
-          "name": "Loenpo Gang",
-          "altitude_meters": 6979,
-          "note": "Visible from Kyanjin Gompa"
-        },
-        {
-          "name": "Tsangbu Ri",
-          "altitude_meters": 6781,
-          "note": "Visible from Kyanjin Ri"
-        },
-        {
-          "name": "Yansa Tsenji",
-          "altitude_meters": 6690,
-          "note": "Visible from Kyanjin Gompa"
-        },
-        {
-          "name": "Kyunga Ri",
-          "altitude_meters": 6601,
-          "note": "Visible from Kyanjin area"
-        },
-        {
-          "name": "Ghenge Liru",
-          "altitude_meters": 6581,
-          "note": "Visible from Langtang Valley"
-        },
-        {
-          "name": "Naya Kanga (Ganjala Peak)",
-          "altitude_meters": 5863,
-          "note": "Visible from Kyanjin Ri"
-        },
-        {
-          "name": "Yala Peak",
-          "altitude_meters": 5520,
-          "note": "Popular climbing peak, visible from Kyanjin Gompa"
-        },
-        {
-          "name": "Changbu",
-          "altitude_meters": "6,500+",
-          "note": "Visible from Kyanjin Ri"
-        },
-        {
-          "name": "Yubra Peak",
-          "altitude_meters": "6,000+",
-          "note": "Visible from Kyanjin Ri"
-        },
-        {
-          "name": "Shishapangma",
-          "altitude_meters": 8027,
-          "note": "Visible from Tsergo Ri (in Tibet)"
-        }
+      "information": [
+        "Local tea houses (20-30 lodges) are available along the entire route from Syabrubesi to Kyanjin Gompa.",
+        "Basic twin-sharing rooms are standard.",
+        "Toilets are Western-style in lower sections and squat-style in higher sections (shared).",
+        "Hot showers (solar/gas) are available below 2,500m (fee NPR 200-400)."
       ],
-      "rivers": [
-        {
-          "name": "Langtang Khola (Langtang River)",
-          "note": "Main river along trek route, flows through Langtang Valley",
-          "type": "Snow-fed perennial river"
-        },
-        {
-          "name": "Bhote Koshi",
-          "note": "Crossed during drive from Kathmandu to Syabrubesi",
-          "type": "Perennial river"
-        },
-        {
-          "name": "Trishuli River",
-          "note": "Passed during drive, creates pristine villages on banks",
-          "type": "Perennial river"
-        }
-      ],
-      "waterfalls": [
-        {
-          "name": "Waterfalls along Langtang Khola",
-          "location": "Multiple sections between Syabrubesi and Lama Hotel",
-          "note": "Seasonal waterfalls visible along river valley"
-        }
-      ],
-      "lakes": [
-        {
-          "name": "No major lakes on standard Langtang Valley route",
-          "note": "Gosaikunda Lake is on alternative Langtang-Gosaikunda route"
-        }
-      ],
-      "viewpoints": [
-        {
-          "name": "Kyanjin Ri",
-          "altitude_meters": 4773,
-          "latitude": 28.2167,
-          "longitude": 85.6,
-          "best_for": "Sunrise views of Langtang peaks",
-          "mountains_visible": [
-            "Langtang Lirung",
-            "Dorje Lakpa",
-            "Yala Peak",
-            "Changbu",
-            "Yubra Peak"
-          ],
-          "note": "3-4 hour hike from Kyanjin Gompa, stunning panoramic views"
-        },
-        {
-          "name": "Tsergo Ri (Tserko Ri)",
-          "altitude_meters": 5033,
-          "latitude": 28.21278,
-          "longitude": 85.6,
-          "best_for": "Panoramic Langtang range and Shishapangma views",
-          "mountains_visible": [
-            "Full Langtang mountain range",
-            "Shishapangma (Tibet)"
-          ],
-          "note": "6-7 hour climb from Kyanjin Gompa, challenging due to wind and rough trail"
-        },
-        {
-          "name": "Kyanjin Gompa",
-          "altitude_meters": 3870,
-          "best_for": "Panoramic views of Langtang peaks and glaciers",
-          "mountains_visible": [
-            "Langtang Lirung",
-            "Langtang II",
-            "Yala Peak",
-            "Dorje Lakpa"
-          ]
-        },
-        {
-          "name": "Ghora Tabela",
-          "altitude_meters": 3000,
-          "best_for": "Valley opening views",
-          "note": "From here valley opens giving views of mountains"
-        }
-      ],
-      "forest_types": [
-        {
-          "type": "Pine Forest",
-          "altitude_range": "1500-2500m",
-          "locations": [
-            "Syabrubesi to Lama Hotel"
-          ]
-        },
-        {
-          "type": "Rhododendron Forest",
-          "altitude_range": "2500-3500m",
-          "locations": [
-            "Lama Hotel to Kyanjin Gompa"
-          ],
-          "note": "Blooms in spring (March-May)"
-        },
-        {
-          "type": "Alpine Pasture",
-          "altitude_range": "3500-5033m",
-          "locations": [
-            "Ghora Tabela to Tsergo Ri"
-          ],
-          "note": "Open valley with yak pastures, sparse vegetation"
-        }
-      ],
-      "base_camps": [
-        {
-          "name": "Langtang Village",
-          "altitude_meters": 3430,
-          "latitude": 28.2333,
-          "longitude": 85.6167,
-          "note": "Quiet village nestled in foothills of Langtang Lirung, recovery site from 1934 earthquake and 2015 avalanche"
-        },
-        {
-          "name": "Kyanjin Gompa",
-          "altitude_meters": 3870,
-          "latitude": 28.25,
-          "longitude": 85.6,
-          "note": "Final destination, spiritual center, cheese factory, glacier views"
-        }
-      ],
-      "cultural_sites": [
-        {
-          "name": "Kyanjin Gompa (Monastery)",
-          "type": "Buddhist monastery",
-          "altitude_meters": 3870,
-          "latitude": 28.25,
-          "longitude": 85.6,
-          "note": "Spiritual center of Langtang Valley, ancient monastery"
-        },
-        {
-          "name": "Tamang Villages",
-          "type": "Traditional settlements",
-          "locations": [
-            "Syabrubesi",
-            "Lama Hotel",
-            "Langtang Village"
-          ],
-          "note": "Rich Tamang culture, traditional architecture, Tibetan influences"
-        },
-        {
-          "name": "Kyanjin Cheese Factory",
-          "type": "Cultural/industrial site",
-          "location": "Kyanjin Gompa",
-          "altitude_meters": 3870,
-          "note": "Traditional yak cheese production, local specialty"
-        },
-        {
-          "name": "Chortens and Prayer Flags",
-          "locations": [
-            "Throughout trek route"
-          ],
-          "note": "Buddhist shrines at villages, memorial chortens"
-        },
-        {
-          "name": "1934 Langtang Earthquake Memorial",
-          "location": "Langtang Village",
-          "note": "Historical site marking devastating earthquake"
-        },
-        {
-          "name": "2015 Avalanche Memorial",
-          "location": "Langtang Village",
-          "note": "Memorial for avalanche victims during 2015 earthquake"
-        }
+      "additional_information": [
+        "Hot showers become very limited, lukewarm, or unavailable above 3,500m due to freezing temperatures."
       ]
-    },
-    "transport": {
-      "how_to_reach_starting_point": {
-        "starting_point": "Syabrubesi",
-        "from_kathmandu": {
-          "option_1": {
-            "method": "Direct drive Kathmandu to Syabrubesi",
-            "drive_duration": "8 hours",
-            "distance_km": 122,
-            "cost_usd": "15-20 (shared bus)",
-            "route": "Kathmandu → Bhote Koshi → Trishuli River → Syabrubesi",
-            "note": "Mountainous road, can be slow"
-          }
-        }
-      },
-      "transportation_options": [
-        {
-          "type": "Shared Bus",
-          "from": "Kathmandu to Syabrubesi",
-          "duration": "8 hours",
-          "cost_usd": "15-20",
-          "capacity": "Multiple passengers"
-        },
-        {
-          "type": "Private Jeep",
-          "from": "Kathmandu to Syabrubesi",
-          "duration": "7-8 hours",
-          "cost_usd": "80-120",
-          "capacity": "4-6 people"
-        },
-        {
-          "type": "Helicopter (Return)",
-          "from": "Kyanjin Gompa to Kathmandu",
-          "duration": "30-40 minutes",
-          "cost_usd": "1,275 per person shared",
-          "note": "Spectacular aerial views of trek route"
-        }
-      ],
-      "estimated_travel_times": [
-        {
-          "route": "Kathmandu to Syabrubesi (drive)",
-          "time": "8 hours"
-        },
-        {
-          "route": "Syabrubesi to Lama Hotel (trek)",
-          "time": "6-7 hours walking"
-        },
-        {
-          "route": "Lama Hotel to Langtang Village (trek)",
-          "time": "5-6 hours walking"
-        },
-        {
-          "route": "Langtang Village to Kyanjin Gompa (trek)",
-          "time": "3-4 hours walking"
-        },
-        {
-          "route": "Kyanjin Gompa to Kathmandu (helicopter)",
-          "time": "30-40 minutes"
-        },
-        {
-          "route": "Kyanjin Gompa to Syabrubesi (return trek)",
-          "time": "8-9 hours total"
-        },
-        {
-          "route": "Syabrubesi to Kathmandu (drive)",
-          "time": "8 hours"
-        }
-      ]
-    },
-    "emergency": {
-      "rescue_points": [
-        {
-          "name": "Lama Hotel",
-          "altitude_meters": 2480,
-          "type": "Rescue coordination point"
-        },
-        {
-          "name": "Langtang Village",
-          "altitude_meters": 3430,
-          "type": "Rescue point"
-        },
-        {
-          "name": "Kyanjin Gompa",
-          "altitude_meters": 3870,
-          "type": "High-altitude rescue point"
-        }
-      ],
-      "helicopter_evacuation_locations": [
-        {
-          "name": "Tsergo Ri area",
-          "altitude_meters": 5033,
-          "coordinates": {
-            "latitude": 28.21278,
-            "longitude": 85.6
-          },
-          "note": "Helicopters can land in good weather conditions"
-        },
-        {
-          "name": "Kyanjin Gompa",
-          "altitude_meters": 3870,
-          "coordinates": {
-            "latitude": 28.25,
-            "longitude": 85.6
-          },
-          "note": "Good helicopter landing point, open area"
-        },
-        {
-          "name": "Langtang Village",
-          "altitude_meters": 3430,
-          "latitude": 28.2333,
-          "longitude": 85.6167,
-          "note": "Helicopter evacuation point"
-        },
-        {
-          "name": "Ghora Tabela",
-          "altitude_meters": 3000,
-          "note": "Open valley suitable for helicopter landing"
-        },
-        {
-          "name": "Syabrubesi",
-          "altitude_meters": 1503,
-          "note": "Good helicopter landing point"
-        }
-      ],
-      "emergency_contact_numbers": [
-        {
-          "service": "Nepal Police Emergency",
-          "number": "100",
-          "note": "National emergency"
-        },
-        {
-          "service": "Tourist Police (Kathmandu)",
-          "number": "1144",
-          "alternative": "+977-1-4247041"
-        },
-        {
-          "service": "Tourist Police (Bhrikuti Mandap)",
-          "number": "+977-1-4226359 / 4226403"
-        },
-        {
-          "service": "Nepal Tourism Board",
-          "number": "+977-1-5356909 / 4256229",
-          "email": "info@ntb.org.np"
-        },
-        {
-          "service": "Healthcare First Helicopter Rescue",
-          "number": "+977 9801360911",
-          "note": "Langtang Valley rescue available"
-        },
-        {
-          "service": "IHSA Helicopter Return",
-          "number": "+977-1-4547103",
-          "note": "Kyanjin to Kathmandu helicopter USD 1,275/pax"
-        }
-      ],
-      "common_trekking_risks": [
-        {
-          "risk": "Altitude Sickness (AMS)",
-          "severity": "Moderate",
-          "prevention": "Gradual ascent, acclimatization day at Kyanjin, stay hydrated"
-        },
-        {
-          "risk": "Falls on steep trails",
-          "severity": "Moderate",
-          "prevention": "Use trekking poles, wear proper boots, be cautious on descents"
-        },
-        {
-          "risk": "Dehydration",
-          "severity": "Moderate",
-          "prevention": "Drink 3-4 liters daily, carry water purification"
-        },
-        {
-          "risk": "Weather changes",
-          "severity": "Moderate",
-          "prevention": "Check weather, carry warm layers, rain gear"
-        },
-        {
-          "risk": "Blister and foot injuries",
-          "severity": "Minor",
-          "prevention": "Proper boots, blister prevention, rest breaks"
-        },
-        {
-          "risk": "Cold exposure (winter)",
-          "severity": "Moderate",
-          "prevention": "Warm clothing, proper gear, avoid trekking in extreme cold"
-        },
-        {
-          "risk": "Slippery trails (monsoon)",
-          "severity": "Moderate",
-          "prevention": "Avoid monsoon season, wear good boots with grip"
-        }
-      ],
-      "altitude_sickness_information": {
-        "maximum_altitude": 3870,
-        "optional_hike_max": 5033,
-        "risk_level": "Moderate risk - above 3,000m",
-        "symptoms_ams": [
-          "Headache",
-          "Nausea",
-          "Dizziness",
-          "Fatigue",
-          "Loss of appetite",
-          "Mild shortness of breath"
-        ],
-        "symptoms_severe": [
-          "Severe headache",
-          "Confusion",
-          "Loss of coordination",
-          "Difficulty breathing at rest",
-          "Cough with pink/frothy mucus"
-        ],
-        "prevention": [
-          "Ascend gradually (max 300-500m per day above 3000m)",
-          "Include acclimatization day at Kyanjin Gompa",
-          "Stay hydrated (3-4 liters daily)",
-          "Avoid alcohol and caffeine",
-          "Consider Diamox (with doctor's prescription)",
-          "Sleep at lower altitude when possible"
-        ],
-        "treatment": [
-          "Rest and rehydration for mild AMS",
-          "Descend immediately if symptoms worsen",
-          "Helicopter evacuation for severe cases (HAPE/HACE)"
-        ],
-        "note": "Langtang trek max altitude 3,870m (Kyanjin Gompa) - moderate altitude risk. Optional hikes Kyanjin Ri (4,773m) and Tsergo Ri (5,033m) increase risk"
-      }
     },
     "food_water": {
-      "reliable_water_sources": [
-        {
-          "source": "Spring water",
-          "locations": [
-            "All villages along route"
-          ],
-          "safety": "Not safe untreated - must boil/purify"
-        },
-        {
-          "source": "Langtang Khola River water",
-          "locations": [
-            "Along river valley (Syabrubesi to Lama Hotel)"
-          ],
-          "safety": "Not safe - must purify"
-        },
-        {
-          "source": "Boiled water (tea houses)",
-          "cost_per_liter_usd": "1-3",
-          "note": "Cost increases with altitude",
-          "safety": "Safe"
-        },
-        {
-          "source": "Hot water (for drinking)",
-          "cost": "Included with some meals",
-          "safety": "Safe"
-        }
+      "information": [
+        "Tea houses serve traditional Dal Bhat, pasta, noodle soups, potatoes, and bread.",
+        "Kyanjin Gompa features a local government cheese factory producing Swiss-style yak cheese.",
+        "Tap water is unsafe; use water purification tablets/filters or buy boiled water (NPR 100-200 per liter)."
       ],
-      "food_availability": {
-        "menu_regulation": "Fixed menu varies by altitude",
-        "common_items": [
-          {
-            "item": "Dal Bhat",
-            "description": "Nepali rice and lentils",
-            "price_npr": "400-700"
-          },
-          {
-            "item": "Momos",
-            "description": "Dumplings (vegetable/mutton)",
-            "price_npr": "300-500"
-          },
-          {
-            "item": "Thukpa",
-            "description": "Noodle soup",
-            "price_npr": "400-600"
-          },
-          {
-            "item": "Chapati",
-            "description": "Flatbread",
-            "price_npr": "200-350"
-          },
-          {
-            "item": "Pasta",
-            "description": "Various pasta dishes",
-            "price_npr": "400-650"
-          },
-          {
-            "item": "Pancakes",
-            "description": "With honey/jam",
-            "price_npr": "300-500"
-          },
-          {
-            "item": "Fried Rice",
-            "description": "Vegetable fried rice",
-            "price_npr": "400-650"
-          },
-          {
-            "item": "Yak Cheese",
-            "description": "Local specialty from Kyanjin",
-            "price_npr": "300-500"
-          },
-          {
-            "item": "Tsampa",
-            "description": "Roasted barley flour",
-            "price_npr": "250-400"
-          },
-          {
-            "item": "Butter Tea",
-            "description": "Traditional Tibetan tea",
-            "price_npr": "150-300"
-          },
-          {
-            "item": "Tea",
-            "description": "Various types (black, milk, ginger)",
-            "price_npr": "100-250"
-          },
-          {
-            "item": "Coffee",
-            "description": "Black/milk coffee",
-            "price_npr": "200-350"
-          }
-        ],
-        "meat_availability": {
-          "below_lama_hotel": "Available (vegetable and mutton)",
-          "above_lama_hotel": "Limited/Not recommended - no refrigeration",
-          "kyanjin": "Mostly vegetarian food"
-        },
-        "price_trend": "Increases with altitude (2-3x at Kyanjin vs Syabrubesi)",
-        "special_note": "Dal Bhat often unlimited at many tea houses. Yak cheese is local specialty from Kyanjin factory"
-      },
-      "refill_points": [
-        {
-          "location": "All tea houses",
-          "service": "Water boiling/purification",
-          "cost": "NPR 100-300 per liter"
-        },
-        {
-          "location": "Villages (Lama Hotel, Langtang, Kyanjin)",
-          "service": "Small shops with bottled water",
-          "note": "Bring refillable bottle to reduce plastic"
-        },
-        {
-          "recommendation": "Carry UV SteriPen or water purification tablets",
-          "note": "Reduce plastic waste with refillable bottles"
-        }
-      ]
-    },
-    "geography": {
-      "important_locations_with_coordinates": [
-        {
-          "name": "Kathmandu",
-          "category": "City (starting point)",
-          "latitude": 27.7172,
-          "longitude": 85.324,
-          "altitude_meters": 1400
-        },
-        {
-          "name": "Syabrubesi",
-          "category": "Village (trek starting point)",
-          "latitude": 28.1167,
-          "longitude": 85.7833,
-          "altitude_meters": 1503
-        },
-        {
-          "name": "Bamboo",
-          "category": "Village",
-          "latitude": 28.15,
-          "longitude": 85.75,
-          "altitude_meters": 1960
-        },
-        {
-          "name": "Rimche",
-          "category": "Village",
-          "latitude": 28.1833,
-          "longitude": 85.7333,
-          "altitude_meters": 2400
-        },
-        {
-          "name": "Lama Hotel",
-          "category": "Village",
-          "latitude": 28.2,
-          "longitude": 85.7167,
-          "altitude_meters": 2480
-        },
-        {
-          "name": "Ghora Tabela",
-          "category": "Village",
-          "latitude": 28.2167,
-          "longitude": 85.6833,
-          "altitude_meters": 3000
-        },
-        {
-          "name": "Langtang Village",
-          "category": "Village",
-          "latitude": 28.2333,
-          "longitude": 85.6167,
-          "altitude_meters": 3430
-        },
-        {
-          "name": "Kyanjin Gompa",
-          "category": "Village (final destination)",
-          "latitude": 28.25,
-          "longitude": 85.6,
-          "altitude_meters": 3870
-        },
-        {
-          "name": "Kyanjin Ri",
-          "category": "Viewpoint",
-          "latitude": 28.2167,
-          "longitude": 85.6,
-          "altitude_meters": 4773
-        },
-        {
-          "name": "Tsergo Ri",
-          "category": "Viewpoint/Peak",
-          "latitude": 28.21278,
-          "longitude": 85.6,
-          "altitude_meters": 5033
-        },
-        {
-          "name": "Langtang Lirung",
-          "category": "Mountain",
-          "latitude": 28.25,
-          "longitude": 85.6,
-          "altitude_meters": 7234
-        },
-        {
-          "name": "Langtang Khola River",
-          "category": "River",
-          "latitude": 28.1833,
-          "longitude": 85.7,
-          "altitude_meters": "1503-3870 (along route)"
-        },
-        {
-          "name": "Dorje Lakpa",
-          "category": "Mountain",
-          "latitude": 28.26,
-          "longitude": 85.58,
-          "altitude_meters": 6966
-        },
-        {
-          "name": "Yala Peak",
-          "category": "Mountain",
-          "latitude": 28.24,
-          "longitude": 85.62,
-          "altitude_meters": 5520
-        }
+      "additional_information": [
+        "Yak cheese is a local specialty and highly recommended source of protein for trekkers."
       ]
     },
     "permits": {
-      "required_permits": [
-        {
-          "name": "Langtang National Park Entry Permit",
-          "fee_npr_foreigners": 3000,
-          "fee_npr_saarc": 1500,
-          "fee_npr_nepali": 100,
-          "fee_usd": "Not applicable (NPR only)",
-          "obtained_at": [
-            "Nepal Tourism Board, Bhrikuti Mandap, Kathmandu",
-            "National Park Entry Gate near Dhunche"
-          ],
-          "requirements": [
-            "Passport",
-            "Passport copy",
-            "NPR 3,000 in cash"
-          ]
-        },
-        {
-          "name": "TIMS Card (Trekkers Information Management System)",
-          "fee_npr_green_card": 2000,
-          "fee_npr_blue_card_group": 1000,
-          "fee_usd_saarc": "600 (green), 300 (blue)",
-          "obtained_at": [
-            "Nepal Tourism Board, Bhrikuti Mandap, Kathmandu",
-            "Through registered trekking agency"
-          ],
-          "requirements": [
-            "Passport",
-            "Passport-size photos",
-            "Trip itinerary"
-          ],
-          "note": "Green card for independent travelers, Blue card for group travelers. New rule: TIMS may not be required - check current regulations"
-        }
+      "information": [
+        "A Langtang National Park entry permit is required, costing NPR 3,000 for foreigners.",
+        "A Trekkers' Information Management System (TIMS) card is required, costing USD 20 for individual travelers.",
+        "Permits can be purchased on arrival in Syabrubesi or at the park entry checkpoint."
+      ],
+      "additional_information": [
+        "Checkpoints exist at Dunche and Syabrubesi; keep printed permits easily accessible."
       ]
     },
-    "internet": {
-      "mobile_networks": [
-        "NTC",
-        "Ncell"
+    "connectivity": {
+      "information": [
+        "NTC and Ncell have basic coverage up to Ghora Tabela, but it becomes weak/non-existent above.",
+        "Wi-Fi is available at Kyanjin Gompa teahouses for a fee (NPR 300-500), but is slow and limited.",
+        "Electricity charging for devices is available at tea houses (fee $2-3/device)."
       ],
-      "wifi_availability": "Available at major tea houses / villages for a fee, limited at higher altitudes.",
-      "charging_facilities": "Electricity charging available at most tea houses for a fee."
+      "additional_information": [
+        "Mobile signals are highly weather-dependent; satellite phones are available at Kyanjin Gompa in emergencies."
+      ]
     },
     "weather": {
-      "best_seasons": [
-        {
-          "season": "Spring",
-          "months": "March - May",
-          "advantages": "Clear skies, rhododendron blooms, moderate temperatures, best visibility"
-        },
-        {
-          "season": "Autumn",
-          "months": "September - November",
-          "advantages": "Best visibility, stable weather, post-monsoon clear skies, peak season"
-        },
-        {
-          "season": "Winter",
-          "months": "December - February",
-          "advantages": "Less crowded, Crystal clear views",
-          "challenges": "Cold temperatures, possible snow at higher elevations"
-        },
-        {
-          "season": "Monsoon",
-          "months": "June - August",
-          "advantages": "Fewer trekkers, lush greenery",
-          "challenges": "Rain, leeches, poor visibility, slippery trails - not recommended"
-        }
+      "information": [
+        "Best seasons: Spring (March-May) for blooming rhododendrons, Autumn (September-November) for stable weather/clear skies.",
+        "Winter (December-February) brings heavy snow, freezing temperatures, and path closures above Langtang Village.",
+        "Monsoon (June-August) makes trails slippery, introduces leeches, and increases landslide risks."
       ],
-      "temperature_notes": "Weather changes rapidly. High altitude brings extreme cold and snow, especially in winter."
+      "additional_information": [
+        "Spring offers the warmest daytime trekking temperatures, while autumn provides the crispest clear views."
+      ]
     },
-    "wildlife": {
-      "fauna": [
-        "Langur monkeys",
-        "Himalayan thar",
-        "Snow leopards (rare)"
+    "hospitals": {
+      "information": [
+        "No hospitals or medical clinics exist along the trek route.",
+        "Basic first aid supplies are available at village health posts, but they are sparsely stocked.",
+        "Kathmandu hospitals are the primary destination for emergency medical care."
       ],
-      "flora": [
-        "Pine Forest",
-        "Rhododendron Forest",
-        "Alpine Pasture"
+      "additional_information": [
+        "Trekkers must carry a comprehensive personal first aid kit containing altitude medication."
+      ]
+    },
+    "emergency": {
+      "information": [
+        "Helicopter evacuation costs $3,000-$5,000 USD depending on weather, requiring insurance covering up to 5,100m.",
+        "Acute Mountain Sickness (AMS) is a moderate risk above 3,000m; rise slowly and drink 3-4 liters of water daily.",
+        "Rescue landing points are designated at Lama Hotel, Ghora Tabela, Langtang Village, and Kyanjin Gompa."
+      ],
+      "additional_information": [
+        "Langtang Valley is narrow, meaning helicopter rescue is highly dependent on clear visibility and low wind."
+      ]
+    },
+    "transport": {
+      "information": [
+        "Syabrubesi starting point is reached by an 8-hour drive from Kathmandu (122 km) along winding mountain roads.",
+        "Transport options: public/shared bus ($15-20 USD) or private jeep ($80-120 USD).",
+        "Helicopter charter return is available from Kyanjin Gompa to Kathmandu ($1,275 USD per person shared)."
+      ],
+      "additional_information": [
+        "The road from Kathmandu to Dunche/Syabrubesi can be rough and is frequently affected by monsoonal landslides."
       ]
     }
   },

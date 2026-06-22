@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import '../models/conversation.dart';
+import '../models/trek_data.dart';
+import '../models/tool_result.dart';
 import 'trek_knowledge_service.dart';
 
 class ToolCall {
@@ -74,12 +76,14 @@ class ToolRegistryResult {
   final bool success;
   final String toolName;
   final Map<String, dynamic> payload;
+  final ToolResult normalizedResult;
   final ToolExecutionRecord record;
 
   const ToolRegistryResult({
     required this.success,
     required this.toolName,
     required this.payload,
+    required this.normalizedResult,
     required this.record,
   });
 }
@@ -189,18 +193,13 @@ class ToolRegistryService {
 
     final category = _stringArg(call.arguments, 'category');
     if (category.isNotEmpty) {
-      final allowed = [
-        'route',
-        'landmarks',
-        'villages',
-        'hospitals',
-        'emergency',
-        'transport',
-        'itinerary',
-      ];
-      if (!allowed.contains(category)) {
+      // 'itinerary' is a valid alias that maps to 'route' in TrekKnowledgeService.
+      final isAlias = category == 'itinerary';
+      final isValidEnum = TrekCategory.fromString(category) != null;
+      if (!isAlias && !isValidEnum) {
+        final validNames = TrekCategory.values.map((c) => c.name).join(', ');
         final result = ToolValidationResult.invalid(
-          'Invalid category: $category. Allowed: ${allowed.join(', ')}',
+          'Invalid category: $category. Allowed: $validNames, itinerary',
         );
         debugPrint('[ToolRegistry] VALIDATE FAIL → ${result.error}');
         return result;
@@ -245,6 +244,14 @@ class ToolRegistryService {
       '[ToolRegistry] EXECUTE DONE → ${call.name}  '
       '${stopwatch.elapsedMilliseconds}ms',
     );
+    final normalizedResult = _normalizeToolResult(call, payload);
+    debugPrint(
+      '[ToolRegistry] NORMALIZED → ${call.name}  '
+      'trek=${normalizedResult.trekName}  '
+      'category=${normalizedResult.category}  '
+      'information=${normalizedResult.information.length}  '
+      'additional=${normalizedResult.additionalInformation.length}',
+    );
     final sourceFiles = _sourceFilesFromPayload(payload);
     final record = ToolExecutionRecord(
       toolName: call.name,
@@ -260,6 +267,7 @@ class ToolRegistryService {
       success: payload['success'] == true,
       toolName: call.name,
       payload: payload,
+      normalizedResult: normalizedResult,
       record: record,
     );
   }
@@ -364,45 +372,41 @@ class ToolRegistryService {
   void _registerTrekTools() {
     final tools = <ToolDefinition>[
       ToolDefinition(
-        name: 'get_trek_overview',
-        description:
-            'Use this to get the general overview of the selected trek, including difficulty level, maximum altitude, standard duration (days), permits required, best seasons, and general description.',
-        parametersSchema: _objectSchema(
-          {
-            'trek_name': {
-              'type': 'string',
-              'description': 'The name of the trek.',
-            },
-          },
-          const ['trek_name'],
-        ),
-        executor: (args) => _trekKnowledgeService.get_trek_overview(
-          _stringArg(args, 'trek_name'),
-        ),
-      ),
-      ToolDefinition(
         name: 'get_trek_details',
         description:
-            'Use this to retrieve specific categorized details about the selected trek. Requires category parameter. Category mappings:\n'
-            '- "route": itinerary, route, trail, path, map, distance, days, itinerary, trek route\n'
-            '- "landmarks": landmarks, places, points of interest, mountains, peaks, sights, viewpoints, highlights\n'
-            '- "villages": villages, settlements, towns, stops, teahouses, lodges, hotels, accommodation, stays\n'
-            '- "hospitals": hospitals, clinics, medical, doctor posts, health aid, pharmacies\n'
-            '- "emergency": emergency, rescue, safety, dangers, risks, evacuation, emergency contact numbers\n'
-            '- "transport": transport, bus, flights, jeep, travel, airport, how to get there',
+            'Use this to retrieve specific categorized details about the selected trek. Requires category parameter.',
         parametersSchema: _objectSchema(
           {
             'category': {
               'type': 'string',
               'enum': [
+                'info',
                 'route',
                 'landmarks',
                 'villages',
+                'accommodation',
+                'food_water',
+                'permits',
+                'connectivity',
+                'weather',
                 'hospitals',
                 'emergency',
                 'transport',
               ],
-              'description': 'The category of details to retrieve. Must be one of the allowed enums.',
+              'description':
+                  'The category of details to retrieve. Must be one of the allowed enums.Category mappings:\n'
+                  '- "info": difficulty, altitude, standard duration, region, districts, or general overview/description\n'
+                  '- "route": itinerary, starting/ending points, elevation profile, walking hours, distances\n'
+                  '- "landmarks": peaks visible, viewpoints, rivers, forest types, cultural sites\n'
+                  '- "villages": major settlements, elevations, facilities, lodging types\n'
+                  '- "accommodation": tea houses, rooms, toilet styles, hot showers\n'
+                  '- "food_water": reliable water sources, meal menus, prices, meat availability (vegetarian zones)\n'
+                  '- "permits": ACAP, TIMS cards, permit fees, photos required, obtain locations\n'
+                  '- "connectivity": mobile networks (NTC, Ncell), Wi-Fi fees, electricity charging\n'
+                  '- "weather": best seasons, temperature ranges, weather hazards\n'
+                  '- "hospitals": local health posts, medical centers, altitude aid/services\n'
+                  '- "emergency": helicopter landing points, rescue points, contact numbers, AMS safety guidelines\n'
+                  '- "transport": how to reach starting point, jeep/bus/flight routes, travel times, costs',
             },
             'trek_name': {
               'type': 'string',
@@ -446,44 +450,6 @@ class ToolRegistryService {
         parametersSchema: _objectSchema(const {}, const []),
         executor: (_) => _trekKnowledgeService.list_available_treks(),
       ),
-      ToolDefinition(
-        name: 'get_used_tools',
-        description: 'Returns tool names used so far in this app session.',
-        parametersSchema: _objectSchema(const {}, const []),
-        executor: (_) => {
-          'success': true,
-          'tool': 'get_used_tools',
-          'trek_name': 'session',
-          'source_file': 'runtime',
-          'data': {'tools': usedTools},
-        },
-      ),
-      ToolDefinition(
-        name: 'get_tool_history',
-        description:
-            'Returns the offline tool execution history for this app session.',
-        parametersSchema: _objectSchema(const {}, const []),
-        executor: (_) => {
-          'success': true,
-          'tool': 'get_tool_history',
-          'trek_name': 'session',
-          'source_file': 'runtime',
-          'data': {'history': _history.map((r) => r.toMap()).toList()},
-        },
-      ),
-      ToolDefinition(
-        name: 'get_reasoning_trace',
-        description:
-            'Returns the current response reasoning metadata without chain-of-thought.',
-        parametersSchema: _objectSchema(const {}, const []),
-        executor: (_) => {
-          'success': true,
-          'tool': 'get_reasoning_trace',
-          'trek_name': 'response',
-          'source_file': 'runtime',
-          'data': _currentTrace.toMap(),
-        },
-      ),
     ];
 
     for (final tool in tools) {
@@ -523,6 +489,194 @@ class ToolRegistryService {
       'error': error,
       'data': {},
     };
+  }
+
+  ToolResult _normalizeToolResult(ToolCall call, Map<String, dynamic> payload) {
+    final category = _normalizedCategory(call, payload);
+    final trekName = _normalizedTrekName(call, payload);
+    final success = payload['success'] == true;
+    if (!success) {
+      final error = payload['error']?.toString().trim();
+      return ToolResult.error(
+        trekName: trekName,
+        category: category,
+        message: error != null && error.isNotEmpty
+            ? error
+            : 'The offline tool did not return information.',
+      );
+    }
+
+    final data = _payloadData(payload);
+    final additionalInformation = <String>[
+      ..._stringList(data['additional_information']),
+      ..._sourceNotes(payload),
+    ];
+
+    if (call.name == 'get_trek_details') {
+      return _withFallback(
+        ToolResult(
+          trekName: trekName,
+          category: category,
+          information: _stringList(data['information']),
+          additionalInformation: additionalInformation,
+        ),
+      );
+    }
+
+    if (call.name == 'get_trek_faq') {
+      final answer = data['answer']?.toString().trim() ?? '';
+      final matchedQuestion = data['question']?.toString().trim() ?? '';
+      return _withFallback(
+        ToolResult(
+          trekName: trekName,
+          category: category,
+          information: answer.isEmpty ? const [] : [answer],
+          additionalInformation: [
+            if (matchedQuestion.isNotEmpty)
+              'Matched FAQ question: $matchedQuestion',
+            ..._sourceNotes(payload),
+          ],
+        ),
+      );
+    }
+
+    if (call.name == 'list_available_treks') {
+      final treks = data['treks'];
+      return _withFallback(
+        ToolResult(
+          trekName: trekName,
+          category: category,
+          information: treks is List
+              ? treks
+                    .whereType<Map>()
+                    .map((trek) => _formatAvailableTrek(trek))
+                    .where((line) => line.isNotEmpty)
+                    .toList(growable: false)
+              : const [],
+          additionalInformation: _sourceNotes(payload),
+        ),
+      );
+    }
+
+    final directInformation = _stringList(data['information']);
+    if (directInformation.isNotEmpty) {
+      return _withFallback(
+        ToolResult(
+          trekName: trekName,
+          category: category,
+          information: directInformation,
+          additionalInformation: additionalInformation,
+        ),
+      );
+    }
+
+    return _withFallback(
+      ToolResult(
+        trekName: trekName,
+        category: category,
+        information: _flattenDataLines(data),
+        additionalInformation: _sourceNotes(payload),
+      ),
+    );
+  }
+
+  ToolResult _withFallback(ToolResult result) {
+    if (result.information.isNotEmpty) return result;
+    return ToolResult.empty(
+      trekName: result.trekName,
+      category: result.category,
+    );
+  }
+
+  String _normalizedCategory(ToolCall call, Map<String, dynamic> payload) {
+    final data = _payloadData(payload);
+    final rawCategory = (data['category'] ?? call.arguments['category'])
+        ?.toString()
+        .trim();
+    if (rawCategory != null && rawCategory.isNotEmpty) {
+      final category = TrekCategory.fromString(rawCategory);
+      return category?.name ?? rawCategory.toLowerCase().replaceAll('-', '_');
+    }
+
+    return switch (call.name) {
+      'get_trek_details' => 'info',
+      'get_trek_faq' => 'faq',
+      'list_available_treks' => 'available_treks',
+      _ => call.name,
+    };
+  }
+
+  String _normalizedTrekName(ToolCall call, Map<String, dynamic> payload) {
+    final payloadTrek = payload['trek_name']?.toString().trim();
+    if (payloadTrek != null && payloadTrek.isNotEmpty) return payloadTrek;
+
+    final argumentTrek = call.arguments['trek_name']?.toString().trim();
+    if (argumentTrek != null && argumentTrek.isNotEmpty) return argumentTrek;
+
+    return 'none';
+  }
+
+  Map<String, dynamic> _payloadData(Map<String, dynamic> payload) {
+    final data = payload['data'];
+    if (data is Map) return Map<String, dynamic>.from(data);
+    return const {};
+  }
+
+  List<String> _stringList(Object? value) {
+    if (value is List) {
+      return value
+          .map((item) => item.toString().trim())
+          .where((item) => item.isNotEmpty)
+          .toList(growable: false);
+    }
+    if (value is String && value.trim().isNotEmpty) return [value.trim()];
+    return const [];
+  }
+
+  List<String> _sourceNotes(Map<String, dynamic> payload) {
+    return _sourceFilesFromPayload(payload)
+        .where((file) => file != 'runtime' && file != 'unknown')
+        .map((file) => 'Source: $file')
+        .toList(growable: false);
+  }
+
+  String _formatAvailableTrek(Map trek) {
+    final name = trek['name']?.toString().trim() ?? '';
+    final trekName = trek['trek_name']?.toString().trim() ?? '';
+    final difficulty = trek['difficulty']?.toString().trim() ?? '';
+    final duration = trek['duration_days']?.toString().trim() ?? '';
+    final altitude = trek['max_altitude']?.toString().trim() ?? '';
+
+    final label = name.isNotEmpty ? name : trekName;
+    if (label.isEmpty) return '';
+
+    final parts = <String>[
+      if (difficulty.isNotEmpty && difficulty != 'Unknown')
+        'difficulty $difficulty',
+      if (duration.isNotEmpty && duration != 'Unknown') 'duration $duration',
+      if (altitude.isNotEmpty && altitude != 'Unknown')
+        'maximum altitude $altitude',
+    ];
+    return parts.isEmpty ? label : '$label: ${parts.join(', ')}';
+  }
+
+  List<String> _flattenDataLines(Map<String, dynamic> data) {
+    final lines = <String>[];
+    for (final entry in data.entries) {
+      final value = entry.value;
+      if (value is List) {
+        if (value.isEmpty) continue;
+        lines.add(
+          '${entry.key}: ${value.map((item) => item.toString()).join(', ')}',
+        );
+      } else if (value is Map) {
+        if (value.isEmpty) continue;
+        lines.add('${entry.key}: ${value.keys.join(', ')}');
+      } else if (value != null && value.toString().trim().isNotEmpty) {
+        lines.add('${entry.key}: ${value.toString().trim()}');
+      }
+    }
+    return lines;
   }
 
   List<String> _sourceFilesFromPayload(Map<String, dynamic> payload) {

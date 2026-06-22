@@ -13,6 +13,7 @@ import '../services/stt_service.dart';
 import '../services/tts_service.dart';
 import '../services/trek_knowledge_service.dart';
 import '../services/tool_registry_service.dart';
+import '../services/tool_result_prompt_builder.dart';
 import 'dart:convert';
 
 enum AppScreen { chat, history, models }
@@ -482,7 +483,6 @@ class AppState extends ChangeNotifier {
   }
 
   // Cancel loading if user switches away
-
   /// Unload the current model without selecting a new one.
   Future<void> unloadActiveModel() async {
     await _cancelGeneration();
@@ -564,9 +564,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
 
     final convId = _activeConversation?.id;
-    final lasttrekName = convId != null
-        ? _lastSelectedTrekNames[convId]
-        : null;
+    final lasttrekName = convId != null ? _lastSelectedTrekNames[convId] : null;
 
     final model = activeModel;
     if (model == null) {
@@ -599,52 +597,124 @@ class AppState extends ChangeNotifier {
     }
 
     final allMessages = _activeConversation?.messages ?? [];
-    final contextMessages = _contextWindowManager.getRecentRoleMessages(
-      allMessages,
-    );
+    
+    // For Pass 1: Send only the current user message verbatim.
     final agentMessages = <Map<String, dynamic>>[
-      ...contextMessages.map(
-        (message) => {
-          'role': message.sender == 'user' ? 'user' : 'assistant',
-          'content': message.text,
-        },
-      ),
+      {
+        'role': 'user',
+        'content': text,
+      }
     ];
+
+    // Retrieve derived context from history
+    final derived = getDerivedContextFromHistory(allMessages);
+    final lastResolvedTrekId = derived['trekId'];
+    final lastResolvedTool = derived['tool'];
+
+    String? lastResolvedTrek;
+    if (lastResolvedTrekId != null) {
+      lastResolvedTrek = lastResolvedTrekId;
+      for (final trek in availableTreks) {
+        if (trek['trek_name'] == lastResolvedTrekId) {
+          lastResolvedTrek = trek['name']?.toString();
+          break;
+        }
+      }
+      if (lastResolvedTrek == lastResolvedTrekId) {
+        lastResolvedTrek = _readableTrekName(lastResolvedTrekId);
+      }
+    }
+
+    debugPrint(
+      '===== USER MESSAGE =====\n'
+      '$text\n\n'
+      'Selected Trek: ${_selectedtrek_name ?? 'none'}\n'
+      'Last Conversation Trek: ${lasttrekName ?? 'none'}\n'
+      'Last Resolved Trek: ${lastResolvedTrek ?? 'none'}\n'
+      'Last Resolved Tool: ${lastResolvedTool ?? 'none'}\n'
+      'Context Messages Passed To Router: ${agentMessages.length}',
+    );
 
     _toolRegistryService.beginResponseTrace();
     ReasoningTrace? trace;
 
     try {
-      // ----------------------------------------------------
       // PASS 1: Classification & Routing
-      // ----------------------------------------------------
       _streamingToken = 'Thinking locally...\n';
       notifyListeners();
 
-      final treksList = availableTreks
-          .map((t) => t['trek_name'] as String? ?? '')
-          .where((n) => n.isNotEmpty)
-          .toList();
-
       final routerPrompt = _llmService.buildRouterPrompt(
         messages: agentMessages,
-        availableTreks: treksList,
+        hasSelectedTrek: hasSelectedTrek,
+        lastResolvedTrek: lastResolvedTrek,
+        lastResolvedTool: lastResolvedTool,
+      );
+      _logToolSchemaAudit(
+        toolSchemas: _toolRegistryService.toolSchemas,
+        routerPrompt: routerPrompt,
       );
 
-      debugPrint('[Agent] PASS 1 Prompt:\n$routerPrompt');
-
-      const routerMaxTokens = 150;
-      final routerResponse = await _streamResponse(
+      const routerMaxTokens = 120;
+      _logPromptStage(
+        header: 'PASS 1 INPUT',
+        prompt: routerPrompt,
+        maxTokens: routerMaxTokens,
+      );
+      final routerResponse = await _llmService.generateText(
         routerPrompt,
-        routerMaxTokens,
-        currentSessionId,
+        maxTokens: routerMaxTokens,
+        label: 'Pass 1 (Router)',
       );
 
-      debugPrint('[Agent] PASS 1 Raw Output:\n$routerResponse');
+      debugPrint('===== PASS 1 OUTPUT =====\n$routerResponse');
 
       final classification = _parseRouterOutput(routerResponse);
-      final type = classification['type'] ?? 'chat';
-      debugPrint('[Agent] Router classification: type=$type, details=$classification');
+      var type = classification['type'] ?? 'chat';
+      _logParsedRouterResult(classification);
+      _logRouterAudit(
+        userQuery: text,
+        routerOutput: routerResponse,
+        classification: classification,
+      );
+      if (type == 'chat') {
+        final expected = _expectedRouterClassification(text);
+        if (expected['type'] == 'tool') {
+          classification['type'] = 'tool';
+          classification['tool_name'] = expected['tool'] ?? 'get_trek_details';
+          classification['category'] = expected['category'] ?? 'none';
+          type = 'tool';
+          debugPrint(
+            '===== ROUTER RESULT AFTER GUARDS =====\n'
+            'reason=expected_tool_but_router_returned_chat\n'
+            'type=${classification['type'] ?? 'none'}\n'
+            'category=${classification['category'] ?? 'none'}\n'
+            'tool=${classification['tool_name'] ?? 'none'}',
+          );
+        }
+      }
+
+      if (type == 'tool' && classification['tool_name'] == 'list_available_treks') {
+        final hasTrek = hasSelectedTrek;
+        final queryLower = text.toLowerCase();
+        final hasListingKeywords = queryLower.contains('list') ||
+            queryLower.contains('compare') ||
+            queryLower.contains('other') ||
+            queryLower.contains('options') ||
+            queryLower.contains('alternative') ||
+            queryLower.contains('which treks') ||
+            queryLower.contains('what treks');
+        if (hasTrek && !hasListingKeywords) {
+          classification['tool_name'] = 'get_trek_details';
+          classification['category'] = 'info';
+          debugPrint(
+            '===== ROUTER RESULT AFTER GUARDS =====\n'
+            'reason=override_list_available_treks_when_trek_selected\n'
+            'type=${classification['type'] ?? 'none'}\n'
+            'category=${classification['category'] ?? 'none'}\n'
+            'tool=${classification['tool_name'] ?? 'none'}',
+          );
+        }
+      }
 
       if (type == 'chat') {
         final chatReply = classification['chat_response']?.trim() ?? '';
@@ -671,70 +741,95 @@ class AppState extends ChangeNotifier {
         );
         return;
       }
-
-      // ----------------------------------------------------
       // PASS 2: Tool Execution & Grounded Summarization
-      // ----------------------------------------------------
       _streamingToken = 'Using offline trek knowledge...\n';
       notifyListeners();
 
-      final toolName = classification['tool_name'] ?? 'get_trek_overview';
-      var trekName = classification['trek_name'] ?? _selectedtrek_name ?? lasttrekName ?? 'none';
-      if (trekName == 'none' && (_selectedtrek_name != null || lasttrekName != null)) {
-        trekName = _selectedtrek_name ?? lasttrekName ?? 'none';
-      }
+      final toolName = classification['tool_name'] ?? 'get_trek_details';
+      final trekName = _selectedtrek_name ?? lasttrekName ?? 'none';
 
-      final category = classification['category'] ?? 'none';
-      final question = classification['question'] ?? text;
+      var category = classification['category'] ?? 'none';
+      if (toolName == 'get_trek_details' && category == 'none') {
+        category = 'info';
+      }
+      final question = text;
 
       final arguments = <String, dynamic>{};
-      if (trekName != 'none') {
+      if (_toolRegistryService.requiresTrekName(toolName) &&
+          trekName != 'none') {
         arguments['trek_name'] = trekName;
       }
       if (category != 'none') {
         arguments['category'] = category;
       }
-      if (question != 'none') {
+      if (toolName == 'get_trek_faq' && question.trim().isNotEmpty) {
         arguments['question'] = question;
       }
 
-      final toolCall = ToolCall(
-        name: toolName,
-        arguments: arguments,
-      );
+      final toolCall = ToolCall(name: toolName, arguments: arguments);
 
-      debugPrint('[Agent] Executing tool: ${toolCall.name} with args: ${toolCall.arguments}');
+      debugPrint(
+        '===== TOOL EXECUTION =====\n'
+        'tool=${toolCall.name}\n'
+        'category=$category\n'
+        'trek=$trekName\n'
+        'question=$question\n'
+        'arguments=${_prettyObject(toolCall.arguments)}',
+      );
 
       final result = _toolRegistryService.execute(toolCall);
       trace = _toolRegistryService.currentTrace;
+
+      debugPrint(
+        '===== RAW TOOL RESULT =====\n${_prettyObject(result.payload)}',
+      );
+      debugPrint(
+        '===== NORMALIZED TOOL RESULT =====\n'
+        'trek=${result.normalizedResult.trekName}\n'
+        'category=${result.normalizedResult.category}\n'
+        'information_count=${result.normalizedResult.information.length}\n'
+        'additional_information_count=${result.normalizedResult.additionalInformation.length}\n'
+        '${_prettyObject(result.normalizedResult.toMap())}',
+      );
 
       final matchedTrek = trace.matchedTrek;
       if (matchedTrek.isNotEmpty && matchedTrek != 'none' && convId != null) {
         _lastSelectedTrekNames[convId] = matchedTrek;
       }
 
-      String contextPayload = '';
-      if (result.success) {
-        contextPayload = _truncateToolResult(result.payload);
-      } else {
-        contextPayload = 'No offline data found for category "$category" of trek "$trekName".';
-      }
+      // For Pass 2: Send zero prior conversation history turns to avoid context blending.
+      final pass2Messages = const <Map<String, dynamic>>[];
+      _logPass2History(pass2Messages);
 
-      debugPrint('[Agent] Local tool execution completed. Data: $contextPayload');
+      final contextPayload = ToolResultPromptBuilder.build(
+        question: question,
+        result: result.normalizedResult,
+      );
+
+      debugPrint(
+        '[Agent] Local tool execution completed. Normalized data:\n$contextPayload',
+      );
 
       final rephrasePrompt = _llmService.buildRephrasePrompt(
         context: contextPayload,
-        messages: agentMessages,
+        messages: pass2Messages,
       );
 
-      debugPrint('[Agent] PASS 2 Prompt:\n$rephrasePrompt');
-
-      final maxTokens = model.maxOutputTokens > 0 ? model.maxOutputTokens : 512;
+      final maxTokens = model.maxOutputTokens > 0
+          ? model.maxOutputTokens.clamp(700, 2048)
+          : 700;
+      _logPromptStage(
+        header: 'PASS 2 INPUT',
+        prompt: rephrasePrompt,
+        maxTokens: maxTokens,
+        tokenHeader: 'PASS 2 TOKENS',
+      );
       final finalResponse = await _streamResponse(
         rephrasePrompt,
         maxTokens,
         currentSessionId,
       );
+      debugPrint('===== PASS 2 OUTPUT =====\n$finalResponse');
 
       _sentenceQueue.clear();
       _sentenceBuffer = '';
@@ -756,7 +851,6 @@ class AppState extends ChangeNotifier {
         modelName: model.name,
         reasoningTrace: trace,
       );
-
     } catch (e) {
       _finishStreamingWithMessage(
         '*(Inference Error)*\n\n${e.toString()}',
@@ -766,36 +860,242 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  @visibleForTesting
+  Map<String, String?> getDerivedContextFromHistory(List<Message> messages) {
+    String? lastResolvedTrekId;
+    String? lastResolvedTool;
+    for (final message in messages.reversed) {
+      if (message.sender == 'ai' && message.reasoningTrace != null) {
+        final trace = message.reasoningTrace!;
+        final trek = trace.matchedTrek;
+        final isValidTrek = trek.isNotEmpty &&
+            trek != 'all' &&
+            trek != 'session' &&
+            trek != 'response' &&
+            trek != 'none';
+        if (isValidTrek) {
+          lastResolvedTrekId = trek;
+          if (trace.toolsUsed.isNotEmpty) {
+            lastResolvedTool = trace.toolsUsed.last;
+          }
+          break;
+        }
+      }
+    }
+    return {
+      'trekId': lastResolvedTrekId,
+      'tool': lastResolvedTool,
+    };
+  }
+
+  void _logPromptStage({
+    required String header,
+    required String prompt,
+    required int maxTokens,
+    String? tokenHeader,
+  }) {
+    debugPrint('===== $header =====\n$prompt');
+    final budgetHeader = tokenHeader ?? '$header TOKEN BUDGET';
+    debugPrint(
+      '===== $budgetHeader =====\n'
+      'Prompt Length: ${prompt.length}\n'
+      'Estimated Tokens: ${_estimateTokenCount(prompt)}\n'
+      'Max Tokens: $maxTokens',
+    );
+  }
+
+  void _logPass2History(List<Map<String, dynamic>> messages) {
+    debugPrint(
+      '===== PASS 2 HISTORY =====\n'
+      'History Count: ${messages.length}\n'
+      'History Messages:\n'
+      '${messages.isEmpty ? 'none' : _prettyObject(messages)}',
+    );
+  }
+
+  void _logToolSchemaAudit({
+    required List<Map<String, dynamic>> toolSchemas,
+    required String routerPrompt,
+  }) {
+    for (final schema in toolSchemas) {
+      final function = schema['function'];
+      final functionMap = function is Map
+          ? Map<String, dynamic>.from(function)
+          : const <String, dynamic>{};
+      final toolName = functionMap['name']?.toString() ?? 'unknown';
+      final description = functionMap['description']?.toString() ?? '';
+      final serializedSchema = _prettyObject(schema);
+      final descriptionIncluded =
+          description.isNotEmpty && routerPrompt.contains(description);
+      final schemaIncluded = routerPrompt.contains(serializedSchema);
+
+      debugPrint(
+        '===== TOOL SCHEMA AUDIT =====\n'
+        'Tool Name: $toolName\n'
+        'Description:\n${description.isEmpty ? 'none' : description}\n'
+        'Included In Prompt: $descriptionIncluded\n'
+        'Serialized Schema Included In Prompt: $schemaIncluded\n'
+        'Serialized Schema:\n$serializedSchema',
+      );
+    }
+  }
+
+  void _logParsedRouterResult(Map<String, String> classification) {
+    debugPrint(
+      '===== PARSED ROUTER RESULT =====\n'
+      'type=${classification['type'] ?? 'none'}\n'
+      'category=${classification['category'] ?? 'none'}\n'
+      'tool=${classification['tool_name'] ?? 'none'}\n'
+      'chat_response_length=${classification['chat_response']?.length ?? 0}',
+    );
+  }
+
+  void _logRouterAudit({
+    required String userQuery,
+    required String routerOutput,
+    required Map<String, String> classification,
+  }) {
+    final expected = _expectedRouterClassification(userQuery);
+    final actualType = classification['type'] ?? 'chat';
+    final actualTool = classification['tool_name'] ?? 'none';
+    final actualCategory = classification['category'] ?? 'none';
+    final mismatch =
+        expected['type'] != actualType ||
+        (expected['tool'] != 'none' && expected['tool'] != actualTool) ||
+        (expected['category'] != 'none' &&
+            expected['category'] != actualCategory);
+
+    debugPrint(
+      '===== ROUTER AUDIT =====\n'
+      'User Query:\n$userQuery\n\n'
+      'Router Output:\n$routerOutput\n\n'
+      'Expected Type: ${expected['type']}\n'
+      'Expected Tool: ${expected['tool']}\n'
+      'Expected Category: ${expected['category']}\n'
+      'Actual Type: $actualType\n'
+      'Actual Tool: $actualTool\n'
+      'Actual Category: $actualCategory\n'
+      'Mismatch: $mismatch',
+    );
+  }
+
+  Map<String, String> _expectedRouterClassification(String query) {
+    final category = _inferExpectedCategory(query);
+    if (_looksLikeAvailableTreksQuery(query)) {
+      return const {
+        'type': 'tool',
+        'tool': 'list_available_treks',
+        'category': 'none',
+      };
+    }
+    if (category == 'faq') {
+      return const {'type': 'tool', 'tool': 'get_trek_faq', 'category': 'none'};
+    }
+    if (category != 'none') {
+      return {'type': 'tool', 'tool': 'get_trek_details', 'category': category};
+    }
+    return const {'type': 'chat', 'tool': 'none', 'category': 'none'};
+  }
+
+  String _inferExpectedCategory(String query) {
+    final lower = query.toLowerCase();
+    final words = lower.split(RegExp(r'[\s,\.\?!;:/()\[\]\-]+')).toSet();
+
+    const phraseCategories = <String, String>{
+      'altitude sickness': 'emergency',
+      'health post': 'hospitals',
+      'medical center': 'hospitals',
+      'tea house': 'accommodation',
+      'drinking water': 'food_water',
+      'mobile network': 'connectivity',
+      'sim card': 'faq',
+      'offline map': 'faq',
+    };
+    for (final entry in phraseCategories.entries) {
+      if (lower.contains(entry.key)) return entry.value;
+    }
+
+    const categoryWords = <String, Set<String>>{
+      'route': {'itinerary', 'route', 'day', 'schedule', 'walk', 'hike'},
+      'hospitals': {'hospital', 'hospitals', 'health', 'medical', 'clinic'},
+      'emergency': {'emergency', 'rescue', 'helicopter', 'ams', 'sickness'},
+      'transport': {'transport', 'bus', 'jeep', 'taxi', 'flight', 'airport'},
+      'weather': {'weather', 'season', 'temperature', 'rain', 'snow'},
+      'permits': {'permit', 'permits', 'tims', 'acap', 'fee'},
+      'food_water': {'food', 'water', 'meal', 'meals', 'eat', 'drink'},
+      'accommodation': {'accommodation', 'lodge', 'teahouse', 'room', 'stay'},
+      'connectivity': {'connectivity', 'network', 'internet', 'wifi', 'signal'},
+      'landmarks': {'landmark', 'peak', 'viewpoint', 'mountain', 'river'},
+      'villages': {'village', 'villages', 'settlement', 'town'},
+      'faq': {
+        'gear',
+        'packing',
+        'cost',
+        'costs',
+        'atm',
+        'porter',
+        'guide',
+        'map',
+        'charging',
+        'electricity',
+      },
+      'info': {'difficulty', 'duration', 'overview', 'description', 'trek'},
+    };
+
+    for (final entry in categoryWords.entries) {
+      if (entry.value.any(words.contains)) return entry.key;
+    }
+    return 'none';
+  }
+
+  bool _looksLikeAvailableTreksQuery(String query) {
+    final lower = query.toLowerCase();
+    return (lower.contains('available') || lower.contains('list')) &&
+        (lower.contains('trek') || lower.contains('treks'));
+  }
+
+  int _estimateTokenCount(String text) => (text.length / 4.0).ceil();
+
+  String _prettyObject(Object? value) {
+    try {
+      return const JsonEncoder.withIndent('  ').convert(value);
+    } catch (_) {
+      return value.toString();
+    }
+  }
+
   Map<String, String> _parseRouterOutput(String response) {
     final result = <String, String>{};
 
-    final typeMatch = RegExp(r'Type:\s*(\w+)', caseSensitive: false).firstMatch(response);
-    if (typeMatch != null) {
-      result['type'] = typeMatch.group(1)!.trim().toLowerCase();
-    } else {
-      result['type'] = 'chat';
-    }
+    final typeMatch = RegExp(
+      r'Type:\s*(\w+)',
+      caseSensitive: false,
+    ).firstMatch(response);
+    result['type'] = typeMatch?.group(1)?.trim().toLowerCase() ?? 'chat';
 
     if (result['type'] == 'chat') {
-      final chatResponseIdx = response.indexOf('ChatResponse:');
-      if (chatResponseIdx != -1) {
-        var chatContent = response.substring(chatResponseIdx + 'ChatResponse:'.length).trim();
-        if (chatContent.contains('===')) {
-          chatContent = chatContent.split('===')[0].trim();
-        }
-        result['chat_response'] = chatContent;
-      } else {
-        result['chat_response'] = response.replaceAll(RegExp(r'Type:\s*chat', caseSensitive: false), '').trim();
-      }
-    } else {
-      final fields = ['TrekName', 'ToolName', 'Category', 'Question'];
-      for (final field in fields) {
-        final reg = RegExp('$field:\\s*([^\\n]+)', caseSensitive: false);
-        final match = reg.firstMatch(response);
-        if (match != null) {
-          result[field.toLowerCase()] = match.group(1)!.trim();
-        }
-      }
+      final responseMatch = RegExp(
+        r'Response:\s*([\s\S]+)',
+        caseSensitive: false,
+      ).firstMatch(response);
+      result['chat_response'] = responseMatch?.group(1)?.trim() ?? '';
+      return result;
+    }
+
+    final toolMatch = RegExp(
+      r'Tool:\s*([^\n]+)',
+      caseSensitive: false,
+    ).firstMatch(response);
+    if (toolMatch != null) {
+      result['tool_name'] = toolMatch.group(1)!.trim();
+    }
+
+    final categoryMatch = RegExp(
+      r'Category:\s*([^\n]+)',
+      caseSensitive: false,
+    ).firstMatch(response);
+    if (categoryMatch != null) {
+      result['category'] = categoryMatch.group(1)!.trim();
     }
 
     return result;
@@ -806,7 +1106,11 @@ class AppState extends ChangeNotifier {
     int maxTokens,
     int currentSessionId,
   ) async {
-    final stream = _llmService.generate(prompt, maxTokens: maxTokens);
+    final stream = _llmService.generate(
+      prompt,
+      maxTokens: maxTokens,
+      label: 'Pass 2 (Rephrase)',
+    );
     final buffer = StringBuffer();
     _streamingToken = '';
 
@@ -839,40 +1143,6 @@ class AppState extends ChangeNotifier {
     _llmStreamSub = null;
     return buffer.toString().trim();
   }
-
-
-  /// Compresses a tool result payload so it fits in the prompt without
-  /// bloating every subsequent round. Keeps all keys but truncates long
-  /// string values and large list fields to a short summary.
-  String _truncateToolResult(Map<String, dynamic> payload, {int maxChars = 600}) {
-    final encoded = jsonEncode(payload);
-    if (encoded.length <= maxChars) return encoded;
-
-    // Build a trimmed copy: shorten long strings, summarise big lists.
-    dynamic trimmed(dynamic value, int depth) {
-      if (value is Map<String, dynamic>) {
-        return value.map((k, v) => MapEntry(k, trimmed(v, depth + 1)));
-      }
-      if (value is List) {
-        if (value.length > 3) {
-          return {'_summary': '${value.length} items', '_first': value.take(2).toList()};
-        }
-        return {'_list': value.map((e) => trimmed(e, depth + 1)).toList()};
-      }
-      if (value is String && value.length > 200) {
-        return '${value.substring(0, 197)}…';
-      }
-      return value;
-    }
-
-    final slim = payload.map((k, v) => MapEntry(k, trimmed(v, 0)));
-    final slimEncoded = jsonEncode(slim);
-    if (slimEncoded.length <= maxChars) return slimEncoded;
-
-    // Last resort: raw truncation with a note.
-    return '${encoded.substring(0, maxChars - 20)}…[truncated]';
-  }
-
 
   /// Commits the streamed text as a completed AI message and persists.
   void _finishStreamingWithMessage(
@@ -1095,6 +1365,7 @@ class AppState extends ChangeNotifier {
         notifyListeners();
         return;
       }
+      // Remove this
 
       // Start recording with language set to Nepali ('ne')
       // When user taps mic again, stopListening() will be called

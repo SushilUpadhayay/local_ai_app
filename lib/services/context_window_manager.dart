@@ -2,6 +2,7 @@ import '../models/conversation.dart';
 
 class ContextWindowManager {
   static const int defaultTurnLimit = 3; // Three previous chats
+  static const int pass2TurnLimit = 2; // Two previous chats
 
   // Approximate token count based on typical character length (~4 chars per token).
   // Kept for diagnostics and future budgeting; prompt memory is turn-limited.
@@ -55,6 +56,24 @@ class ContextWindowManager {
     return [
       for (final turn in recentTurns) ...[turn.user, turn.assistant],
       ?currentUserMessage,
+    ];
+  }
+
+  List<Message> getPreviousTurnRoleMessages(
+    List<Message> fullHistory, {
+    int turnLimit = pass2TurnLimit,
+  }) {
+    final currentUserMessage = _currentUserMessage(fullHistory);
+    final previousMessages = currentUserMessage == null
+        ? fullHistory
+        : fullHistory.take(fullHistory.length - 1).toList();
+    final turns = _completeTurns(previousMessages);
+    final recentTurns = turns.length <= turnLimit
+        ? turns
+        : turns.sublist(turns.length - turnLimit);
+
+    return [
+      for (final turn in recentTurns) ...[turn.user, turn.assistant],
     ];
   }
 

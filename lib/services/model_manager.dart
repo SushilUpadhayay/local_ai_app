@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import '../models/model_item.dart';
 import '../repositories/model_repository.dart';
 import '../services/model_catalog_service.dart';
@@ -51,10 +52,25 @@ class ModelManager {
     _activeWhisperModelId = await _repository.loadActiveWhisperModelId();
 
     final defaultModels = await _catalogService.getAvailableModels();
+    debugPrint(
+      '[ModelManager] Catalog loaded: ${defaultModels.length} models.',
+    );
+    for (final model in defaultModels) {
+      debugPrint(
+        '[ModelManager] Catalog context: '
+        'id=${model.id} contextWindow=${model.contextWindow} '
+        'maxOutputTokens=${model.maxOutputTokens}',
+      );
+    }
     // Build a lookup map from catalog for quick access
     final catalogMap = {for (final m in defaultModels) m.id: m};
 
     if (loadedModels != null && loadedModels.isNotEmpty) {
+      debugPrint(
+        '[ModelManager] Cached metadata loaded: ${loadedModels.length} models, '
+        'activeModelId=$_activeModelId, '
+        'activeWhisperModelId=$_activeWhisperModelId',
+      );
       final loadedModelIds = loadedModels.map((m) => m.id).toSet();
       bool dirty = false;
 
@@ -63,7 +79,14 @@ class ModelManager {
       //    requiring users to wipe their cache.
       final refreshedModels = loadedModels.map((cached) {
         final catalog = catalogMap[cached.id];
-        if (catalog == null) return cached; // custom/sideloaded model — keep as-is
+        if (catalog == null) {
+          debugPrint(
+            '[ModelManager] Context source: id=${cached.id} '
+            'custom metadata contextWindow=${cached.contextWindow} '
+            '(no catalog entry)',
+          );
+          return cached; // custom/sideloaded model — keep as-is
+        }
         final updated = cached.copyWith(
           contextWindow: catalog.contextWindow,
           url: catalog.url,
@@ -80,12 +103,21 @@ class ModelManager {
             updated.ram != cached.ram) {
           dirty = true;
         }
+        debugPrint(
+          '[ModelManager] Context source: id=${cached.id} '
+          'cached=${cached.contextWindow} catalog=${catalog.contextWindow} '
+          'effective=${updated.contextWindow}',
+        );
         return updated;
       }).toList();
 
       // 2. Append any brand-new catalog models not yet in the cache
       for (final catalogModel in defaultModels) {
         if (!loadedModelIds.contains(catalogModel.id)) {
+          debugPrint(
+            '[ModelManager] Added catalog model to metadata: '
+            'id=${catalogModel.id} contextWindow=${catalogModel.contextWindow}',
+          );
           refreshedModels.add(catalogModel);
           dirty = true;
         }
@@ -101,6 +133,9 @@ class ModelManager {
       _activeModelId = null;
       _activeWhisperModelId = null;
       _models = defaultModels;
+      debugPrint(
+        '[ModelManager] No cached metadata found; using catalog context windows.',
+      );
       await saveMetadata();
     }
   }

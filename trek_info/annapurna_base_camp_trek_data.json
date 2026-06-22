@@ -6,1192 +6,145 @@
     "annapurna",
     "ABC"
   ],
-  "overview": {
-    "trek_name": "Annapurna Base Camp Trek (ABC Trek)",
-    "overview": "The Annapurna Base Camp Trek is a moderate journey through the Annapurna Conservation Area, taking trekkers to the base of the 10th highest mountain in the world. The trek passes through diverse landscapes from subtropical forests to high-altitude alpine terrain, traditional Gurung and Magar villages, and culminates at 4,130m in the Annapurna Sanctuary.",
-    "region": "Annapurna Conservation Area, Gandaki Province (formerly Bagmati Province)",
-    "districts": [
-      "Kaski District",
-      "Manang District"
-    ],
-    "maximum_altitude": {
-      "value_meters": 4130,
-      "value_feet": 13550,
-      "location": "Annapurna Base Camp"
-    },
-    "difficulty_level": "Moderate to Moderately Difficult",
-    "trek_duration": {
-      "minimum_days": 7,
-      "standard_days": "10-12",
-      "maximum_days": 14,
-      "note": "Depends on route (via Poon Hill is longer but better for acclimatization)"
-    },
-    "total_distance": {
-      "via_poon_hill_km": "75-85",
-      "direct_route_km": "50-70",
-      "note": "Varies by route selection"
-    }
-  },
   "details": {
-    "route": {
-      "starting_point": {
-        "name": "Nayapul",
-        "altitude_meters": 1070,
-        "altitude_feet": 3510,
-        "latitude": 28.2667,
-        "longitude": 83.8833
-      },
-      "ending_point": {
-        "\"name\": \"Nayapul (return) or Pokhara\",altitude_meters": 1070,
-        "note": "Most trekkers return to Nayapul and drive to Pokhara"
-      },
-      "villages_in_order": [
-        {
-          "name": "Nayapul",
-          "altitude_meters": 1070
-        },
-        {
-          "name": "Hile",
-          "altitude_meters": 1450
-        },
-        {
-          "name": "Ghorepani",
-          "altitude_meters": 2850
-        },
-        {
-          "name": "Poon Hill",
-          "altitude_meters": 3210,
-          "note": "Viewpoint (not settlement)"
-        },
-        {
-          "name": "Tadapani",
-          "altitude_meters": 2640
-        },
-        {
-          "name": "Chhomrong",
-          "altitude_meters": 2170
-        },
-        {
-          "name": "Sinuwa",
-          "altitude_meters": 2340
-        },
-        {
-          "name": "Bamboo",
-          "altitude_meters": 2310
-        },
-        {
-          "name": "Dovan",
-          "altitude_meters": 2600
-        },
-        {
-          "name": "Deurali",
-          "altitude_meters": 3230
-        },
-        {
-          "name": "Machhapuchhre Base Camp (MBC)",
-          "altitude_meters": 3700
-        },
-        {
-          "name": "Annapurna Base Camp (ABC)",
-          "altitude_meters": 4130
-        }
+    "info": {
+      "information": [
+        "Annapurna Base Camp (ABC) Trek is a moderate to moderately difficult trek in the Annapurna Conservation Area of Nepal.",
+        "The maximum altitude reached is 4,130 meters (13,550 feet) at Annapurna Base Camp.",
+        "The standard duration of the trek is 10 to 12 days, depending on the specific route taken.",
+        "The trek passes through diverse landscapes, from subtropical forests to high-altitude alpine terrain and the Annapurna Sanctuary."
       ],
-      "itinerary": [
-        {
-          "day": 1,
-          "route": "Pokhara to Nayapul, trek to Hile",
-          "walking_hours": "5-6",
-          "distance_km": 12,
-          "elevation_gain_meters": 380,
-          "elevation_start_meters": 1070,
-          "elevation_end_meters": 1450,
-          "accommodation": "Hile"
-        },
-        {
-          "day": 2,
-          "route": "Hile to Ghorepani",
-          "walking_hours": "7-8",
-          "distance_km": 14,
-          "elevation_gain_meters": 1400,
-          "elevation_start_meters": 1450,
-          "elevation_end_meters": 2850,
-          "accommodation": "Ghorepani",
-          "note": "Steep ascent through forest"
-        },
-        {
-          "day": 3,
-          "route": "Ghorepani to Poon Hill (sunrise), then to Tadapani",
-          "walking_hours": "7-8 total",
-          "distance_km": 13,
-          "elevation_gained_meters": 360,
-          "elevation_lost_meters": 210,
-          "elevation_start_meters": 2850,
-          "elevation_end_meters": 2640,
-          "accommodation": "Tadapani",
-          "note": "Early morning sunrise hike to Poon Hill (30 min uphill)"
-        },
-        {
-          "day": 4,
-          "route": "Tadapani to Chhomrong",
-          "walking_hours": "6-7",
-          "distance_km": 10,
-          "elevation_lost_meters": 470,
-          "elevation_start_meters": 2640,
-          "elevation_end_meters": 2170,
-          "accommodation": "Chhomrong"
-        },
-        {
-          "day": 5,
-          "route": "Chhomrong to Sinuwa to Bamboo",
-          "walking_hours": "6-7",
-          "distance_km": 11,
-          "elevation_gain_meters": 170,
-          "elevation_start_meters": 2170,
-          "elevation_end_meters": 2310,
-          "accommodation": "Bamboo",
-          "note": "Through rhododendron forest, along Modi Khola"
-        },
-        {
-          "day": 6,
-          "route": "Bamboo to Dovan to Deurali",
-          "walking_hours": "6-7",
-          "distance_km": 10,
-          "elevation_gain_meters": 920,
-          "elevation_start_meters": 2310,
-          "elevation_end_meters": 3230,
-          "accommodation": "Deurali",
-          "note": "Steep ascent to Deurali"
-        },
-        {
-          "day": 7,
-          "route": "Deurali to Machhapuchhre Base Camp to Annapurna Base Camp",
-          "walking_hours": "5-6",
-          "distance_km": 8,
-          "elevation_gain_meters": 900,
-          "elevation_start_meters": 3230,
-          "elevation_end_meters": 4130,
-          "accommodation": "Annapurna Base Camp",
-          "note": "Via MBC (3700m), enters Annapurna Sanctuary"
-        },
-        {
-          "day": 8,
-          "route": "Annapurna Base Camp to MBC to Deurali to Dovan/Bamboo",
-          "walking_hours": "7-8",
-          "distance_km": 14,
-          "elevation_lost_meters": 1820,
-          "elevation_start_meters": 4130,
-          "elevation_end_meters": 2310,
-          "accommodation": "Bamboo",
-          "note": "Long descent day"
-        },
-        {
-          "day": 9,
-          "route": "Bamboo to Sinuwa to Chhomrong",
-          "walking_hours": "6-7",
-          "distance_km": 11,
-          "elevation_lost_meters": 140,
-          "elevation_start_meters": 2310,
-          "elevation_end_meters": 2170,
-          "accommodation": "Chhomrong"
-        },
-        {
-          "day": 10,
-          "route": "Chhomrong to Tadapani to Ghorepani",
-          "walking_hours": "7-8",
-          "distance_km": 15,
-          "elevation_gain_meters": 680,
-          "elevation_start_meters": 2170,
-          "elevation_end_meters": 2850,
-          "accommodation": "Ghorepani"
-        },
-        {
-          "day": 11,
-          "route": "Ghorepani to Poon Hill (sunrise) to Nayapul to Pokhara",
-          "walking_hours": "7-8",
-          "distance_km": 18,
-          "elevation_lost_meters": 1780,
-          "elevation_start_meters": 2850,
-          "elevation_end_meters": 1070,
-          "accommodation": "Pokhara",
-          "note": "Final sunrise at Poon Hill, drive back to Pokhara"
-        }
-      ],
-      "elevation_profile_summary": {
-        "lowest_point_meters": 1070,
-        "highest_point_meters": 4130,
-        "total_ascent_meters": "~4500 (cumulative)",
-        "total_descent_meters": "~4500 (cumulative)",
-        "key_elevation_milestones": [
-          {
-            "location": "Nayapul",
-            "altitude_meters": 1070
-          },
-          {
-            "location": "Ghorepani",
-            "altitude_meters": 2850
-          },
-          {
-            "location": "Poon Hill",
-            "altitude_meters": 3210
-          },
-          {
-            "location": "Tadapani",
-            "altitude_meters": 2640
-          },
-          {
-            "location": "Chhomrong",
-            "altitude_meters": 2170
-          },
-          {
-            "location": "Bamboo",
-            "altitude_meters": 2310
-          },
-          {
-            "location": "Deurali",
-            "altitude_meters": 3230
-          },
-          {
-            "location": "Machhapuchhre BC",
-            "altitude_meters": 3700
-          },
-          {
-            "location": "Annapurna BC",
-            "altitude_meters": 4130
-          }
-        ]
-      }
+      "additional_information": [
+        "The trek difficulty level varies based on the route; taking the route via Poon Hill increases duration but is much better for altitude acclimatization."
+      ]
     },
-    "hospitals": {
-      "health_posts": [
-        {
-          "name": "Chhomrong Health Post",
-          "location": "Chhomrong Village",
-          "altitude_meters": 2170,
-          "type": "Basic health post",
-          "services": [
-            "Basic first aid",
-            "Minor illness treatment"
-          ]
-        },
-        {
-          "name": "Jhinu Danda Health Post",
-          "location": "Jhinu Danda",
-          "altitude_meters": 1750,
-          "type": "Basic health post",
-          "services": [
-            "First aid",
-            "Basic medical care"
-          ]
-        }
+    "route": {
+      "information": [
+        "The starting point of the trek is Nayapul (1,070m), which is a 3 to 4-hour drive (65km) from Pokhara.",
+        "The ending point is Nayapul, from where trekkers drive back to Pokhara.",
+        "The total trekking distance is approximately 75 to 85 kilometers via Poon Hill, or 50 to 70 kilometers on the direct route.",
+        "Trekkers walk an average of 5 to 7 hours per day, covering 8 to 14 kilometers daily.",
+        "Day 1: Pokhara to Nayapul (drive), trek to Hile (5-6 hours, 12km, 380m climb).",
+        "Day 2: Hile to Ghorepani (7-8 hours, 14km, steep 1400m ascent through forest).",
+        "Day 3: Ghorepani to Poon Hill (sunrise), then trek to Tadapani (7-8 hours total, 13km).",
+        "Day 4: Tadapani to Chhomrong (6-7 hours, 10km, descend 470m).",
+        "Day 5: Chhomrong to Bamboo (6-7 hours, 11km, through forest along Modi Khola).",
+        "Day 6: Bamboo to Deurali (6-7 hours, 10km, 920m steep ascent).",
+        "Day 7: Deurali to Annapurna Base Camp via MBC (5-6 hours, 8km, 900m climb, enters sanctuary).",
+        "Day 8: Annapurna Base Camp to Bamboo (7-8 hours, 14km, long 1820m descent).",
+        "Day 9: Bamboo to Sinuwa to Chhomrong (6-7 hours, 11km).",
+        "Day 10: Chhomrong to Tadapani to Ghorepani (7-8 hours, 15km, 680m climb).",
+        "Day 11: Ghorepani to Poon Hill (sunrise) to Nayapul to Pokhara (7-8 hours, 18km, drive to Pokhara)."
       ],
-      "medical_centers": [
-        {
-          "name": "No hospitals/clinics on ABC route",
-          "note": "Basic health posts only; serious cases require helicopter evacuation"
-        },
-        {
-          "name": "Pokhara Medical Hospitals",
-          "location": "Pokhara",
-          "altitude_meters": 820,
-          "type": "Full medical facilities",
-          "note": "Primary destination for helicopter evacuation"
-        }
+      "additional_information": [
+        "Poon Hill (3,210m) is a key sunrise viewpoint along the route, accessed from Ghorepani via 3,767 stone steps."
+      ]
+    },
+    "landmarks": {
+      "information": [
+        "Major visible peaks include Annapurna I (8,091m), Annapurna South (7,219m), Machhapuchhre (Fishtail, 6,993m), Hiunchuli (6,441m), and Gangapurna (7,455m).",
+        "Poon Hill offers a panoramic sunrise view of the full Annapurna and Dhaulagiri ranges.",
+        "The trek follows the Modi Khola river valley and passes through extensive rhododendron, bamboo, and oak forests.",
+        "Rhododendrons bloom spectacularly in the lower forest sections between 2,000m and 3,500m during spring (March to May)."
+      ],
+      "additional_information": [
+        "The path crosses several suspension bridges over the Modi Khola river."
       ]
     },
     "villages": {
-      "major_settlements": [
-        {
-          "name": "Nayapul",
-          "altitude_meters": 1070,
-          "latitude": 28.2667,
-          "longitude": 83.8833,
-          "facilities": [
-            "Bus stop",
-            "Tea houses",
-            "Small shops",
-            "Tourist information"
-          ],
-          "lodging": "Multiple tea houses and lodges",
-          "lodging_type": "Basic rooms with shared facilities"
-        },
-        {
-          "name": "Hile",
-          "altitude_meters": 1450,
-          "latitude": 28.2833,
-          "longitude": 83.9,
-          "facilities": [
-            "Tea houses",
-            "Small shops"
-          ],
-          "lodging": "Tea houses available",
-          "lodging_type": "Basic"
-        },
-        {
-          "name": "Ghorepani",
-          "altitude_meters": 2850,
-          "latitude": 28.5083,
-          "longitude": 83.85,
-          "facilities": [
-            "Multiple tea houses",
-            "Wi-Fi (fee)",
-            "Mobile network",
-            "Electricity charging",
-            "Small shops",
-            "Restaurant"
-          ],
-          "lodging": "Many tea houses with twin-sharing rooms",
-          "lodging_type": "Standard tea house rooms",
-          "note": "Popular overnight stop, gateway to Poon Hill"
-        },
-        {
-          "name": "Tadapani",
-          "altitude_meters": 2640,
-          "latitude": 28.4833,
-          "longitude": 83.8667,
-          "facilities": [
-            "Tea houses",
-            "Electricity",
-            "Wi-Fi (fee)",
-            "Small shops"
-          ],
-          "lodging": "Tea houses available",
-          "lodging_type": "Basic rooms"
-        },
-        {
-          "name": "Chhomrong",
-          "altitude_meters": 2170,
-          "latitude": 28.4667,
-          "longitude": 83.8833,
-          "facilities": [
-            "Tea houses",
-            "Health post",
-            "Mobile network",
-            "Electricity",
-            "Small shops",
-            "Restaurant"
-          ],
-          "lodging": "Multiple tea houses",
-          "lodging_type": "Standard tea house",
-          "note": "Last village with meat available"
-        },
-        {
-          "name": "Sinuwa",
-          "altitude_meters": 2340,
-          "latitude": 28.45,
-          "longitude": 83.89,
-          "facilities": [
-            "Tea houses",
-            "Small shops",
-            "Electricity"
-          ],
-          "lodging": "Tea houses available",
-          "lodging_type": "Basic"
-        },
-        {
-          "name": "Bamboo",
-          "altitude_meters": 2310,
-          "latitude": 28.4583,
-          "longitude": 83.9,
-          "facilities": [
-            "Tea houses",
-            "Small shops",
-            "Hot showers (solar)",
-            "Electricity charging"
-          ],
-          "lodging": "Several tea houses",
-          "lodging_type": "Standard",
-          "note": "Named for bamboo forests nearby"
-        },
-        {
-          "name": "Dovan",
-          "altitude_meters": 2600,
-          "latitude": 28.475,
-          "longitude": 83.91,
-          "facilities": [
-            "Tea houses",
-            "Electricity"
-          ],
-          "lodging": "Few tea houses",
-          "lodging_type": "Basic"
-        },
-        {
-          "name": "Deurali",
-          "altitude_meters": 3230,
-          "latitude": 28.5119,
-          "longitude": 83.92,
-          "facilities": [
-            "Tea houses",
-            "Electricity",
-            "Limited Wi-Fi"
-          ],
-          "lodging": "Tea houses available",
-          "lodging_type": "Basic (higher altitude)",
-          "note": "Last village before base camp, important acclimatization point"
-        },
-        {
-          "name": "Machhapuchhre Base Camp (MBC)",
-          "altitude_meters": 3700,
-          "latitude": 28.526692,
-          "longitude": 83.907845,
-          "facilities": [
-            "Tea houses",
-            "Electricity (limited)",
-            "No Wi-Fi"
-          ],
-          "lodging": "Few tea houses (twin-sharing)",
-          "lodging_type": "High-altitude basic",
-          "note": "No meat available, only vegetarian food"
-        },
-        {
-          "name": "Annapurna Base Camp (ABC)",
-          "altitude_meters": 4130,
-          "latitude": 28.5306,
-          "longitude": 83.878,
-          "facilities": [
-            "Tea houses",
-            "Limited electricity",
-            "No Wi-Fi (weather dependent)"
-          ],
-          "lodging": "Tea houses (limited rooms)",
-          "lodging_type": "High-altitude basic",
-          "note": "Only vegetarian food, no Wi-Fi, limited facilities"
-        }
+      "information": [
+        "Nayapul (1,070m) is the starting trailhead with basic tourist shops and transportation.",
+        "Ghorepani (2,850m) is a major Gurung village and the gateway to Poon Hill.",
+        "Chhomrong (2,170m) is a large, key settlement with a health post and is the last village before the sanctuary where meat is served.",
+        "Deurali (3,230m) is a critical altitude acclimatization stop before base camp.",
+        "Machhapuchhre Base Camp (MBC) at 3,700m is the final overnight stop before reaching Annapurna Base Camp.",
+        "Annapurna Base Camp (ABC) at 4,130m offers basic lodges directly inside the Annapurna Sanctuary amphitheater."
+      ],
+      "additional_information": [
+        "Settlements above Chhomrong (including Sinuwa, Bamboo, Dovan, Himalaya, Deurali, MBC, and ABC) have basic teahouses."
       ]
     },
     "accommodation": {
-      "tea_houses": {
-        "availability": "Throughout entire route from Nayapul to ABC",
-        "number_estimate": "40-50 tea houses along route",
-        "facilities_common": [
-          "Twin-sharing rooms with beds",
-          "Dining room with wood stove",
-          "Basic toilets (western below, squat above)",
-          "Electricity charging (fee)",
-          "Wi-Fi (fee, limited above Deurali)"
-        ],
-        "hot_shower_availability": {
-          "below_2500m": "Solar/gas heated, available (fee NPR 200-400)",
-          "above_2500m": "Limited, may be lukewarm or cold",
-          "above_3500m": "Rare, mostly cold water only"
-        }
-      }
-    },
-    "landmarks": {
-      "mountains_visible": [
-        {
-          "name": "Annapurna I",
-          "altitude_meters": 8091,
-          "note": "10th highest mountain in world, visible from ABC"
-        },
-        {
-          "name": "Annapurna South",
-          "altitude_meters": 7219,
-          "note": "Prominent from ABC and Poon Hill"
-        },
-        {
-          "name": "Annapurna III",
-          "altitude_meters": 7555,
-          "note": "Visible from Tadapani and higher elevations"
-        },
-        {
-          "name": "Annapurna IV",
-          "altitude_meters": 7525,
-          "note": "Part of Annapurna massif"
-        },
-        {
-          "name": "Machhapuchhre (Fishtail Mountain)",
-          "altitude_meters": 6993,
-          "note": "Dominates view from MBC, iconic fishtail shape"
-        },
-        {
-          "name": "Hiunchuli",
-          "altitude_meters": 6441,
-          "note": "Visible along Modi Khola valley from Sinuwa"
-        },
-        {
-          "name": "Gangapurna",
-          "altitude_meters": 7455,
-          "note": "Appears in sanctuary from ABC"
-        },
-        {
-          "name": "Dhaulagiri",
-          "altitude_meters": 8167,
-          "note": "Visible from Poon Hill"
-        },
-        {
-          "name": "Nilgiri",
-          "altitude_meters": 6940,
-          "note": "Visible from Poon Hill"
-        },
-        {
-          "name": "Tukuche Peak",
-          "altitude_meters": 6888,
-          "note": "Visible from Poon Hill"
-        },
-        {
-          "name": "Gurja Himal",
-          "altitude_meters": 7193,
-          "note": "Visible from Poon Hill"
-        },
-        {
-          "name": "Annapurna II",
-          "altitude_meters": 7855,
-          "note": "Visible from Poon Hill"
-        }
+      "information": [
+        "Accommodation is widely available in local tea houses (basic lodges) throughout the entire route.",
+        "Tea houses generally offer basic twin-sharing rooms with common toilets.",
+        "Western-style toilets are common in lower villages, while squat toilets are typical in higher elevations.",
+        "Hot showers (solar or gas-heated) are available below 2,500m for a fee of NPR 200 to 400."
       ],
-      "rivers": [
-        {
-          "name": "Modi Khola (Modi River)",
-          "note": "Main river along trek route, originates from glaciers around Annapurna South and Hiunchuli",
-          "type": "Snow-fed perennial river",
-          "catchment_area_km2": 675,
-          "length_km": "~40"
-        }
-      ],
-      "waterfalls": [
-        {
-          "name": "Waterfalls along Modi Khola",
-          "location": "Multiple sections between Sinuwa and Deurali",
-          "note": "Seasonal waterfalls visible along the river valley"
-        }
-      ],
-      "lakes": [
-        {
-          "name": "No major lakes on ABC route",
-          "note": "Tilicho Lake is on a different trek (Annapurna Circuit)"
-        }
-      ],
-      "viewpoints": [
-        {
-          "name": "Poon Hill",
-          "altitude_meters": 3210,
-          "latitude": 28.5083,
-          "longitude": 83.8556,
-          "best_for": "Sunrise views",
-          "mountains_visible": [
-            "Annapurna range",
-            "Dhaulagiri",
-            "Machhapuchhre",
-            "Nilgiri",
-            "Tukuche Peak"
-          ],
-          "note": "One of the best viewpoints in the world for 7000m and 8000m peaks"
-        },
-        {
-          "name": "Annapurna Base Camp",
-          "altitude_meters": 4130,
-          "best_for": "Sunset and panoramic views of Annapurna Sanctuary",
-          "mountains_visible": [
-            "Annapurna I",
-            "Annapurna South",
-            "Machhapuchhre",
-            "Hiunchuli",
-            "Gangapurna"
-          ]
-        },
-        {
-          "name": "Machhapuchhre Base Camp",
-          "altitude_meters": 3700,
-          "best_for": "Close-up views of Machhapuchhre",
-          "latitude": 28.526692,
-          "longitude": 83.907845
-        }
-      ],
-      "forest_types": [
-        {
-          "type": "Bamboo Forest",
-          "altitude_range": "1500-2500m",
-          "locations": [
-            "Between Hile and Ghorepani",
-            "Near Bamboo village"
-          ]
-        },
-        {
-          "type": "Rhododendron Forest",
-          "altitude_range": "2000-3500m",
-          "locations": [
-            "Ghorepani to Tadapani",
-            "Bamboo to Deurali"
-          ],
-          "note": "Blooms in spring (March-May), includes rare species"
-        },
-        {
-          "type": "Subtropical Forest",
-          "altitude_range": "1000-2000m",
-          "locations": [
-            "Lower elevations near Nayapul"
-          ]
-        },
-        {
-          "type": "Alpine Pasture",
-          "altitude_range": "3500-4130m",
-          "locations": [
-            "Deurali to ABC"
-          ],
-          "note": "Rocky terrain with sparse vegetation"
-        }
-      ],
-      "base_camps": [
-        {
-          "name": "Machhapuchhre Base Camp (MBC)",
-          "altitude_meters": 3700,
-          "latitude": 28.526692,
-          "longitude": 83.907845,
-          "note": "Last settlement before ABC, in Annapurna Sanctuary"
-        },
-        {
-          "name": "Annapurna Base Camp (ABC)",
-          "altitude_meters": 4130,
-          "latitude": 28.5306,
-          "longitude": 83.878,
-          "note": "Final destination, surrounded by Annapurna massif"
-        }
-      ],
-      "cultural_sites": [
-        {
-          "name": "Ghandruk Village",
-          "type": "Traditional Gurung village",
-          "altitude_meters": 1940,
-          "note": "Rich Gurung culture, traditional architecture"
-        },
-        {
-          "name": "Chhomrong Village",
-          "type": "Gurung settlement",
-          "altitude_meters": 2170,
-          "note": "Traditional village with cultural heritage"
-        },
-        {
-          "name": "Temples and shrines",
-          "locations": [
-            "Various villages along route"
-          ],
-          "note": "Small Buddhist shrines and Hindu temples in villages"
-        }
+      "additional_information": [
+        "Hot shower options become very limited, lukewarm, or cold at higher altitudes (especially MBC and ABC)."
       ]
-    },
-    "transport": {
-      "how_to_reach_starting_point": {
-        "starting_point": "Nayapul",
-        "from_kathmandu": {
-          "option_1": {
-            "method": "Flight to Pokhara + Drive",
-            "flight_duration": "25-30 minutes (Kathmandu-Pokhara)",
-            "drive_duration": "3-4 hours (Pokhara-Nayapul)",
-            "total_time": "4-5 hours",
-            "cost_estimate_usd": "100-150 (flight) + 10-15 (drive)"
-          },
-          "option_2": {
-            "method": "Bus to Pokhara + Drive",
-            "bus_duration": "6-7 hours (Kathmandu-Pokhara)",
-            "drive_duration": "3-4 hours (Pokhara-Nayapul)",
-            "total_time": "10-12 hours",
-            "cost_estimate_usd": "15-25 (bus) + 10-15 (drive)"
-          }
-        },
-        "from_pokhara": {
-          "method": "Drive",
-          "duration": "3-4 hours",
-          "distance_km": "~65",
-          "cost_usd": "10-15 (jeep/shared)",
-          "note": "Road is mountainous, can be slow"
-        }
-      },
-      "transportation_options": [
-        {
-          "type": "Private Jeep",
-          "from": "Pokhara to Nayapul",
-          "duration": "3-4 hours",
-          "cost_usd": "40-60",
-          "capacity": "4-6 people"
-        },
-        {
-          "type": "Shared Jeep/Bus",
-          "from": "Pokhara to Nayapul",
-          "duration": "3-4 hours",
-          "cost_usd": "10-15",
-          "capacity": "Multiple passengers"
-        },
-        {
-          "type": "Flight",
-          "from": "Kathmandu to Pokhara",
-          "duration": "25-30 minutes",
-          "cost_usd": "100-150",
-          "note": "Weather dependent, book in advance"
-        }
-      ],
-      "estimated_travel_times": [
-        {
-          "route": "Kathmandu to Pokhara (flight)",
-          "time": "25-30 minutes"
-        },
-        {
-          "route": "Kathmandu to Pokhara (bus)",
-          "time": "6-7 hours"
-        },
-        {
-          "route": "Pokhara to Nayapul",
-          "time": "3-4 hours"
-        },
-        {
-          "route": "Nayapul to Hile (trek)",
-          "time": "5-6 hours walking"
-        },
-        {
-          "route": "ABC to Pokhara (return)",
-          "time": "7-8 hours trek + 3-4 hours drive"
-        }
-      ]
-    },
-    "emergency": {
-      "rescue_points": [
-        {
-          "name": "Chhomrong",
-          "altitude_meters": 2170,
-          "type": "Rescue coordination point"
-        },
-        {
-          "name": "Bamboo",
-          "altitude_meters": 2310,
-          "type": "Rescue point"
-        },
-        {
-          "name": "Deurali",
-          "altitude_meters": 3230,
-          "type": "High-altitude rescue point"
-        }
-      ],
-      "helicopter_evacuation_locations": [
-        {
-          "name": "ABC (Annapurna Base Camp)",
-          "altitude_meters": 4130,
-          "coordinates": {
-            "latitude": 28.5306,
-            "longitude": 83.878
-          },
-          "note": "Helicopters can land at ABC in good weather conditions"
-        },
-        {
-          "name": "MBC (Machhapuchhre Base Camp)",
-          "altitude_meters": 3700,
-          "coordinates": {
-            "latitude": 28.526692,
-            "longitude": 83.907845
-          },
-          "note": "Good helicopter landing point"
-        },
-        {
-          "name": "Deurali",
-          "altitude_meters": 3230,
-          "note": "Helicopter evacuation point"
-        },
-        {
-          "name": "Poon Hill area",
-          "altitude_meters": 3210,
-          "note": "Open area suitable for helicopter landing"
-        }
-      ],
-      "emergency_contact_numbers": [
-        {
-          "service": "Nepal Police Emergency",
-          "number": "100",
-          "note": "National emergency"
-        },
-        {
-          "service": "Tourist Police (Kathmandu)",
-          "number": "1144",
-          "alternative": "+977-1-4247041"
-        },
-        {
-          "service": "Tourist Police (Bhrikuti Mandap)",
-          "number": "+977-1-4226359 / 4226403"
-        },
-        {
-          "service": "Nepal Tourism Board",
-          "number": "+977-1-5356909 / 4256229",
-          "email": "info@ntb.org.np"
-        },
-        {
-          "service": "Emergency Police",
-          "number": "+977-1-4228435"
-        },
-        {
-          "service": "Crime Information",
-          "number": "+977-1-4412748"
-        },
-        {
-          "service": "Himalayan Guide Nepal (Helicopter Rescue)",
-          "number": "Contact via trekking agency"
-        },
-        {
-          "service": "Discovery World Trekking (Rescue)",
-          "number": "Contact via agency"
-        }
-      ],
-      "common_trekking_risks": [
-        {
-          "risk": "Altitude Sickness (AMS)",
-          "severity": "Moderate to Severe",
-          "prevention": "Gradual ascent, acclimatization days, stay hydrated"
-        },
-        {
-          "risk": "Falls on steep trails",
-          "severity": "Moderate",
-          "prevention": "Use trekking poles, wear proper boots, be cautious on descents"
-        },
-        {
-          "risk": "Dehydration",
-          "severity": "Moderate",
-          "prevention": "Drink 3-4 liters daily, carry water purification"
-        },
-        {
-          "risk": "Weather changes",
-          "severity": "Moderate",
-          "prevention": "Check weather, carry warm layers, rain gear"
-        },
-        {
-          "risk": "Blister and foot injuries",
-          "severity": "Minor",
-          "prevention": "Proper boots, blister prevention, rest breaks"
-        },
-        {
-          "risk": "Cold exposure (winter)",
-          "severity": "Moderate to Severe",
-          "prevention": "Warm clothing, proper gear, avoid trekking in extreme cold"
-        }
-      ],
-      "altitude_sickness_information": {
-        "maximum_altitude": 4130,
-        "risk_level": "Moderate risk - above 3000m",
-        "symptoms_ams": [
-          "Headache",
-          "Nausea",
-          "Dizziness",
-          "Fatigue",
-          "Loss of appetite",
-          "Mild shortness of breath"
-        ],
-        "symptoms_severe": [
-          "Severe headache",
-          "Confusion",
-          "Loss of coordination",
-          "Difficulty breathing at rest",
-          "Cough with pink/frothy mucus"
-        ],
-        "prevention": [
-          "Ascend gradually (max 300-500m per day above 3000m)",
-          "Include acclimatization days",
-          "Stay hydrated (3-4 liters daily)",
-          "Avoid alcohol and caffeine",
-          "Consider Diamox (with doctor's prescription)",
-          "Sleep at lower altitude when possible"
-        ],
-        "treatment": [
-          "Rest and rehydration for mild AMS",
-          "Descend immediately if symptoms worsen",
-          "Pulse oximeter monitoring above 3000m",
-          "Helicopter evacuation for severe cases (HAPE/HACE)"
-        ],
-        "note": "ABC trek max altitude 4130m - extreme altitude conditions like HAPE/HACE less common but possible"
-      }
     },
     "food_water": {
-      "reliable_water_sources": [
-        {
-          "source": "Spring water",
-          "locations": [
-            "All villages along route"
-          ],
-          "safety": "Not safe untreated - must boil/purify"
-        },
-        {
-          "source": "Modi Khola river water",
-          "locations": [
-            "Along river valley (Sinuwa to Deurali)"
-          ],
-          "safety": "Not safe - glacier water, very cold, must purify"
-        },
-        {
-          "source": "Boiled water (tea houses)",
-          "cost_per_liter_usd": "1-2",
-          "safety": "Safe"
-        },
-        {
-          "source": "Hot water (for drinking)",
-          "cost": "Included with some meals",
-          "safety": "Safe"
-        }
+      "information": [
+        "Tea houses serve traditional meals like Dal Bhat, pasta, noodles, and standard Western items.",
+        "Dal Bhat is often served with unlimited refills ('food for infinity').",
+        "Above Chhomrong (2,170m), meat consumption is strictly forbidden for cultural/religious reasons, and no meat is served.",
+        "Tap water is not safe to drink; trekkers must use water purification tablets, filters, UV sterilizers, or buy boiled water (NPR 100-200 per liter)."
       ],
-      "food_availability": {
-        "menu_regulation": "Fixed menu regulated by local tourism board",
-        "common_items": [
-          {
-            "item": "Dal Bhat",
-            "description": "Nepali rice and lentils",
-            "price_npr": "400-600"
-          },
-          {
-            "item": "Momos",
-            "description": "Dumplings (vegetable/mutton)",
-            "price_npr": "250-400"
-          },
-          {
-            "item": "Thukpa",
-            "description": "Noodle soup",
-            "price_npr": "300-500"
-          },
-          {
-            "item": "Chapati",
-            "description": "Flatbread",
-            "price_npr": "150-250"
-          },
-          {
-            "item": "Pasta",
-            "description": "Various pasta dishes",
-            "price_npr": "350-550"
-          },
-          {
-            "item": "Pancakes",
-            "description": "With honey/jam",
-            "price_npr": "250-400"
-          },
-          {
-            "item": "Fried Rice",
-            "description": "Vegetable fried rice",
-            "price_npr": "350-500"
-          },
-          {
-            "item": "Tea",
-            "description": "Various types (black, milk, ginger)",
-            "price_npr": "50-150"
-          },
-          {
-            "item": "Coffee",
-            "description": "Black/milk coffee",
-            "price_npr": "150-250"
-          }
-        ],
-        "meat_availability": {
-          "below_chhomrong": "Available (vegetable and mutton)",
-          "above_chhomrong": "Not recommended/available - no refrigeration",
-          "abc_mbc": "Only vegetarian food"
-        },
-        "price_trend": "Increases with altitude (up to 2-3x at ABC vs Nayapul)",
-        "special_note": "Dal Bhat often unlimited/free for trekkers (traditional 'food for infinity')"
-      },
-      "refill_points": [
-        {
-          "location": "All tea houses",
-          "service": "Water boiling/purification",
-          "cost": "NPR 100-300 per liter"
-        },
-        {
-          "location": "Villages (Bamboo, Chhomrong, Sinuwa)",
-          "service": "Small shops with bottled water",
-          "note": "Bring refillable bottle to reduce plastic"
-        },
-        {
-          "recommendation": "Carry UV SteriPen or water purification tablets",
-          "note": "Reduce plastic waste with refillable bottles"
-        }
-      ]
-    },
-    "geography": {
-      "important_locations_with_coordinates": [
-        {
-          "name": "Nayapul",
-          "category": "Village (starting point)",
-          "latitude": 28.2667,
-          "longitude": 83.8833,
-          "altitude_meters": 1070
-        },
-        {
-          "name": "Hile",
-          "category": "Village",
-          "latitude": 28.2833,
-          "longitude": 83.9,
-          "altitude_meters": 1450
-        },
-        {
-          "name": "Ghorepani",
-          "category": "Village",
-          "latitude": 28.5083,
-          "longitude": 83.85,
-          "altitude_meters": 2850
-        },
-        {
-          "name": "Poon Hill",
-          "category": "Viewpoint",
-          "latitude": 28.5083,
-          "longitude": 83.8556,
-          "altitude_meters": 3210
-        },
-        {
-          "name": "Tadapani",
-          "category": "Village",
-          "latitude": 28.4833,
-          "longitude": 83.8667,
-          "altitude_meters": 2640
-        },
-        {
-          "name": "Chhomrong",
-          "category": "Village",
-          "latitude": 28.4667,
-          "longitude": 83.8833,
-          "altitude_meters": 2170
-        },
-        {
-          "name": "Sinuwa",
-          "category": "Village",
-          "latitude": 28.45,
-          "longitude": 83.89,
-          "altitude_meters": 2340
-        },
-        {
-          "name": "Bamboo",
-          "category": "Village",
-          "latitude": 28.4583,
-          "longitude": 83.9,
-          "altitude_meters": 2310
-        },
-        {
-          "name": "Dovan",
-          "category": "Village",
-          "latitude": 28.475,
-          "longitude": 83.91,
-          "altitude_meters": 2600
-        },
-        {
-          "name": "Deurali",
-          "category": "Village",
-          "latitude": 28.5119,
-          "longitude": 83.92,
-          "altitude_meters": 3230
-        },
-        {
-          "name": "Machhapuchhre Base Camp",
-          "category": "Base Camp",
-          "latitude": 28.526692,
-          "longitude": 83.907845,
-          "altitude_meters": 3700
-        },
-        {
-          "name": "Annapurna Base Camp",
-          "category": "Base Camp",
-          "latitude": 28.5306,
-          "longitude": 83.878,
-          "altitude_meters": 4130
-        },
-        {
-          "name": "Mount Annapurna I",
-          "category": "Mountain",
-          "latitude": 28.5961,
-          "longitude": 83.8203,
-          "altitude_meters": 8091
-        },
-        {
-          "name": "Modi Khola River",
-          "category": "River",
-          "latitude": 28.47,
-          "longitude": 83.9,
-          "altitude_meters": "1750-3230 (along route)"
-        },
-        {
-          "name": "Chhomrong Health Post",
-          "category": "Health Post",
-          "latitude": 28.4667,
-          "longitude": 83.8833,
-          "altitude_meters": 2170
-        },
-        {
-          "name": "Ghandruk",
-          "category": "Village (alternative route)",
-          "latitude": 28.4333,
-          "longitude": 83.8667,
-          "altitude_meters": 1940
-        },
-        {
-          "name": "Jhinu Danda",
-          "category": "Village (hot springs)",
-          "latitude": 28.4167,
-          "longitude": 83.85,
-          "altitude_meters": 1750
-        }
+      "additional_information": [
+        "Food and boiled water costs increase with altitude due to transportation difficulties, costing 2 to 3 times more at ABC than Nayapul."
       ]
     },
     "permits": {
-      "required_permits": [
-        {
-          "name": "ACAP Permit (Annapurna Conservation Area Permit)",
-          "fee_npr_foreigners": 3000,
-          "fee_npr_saarc": 1000,
-          "fee_usd": "Not applicable (NPR only)",
-          "obtained_at": [
-            "Nepal Tourism Board, Kathmandu",
-            "Damside Tourist Office, Pokhara"
-          ],
-          "requirements": [
-            "Passport",
-            "2 passport-size photos",
-            "Passport copy"
-          ]
-        },
-        {
-          "name": "TIMS Card (Trekkers Information Management System)",
-          "fee_usd_individual": 20,
-          "fee_usd_agency": 10,
-          "obtained_at": [
-            "TAAN Office, Kathmandu",
-            "Registered trekking agencies",
-            "Damside Tourist Office, Pokhara"
-          ],
-          "requirements": [
-            "Passport",
-            "Passport-size photos",
-            "Detailed trekking itinerary"
-          ]
-        }
+      "information": [
+        "Trekkers must obtain an Annapurna Conservation Area Project (ACAP) permit, which costs NPR 3,000 (approx. $23 USD) for foreigners.",
+        "A Trekkers' Information Management System (TIMS) card is required, costing USD 20 for individual travelers.",
+        "Permits must be acquired in Kathmandu or Pokhara before starting the trek; passport photos are required."
+      ],
+      "additional_information": [
+        "Permit checkpoints exist at Birethanti (near Nayapul) and Chhomrong; you must present printed permits."
       ]
     },
-    "internet": {
-      "mobile_networks": [
-        "NTC",
-        "Ncell"
+    "connectivity": {
+      "information": [
+        "Mobile network coverage (NTC and Ncell) is available up to Deurali, though it can be weak and weather-dependent.",
+        "Wi-Fi is offered in most tea houses up to Deurali for a fee of NPR 300 to 500.",
+        "Electricity charging facilities are available at tea houses for a fee of $2 to $3 per device."
       ],
-      "wifi_availability": "Available at major tea houses / villages for a fee, limited at higher altitudes.",
-      "charging_facilities": "Electricity charging available at most tea houses for a fee."
+      "additional_information": [
+        "Wi-Fi is highly unreliable or unavailable above Deurali, and power is mostly solar or hydro-based, so a power bank is recommended."
+      ]
     },
     "weather": {
-      "best_seasons": [
-        {
-          "season": "Spring",
-          "months": "March - May",
-          "advantages": "Clear skies, rhododendron blooms, moderate temperatures"
-        },
-        {
-          "season": "Autumn",
-          "months": "September - November",
-          "advantages": "Best visibility, stable weather, post-monsoon clear skies"
-        },
-        {
-          "season": "Winter",
-          "months": "December - February",
-          "advantages": "Less crowded, clear views",
-          "challenges": "Cold temperatures, possible snow at higher elevations"
-        }
+      "information": [
+        "The best trekking seasons are Spring (March to May) and Autumn (September to November) due to clear skies and stable weather.",
+        "Winter (December to February) brings freezing temperatures (-5°C to -15°C at night) and potential heavy snow above 3,500m.",
+        "Monsoon season (June to August) brings heavy rainfall, slippery trails, and risk of landslides/leeches."
       ],
-      "temperature_notes": "Weather changes rapidly. High altitude brings extreme cold and snow, especially in winter."
+      "additional_information": [
+        "Daytime temperatures in spring/autumn are pleasant (15°C to 20°C in lower sections, 5°C to 10°C at ABC), but nights are cold."
+      ]
     },
-    "wildlife": {
-      "fauna": [
-        "Langur monkeys",
-        "Himalayan thar",
-        "Snow leopards (rare)"
+    "hospitals": {
+      "information": [
+        "Basic government health posts are located at Chhomrong and Jhinu Danda.",
+        "There are no hospitals, clinics, or advanced medical facilities above Chhomrong.",
+        "Severe cases of altitude sickness or injury require emergency helicopter evacuation to Pokhara or Kathmandu."
       ],
-      "flora": [
-        "Bamboo Forest",
-        "Rhododendron Forest",
-        "Subtropical Forest",
-        "Alpine Pasture"
+      "additional_information": [
+        "Health posts are equipped for basic first aid only; trekkers should carry their own medical kits."
+      ]
+    },
+    "emergency": {
+      "information": [
+        "Helicopter evacuation from designated landing zones costs between $3,000 and $6,000 USD.",
+        "Trekking insurance must cover high-altitude rescue up to 4,200 meters and helicopter evacuation.",
+        "Acute Mountain Sickness (AMS) is a moderate risk above 3,000 meters; gradual ascent and hydration (3-4 liters daily) are critical.",
+        "Nepal emergency contacts: Police (100), Tourist Police (1144), Nepal Tourism Board (+977-1-5356909)."
+      ],
+      "additional_information": [
+        "Designated helicopter landing zones exist in villages like Chhomrong, Deurali, MBC, and ABC."
+      ]
+    },
+    "transport": {
+      "information": [
+        "Nayapul trailhead is reached by a 3 to 4-hour drive from Pokhara (65 km) along a mountainous road.",
+        "Transportation options from Pokhara to Nayapul include private jeeps ($40-$60 USD) or shared public buses/jeeps ($10-$15 USD).",
+        "Helicopters are available for charter return from ABC in emergency situations."
+      ],
+      "additional_information": [
+        "Private transport is faster and more comfortable than public buses, which stop frequently."
       ]
     }
   },

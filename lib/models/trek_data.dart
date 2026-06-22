@@ -1,22 +1,19 @@
 // lib/models/trek_data.dart
+// ignore_for_file: constant_identifier_names
 
 enum TrekCategory {
+  info,
   route,
-  hospitals,
-  villages,
   landmarks,
-  transport,
-  emergency,
-  food_water,
-  geography,
-  permits,
+  villages,
   accommodation,
-  internet,
+  food_water,
+  permits,
+  connectivity,
   weather,
-  wildlife,
-  gps,              // Reserved for future use
-  maps,             // Reserved for future use
-  nearby_locations; // Reserved for future use
+  hospitals,
+  emergency,
+  transport;
 
   String get value => name;
 
@@ -32,14 +29,12 @@ enum TrekCategory {
 class TrekData {
   final String id;
   final List<String> aliases;
-  final Map<String, dynamic> overview;
   final Map<TrekCategory, Map<String, dynamic>> details;
   final List<Map<String, String>> faq;
 
   TrekData({
     required this.id,
     required this.aliases,
-    required this.overview,
     required this.details,
     required this.faq,
   });
@@ -47,11 +42,23 @@ class TrekData {
   factory TrekData.fromJson(Map<String, dynamic> json) {
     final detailsMap = <TrekCategory, Map<String, dynamic>>{};
     final rawDetails = json['details'] as Map<String, dynamic>? ?? const {};
-    
+
     for (final key in rawDetails.keys) {
       final category = TrekCategory.fromString(key);
       if (category != null) {
-        detailsMap[category] = Map<String, dynamic>.from(rawDetails[key] as Map? ?? const {});
+        final catMap = Map<String, dynamic>.from(
+          rawDetails[key] as Map? ?? const {},
+        );
+        final infoList = List<String>.from(
+          catMap['information'] as List? ?? const [],
+        );
+        final addInfoList = List<String>.from(
+          catMap['additional_information'] as List? ?? const [],
+        );
+        detailsMap[category] = {
+          'information': infoList,
+          'additional_information': addInfoList,
+        };
       }
     }
 
@@ -67,7 +74,6 @@ class TrekData {
     return TrekData(
       id: json['id'] as String? ?? '',
       aliases: List<String>.from(json['aliases'] ?? const []),
-      overview: Map<String, dynamic>.from(json['overview'] as Map? ?? const {}),
       details: detailsMap,
       faq: faqList,
     );
@@ -76,7 +82,6 @@ class TrekData {
   Map<String, dynamic> toJson() => {
     'id': id,
     'aliases': aliases,
-    'overview': overview,
     'details': details.map((k, v) => MapEntry(k.name, v)),
     'faq': faq,
   };

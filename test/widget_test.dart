@@ -169,4 +169,93 @@ void main() {
       expect(fakeTts.spokenTexts.length, 1); // Second sentence ignored
     });
   });
+
+  group('AppState getDerivedContextFromHistory tests', () {
+    late AppState appState;
+
+    setUp(() {
+      appState = AppState(
+        sttService: FakeSttService(),
+        ttsService: FakeTtsService(),
+      );
+    });
+
+    test('should return null when there are no messages', () {
+      final derived = appState.getDerivedContextFromHistory([]);
+      expect(derived['trekId'], isNull);
+      expect(derived['tool'], isNull);
+    });
+
+    test('should return null (No Prior Tool Execution) when there are only chat-only responses', () {
+      final messages = [
+        Message(sender: 'user', text: 'Hello', timestamp: DateTime.now()),
+        Message(sender: 'ai', text: 'Hi, how can I help you?', timestamp: DateTime.now(), reasoningTrace: null),
+        Message(sender: 'user', text: 'How are you?', timestamp: DateTime.now()),
+        Message(sender: 'ai', text: 'I am an AI assistant.', timestamp: DateTime.now(), reasoningTrace: null),
+      ];
+
+      final derived = appState.getDerivedContextFromHistory(messages);
+      expect(derived['trekId'], isNull);
+      expect(derived['tool'], isNull);
+    });
+
+    test('should return last valid resolved trek and tool', () {
+      final messages = [
+        Message(sender: 'user', text: 'Tell me about EBC', timestamp: DateTime.now()),
+        Message(
+          sender: 'ai',
+          text: 'Here is info.',
+          timestamp: DateTime.now(),
+          reasoningTrace: const ReasoningTrace(
+            matchedTrek: 'everest_base_camp',
+            toolsUsed: ['get_trek_details'],
+            toolCalls: [],
+            toolResults: [],
+            sourceFiles: [],
+            executionTimeMs: 12,
+          ),
+        ),
+      ];
+
+      final derived = appState.getDerivedContextFromHistory(messages);
+      expect(derived['trekId'], 'everest_base_camp');
+      expect(derived['tool'], 'get_trek_details');
+    });
+
+    test('should filter out sentinel matchedTreks (Sentinel Filtering Check)', () {
+      final messages = [
+        Message(
+          sender: 'ai',
+          text: 'First details EBC',
+          timestamp: DateTime.now(),
+          reasoningTrace: const ReasoningTrace(
+            matchedTrek: 'everest_base_camp',
+            toolsUsed: ['get_trek_details'],
+            toolCalls: [],
+            toolResults: [],
+            sourceFiles: [],
+            executionTimeMs: 10,
+          ),
+        ),
+        Message(sender: 'user', text: 'show all treks', timestamp: DateTime.now()),
+        Message(
+          sender: 'ai',
+          text: 'Here are all treks.',
+          timestamp: DateTime.now(),
+          reasoningTrace: const ReasoningTrace(
+            matchedTrek: 'all', // sentinel!
+            toolsUsed: ['list_available_treks'],
+            toolCalls: [],
+            toolResults: [],
+            sourceFiles: [],
+            executionTimeMs: 15,
+          ),
+        ),
+      ];
+
+      final derived = appState.getDerivedContextFromHistory(messages);
+      expect(derived['trekId'], 'everest_base_camp');
+      expect(derived['tool'], 'get_trek_details');
+    });
+  });
 }

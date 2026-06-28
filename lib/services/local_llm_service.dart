@@ -15,8 +15,16 @@ abstract class LlmService {
     int? threads,
   });
   Future<void> unloadModel();
-  Stream<String> generate(String prompt, {int maxTokens = 1024, String label = 'Generation'});
-  Future<String> generateText(String prompt, {int maxTokens = 1024, String label = 'Generation'});
+  Stream<String> generate(
+    String prompt, {
+    int maxTokens = 1024,
+    String label = 'Generation',
+  });
+  Future<String> generateText(
+    String prompt, {
+    int maxTokens = 1024,
+    String label = 'Generation',
+  });
   void cancelGeneration();
   bool get isModelLoaded;
 }
@@ -152,9 +160,11 @@ class LocalLlmService implements LlmService {
       // 4. Perform a model warmup to reduce first-response latency
       debugPrint('Performing model warmup prompt...');
       await _warmup();
-      
+
       loadStopwatch.stop();
-      debugPrint('Model loaded and warmed up successfully in ${loadStopwatch.elapsedMilliseconds}ms.');
+      debugPrint(
+        'Model loaded and warmed up successfully in ${loadStopwatch.elapsedMilliseconds}ms.',
+      );
     } catch (e) {
       _isLoaded = false;
       _isLoading = false;
@@ -197,7 +207,11 @@ class LocalLlmService implements LlmService {
   }
 
   @override
-  Stream<String> generate(String prompt, {int maxTokens = 1024, String label = 'Generation'}) {
+  Stream<String> generate(
+    String prompt, {
+    int maxTokens = 1024,
+    String label = 'Generation',
+  }) {
     final estimatedPromptTokens = _estimateTokenCount(prompt);
     final estimatedRemaining = _remainingContextAfterPrompt(
       estimatedPromptTokens,
@@ -298,7 +312,12 @@ class LocalLlmService implements LlmService {
               if (event.trailingText.isNotEmpty) {
                 controller.add(event.trailingText);
               }
-              logTiming('SUCCESS', forcedTokenCount: event.generatedCount > 0 ? event.generatedCount : null);
+              logTiming(
+                'SUCCESS',
+                forcedTokenCount: event.generatedCount > 0
+                    ? event.generatedCount
+                    : null,
+              );
               controller.close();
             }
           },
@@ -344,9 +363,17 @@ class LocalLlmService implements LlmService {
   }
 
   @override
-  Future<String> generateText(String prompt, {int maxTokens = 1024, String label = 'Generation'}) async {
+  Future<String> generateText(
+    String prompt, {
+    int maxTokens = 1024,
+    String label = 'Generation',
+  }) async {
     final buffer = StringBuffer();
-    await for (final token in generate(prompt, maxTokens: maxTokens, label: label)) {
+    await for (final token in generate(
+      prompt,
+      maxTokens: maxTokens,
+      label: label,
+    )) {
       buffer.write(token);
     }
     return buffer.toString();
@@ -389,13 +416,19 @@ class LocalLlmService implements LlmService {
     buf.writeln('You are NOT an assistant.');
     buf.writeln('Your only job is to classify the user query.');
     buf.writeln('');
-    buf.writeln(hasSelectedTrek
-        ? 'Context: A trek IS currently selected.'
-        : 'Context: No trek is currently selected.');
+    buf.writeln(
+      hasSelectedTrek
+          ? 'Context: A trek IS currently selected.'
+          : 'Context: No trek is currently selected.',
+    );
 
-    if (lastResolvedTrek != null && lastResolvedTrek.isNotEmpty &&
-        lastResolvedTool != null && lastResolvedTool.isNotEmpty) {
-      buf.writeln('Context: Last topic was $lastResolvedTrek ($lastResolvedTool).');
+    if (lastResolvedTrek != null &&
+        lastResolvedTrek.isNotEmpty &&
+        lastResolvedTool != null &&
+        lastResolvedTool.isNotEmpty) {
+      buf.writeln(
+        'Context: Last topic was $lastResolvedTrek ($lastResolvedTool).',
+      );
     } else {
       if (lastResolvedTrek != null && lastResolvedTrek.isNotEmpty) {
         buf.writeln('Context: Last topic was $lastResolvedTrek.');
@@ -492,15 +525,12 @@ class LocalLlmService implements LlmService {
       final role = (msg['role'] as String? ?? 'user').trim();
       final content = msg['content']?.toString() ?? '';
       buf.writeln('<|im_start|>$role');
-      buf.writeln(
-        content,
-      ); // LLM is unable to return the details in proper format. The selected catgegory or tool should be called by dart and information should be normalized and given to the LLM2
+      buf.writeln(content);
       buf.write('<|im_end|>\n');
     }
 
     buf.writeln('<|im_start|>assistant');
     return buf.toString();
-    // After first LLM finishes its job, and dart calls and executes the tool, the response is only sent to the LLM 2.
   }
 
   String buildRephrasePrompt({
@@ -526,9 +556,7 @@ class LocalLlmService implements LlmService {
     );
     buf.writeln('');
     buf.writeln('=== FACTS ===');
-    buf.writeln(
-      context,
-    ); // Here the response from the tool should be received with proper format
+    buf.writeln(context);
     buf.writeln('=============');
     buf.writeln('<|im_end|>');
 
@@ -554,9 +582,7 @@ class LocalLlmService implements LlmService {
     if (_session == null) return;
     try {
       final warmupStream = _session!.generate(prompt: '\n', maxTokens: 1);
-      await for (final _ in warmupStream) {
-        // consume the single token stream to trigger warm up
-      }
+      await for (final _ in warmupStream) {}
     } catch (e) {
       debugPrint('Warmup warning: $e');
     }
@@ -594,7 +620,7 @@ class LocalLlmService implements LlmService {
     debugPrint(
       '===== GENERATION =====\n'
       'Prompt Tokens: $promptTokens\n'
-      'Max Tokens: $maxTokens\n' // what is the use of maxTokens? why is it not included in the request and returned in the response? what if the user asks for a long response?
+      'Max Tokens: $maxTokens\n'
       'Remaining Context: ${remaining ?? 'unknown'}\n'
       'Configured Context: ${_requestedContextWindow ?? 'unknown'}\n'
       'Prompt Can Exceed Context: ${_canExceedContext(promptTokens, maxTokens)}\n'

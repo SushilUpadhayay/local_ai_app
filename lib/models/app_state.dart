@@ -286,8 +286,10 @@ class AppState extends ChangeNotifier {
     notifyListeners();
 
     try {
+      print("Startup model state: $_modelLoadState");
       // 1. Initialize model metadata (lazy — GGUF binary not loaded yet).
       await modelManager.init();
+      print("Startup active model: ${modelManager.activeModel?.id}");
 
       // 2. Detect device hardware.
       await _detectDeviceHardware();

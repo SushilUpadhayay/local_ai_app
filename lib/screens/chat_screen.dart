@@ -339,7 +339,7 @@ class _ChatScreenState extends State<ChatScreen>
               ),
             ),
             const SizedBox(height: 32),
-            ...['What is trekking?', 'What is altitude sickness?'].map(
+            ...['Hello Ai, How are you?', 'What is altitude sickness?'].map(
               (s) => Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: _buildSuggestionCard(s),

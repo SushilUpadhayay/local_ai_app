@@ -6,16 +6,23 @@ import 'widgets/voice_waveform_sheet.dart';
 import 'screens/chat_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/models_screen.dart';
+import 'services/diagnostic_logger.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  DiagnosticLogger.logStart(1, 'App starts (main() executed)');
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  // Override debugPrint to print directly to stdout/terminal
-  debugPrint = (String? message, {int? wrapWidth}) {
-    if (message != null) {
-      print(message);
-    }
-  };
+    // Override debugPrint to print directly to stdout/terminal
+    debugPrint = (String? message, {int? wrapWidth}) {
+      if (message != null) {
+        print(message);
+      }
+    };
+    DiagnosticLogger.logSuccess(1, 'App starts (main() executed)');
+  } catch (e, stack) {
+    DiagnosticLogger.logFailure(1, 'App starts (main() executed)', e, stack);
+  }
 
   runApp(const LocalAiApp());
 }

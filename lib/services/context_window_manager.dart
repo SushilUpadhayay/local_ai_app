@@ -1,7 +1,7 @@
 import '../models/conversation.dart';
 
 class ContextWindowManager {
-  static const int defaultTurnLimit = 3; // Three previous chats
+  static const int defaultTurnLimit = 2; // Three previous chats
   static const int pass2TurnLimit = 2; // Two previous chats
 
   // Approximate token count based on typical character length (~4 chars per token).
@@ -80,7 +80,7 @@ class ContextWindowManager {
   // Build a standard prompt using ChatML format for the llama.cpp engine
   String buildChatMLPrompt(List<Message> messages, String systemInstruction) {
     final buffer = StringBuffer();
-    
+
     // Add system instruction
     buffer.write('<|im_start|>system\n$systemInstruction<|im_end|>\n');
 

@@ -14,6 +14,7 @@ import '../services/tts_service.dart';
 import '../services/trek_knowledge_service.dart';
 import '../services/tool_registry_service.dart';
 import '../services/tool_result_prompt_builder.dart';
+import '../services/diagnostic_logger.dart';
 import 'dart:convert';
 
 enum AppScreen { chat, history, models }
@@ -186,15 +187,21 @@ class AppState extends ChangeNotifier {
   Timer? _voiceTimer;
 
   AppState({SttService? sttService, TtsService? ttsService}) {
-    _sttService =
-        sttService ??
-        WhisperSttService(
-          activeModelPathProvider: () =>
-              modelManager.activeWhisperModel?.localPath,
-          activeModelIdProvider: () => modelManager.activeWhisperModelId,
-        );
-    if (ttsService != null) {
-      _ttsService = ttsService;
+    DiagnosticLogger.logStart(2, 'AppState created successfully');
+    try {
+      _sttService =
+          sttService ??
+          WhisperSttService(
+            activeModelPathProvider: () =>
+                modelManager.activeWhisperModel?.localPath,
+            activeModelIdProvider: () => modelManager.activeWhisperModelId,
+          );
+      if (ttsService != null) {
+        _ttsService = ttsService;
+      }
+      DiagnosticLogger.logSuccess(2, 'AppState created successfully');
+    } catch (e, stack) {
+      DiagnosticLogger.logFailure(2, 'AppState created successfully', e, stack);
     }
     _initData();
     _initVoiceServices();
@@ -206,7 +213,7 @@ class AppState extends ChangeNotifier {
       await _ttsService.initialize();
       _registerTtsHandlers();
     } catch (e) {
-      debugPrint('[AppState] Failed to initialize voice services: $e');
+      print('[AppState] Failed to initialize voice services: $e');
     }
   }
 
@@ -214,7 +221,7 @@ class AppState extends ChangeNotifier {
     _ttsService.setHandlers(
       onStart: () {
         if (_activeUtteranceSessionId != _ttsSessionId) {
-          debugPrint(
+          print(
             '[TTS] Ignoring onStart callback for stale session $_activeUtteranceSessionId (current: $_ttsSessionId)',
           );
           return;
@@ -228,7 +235,7 @@ class AppState extends ChangeNotifier {
       onComplete: () {
         _isSentenceTtsSpeaking = false;
         if (_activeUtteranceSessionId != _ttsSessionId) {
-          debugPrint(
+          print(
             '[TTS] Ignoring onComplete callback for stale session $_activeUtteranceSessionId (current: $_ttsSessionId)',
           );
           return;
@@ -238,10 +245,10 @@ class AppState extends ChangeNotifier {
         _processQueueAfterUtterance();
       },
       onError: (err) {
-        debugPrint('[TTS] Error callback: $err');
+        print('[TTS] Error callback: $err');
         _isSentenceTtsSpeaking = false;
         if (_activeUtteranceSessionId != _ttsSessionId) {
-          debugPrint(
+          print(
             '[TTS] Ignoring onError callback for stale session $_activeUtteranceSessionId (current: $_ttsSessionId)',
           );
           return;
@@ -285,24 +292,47 @@ class AppState extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
+    DiagnosticLogger.logStart(3, 'All repositories initialize successfully');
     try {
       // 1. Initialize model metadata (lazy — GGUF binary not loaded yet).
       await modelManager.init();
 
-      // 2. Detect device hardware.
-      await _detectDeviceHardware();
-
       // 3. Load persisted conversations.
       await _loadPersistedConversations();
+      DiagnosticLogger.logSuccess(3, 'All repositories initialize successfully');
+    } catch (e, stack) {
+      DiagnosticLogger.logFailure(3, 'All repositories initialize successfully', e, stack);
+    }
 
+    try {
+      // 2. Detect device hardware.
+      await _detectDeviceHardware();
+    } catch (e) {
+      print('[AppState] Hardware detection warning: $e');
+    }
+
+    DiagnosticLogger.logStart(4, 'TrekKnowledgeService initializes and loads all trek data');
+    try {
       // 4. Initialize trek knowledge service.
       await _trekKnowledgeService.initialize();
-    } catch (e) {
-      debugPrint('[AppState] Init error: $e');
+      print('[TrekKnowledgeService] Load complete...');
+      DiagnosticLogger.logSuccess(4, 'TrekKnowledgeService initializes and loads all trek data');
+    } catch (e, stack) {
+      DiagnosticLogger.logFailure(4, 'TrekKnowledgeService initializes and loads all trek data', e, stack);
     }
 
     _isLoading = false;
     notifyListeners();
+
+    // 5. Auto-load the previously active model into the LLM engine.
+    //    On every fresh process start, _modelLoadState resets to `unloaded` even
+    //    though the GGUF file and activeModelId are still persisted on disk.
+    //    Without this, the user has to manually tap "Set Active" on every launch.
+    final autoLoadModel = modelManager.activeModel;
+    if (autoLoadModel != null && autoLoadModel.localPath != null) {
+      print('[AppState] Auto-loading persisted active model: ${autoLoadModel.id}');
+      unawaited(selectModel(autoLoadModel));
+    }
   }
 
   void selectTrek(String trekName) {
@@ -332,11 +362,11 @@ class AppState extends ChangeNotifier {
       final storageBytes = await _compatibilityService.getDeviceFreeStorage();
       _deviceRamGb = (ramBytes / (1024 * 1024 * 1024)).round();
       _freeStorageGb = storageBytes / (1024 * 1024 * 1024);
-      debugPrint(
+      print(
         '[AppState] Device RAM: ${_deviceRamGb}GB  Free storage: ${_freeStorageGb.toStringAsFixed(1)}GB',
       );
     } catch (e) {
-      debugPrint('[AppState] Hardware detection failed: $e');
+      print('[AppState] Hardware detection failed: $e');
     }
   }
 
@@ -348,7 +378,7 @@ class AppState extends ChangeNotifier {
         ..clear()
         ..addAll(persisted);
     } catch (e) {
-      debugPrint('[AppState] Failed to load conversations: $e');
+      print('[AppState] Failed to load conversations: $e');
     }
   }
 
@@ -377,7 +407,7 @@ class AppState extends ChangeNotifier {
     // Whisper models are GGML .bin files — they are not GGUF and cannot be
     // loaded by LlamaEngine. Routing them here crashes with LlamaModel.load().
     if (model.id.startsWith('whisper-') || model.modelFamily == 'Whisper') {
-      debugPrint(
+      print(
         '[AppState] selectModel() called with a Whisper model (${model.id}). '
         'This would crash llama_cpp_dart. Re-routing to selectWhisperModel().',
       );
@@ -403,19 +433,22 @@ class AppState extends ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint(
+      print(
         '[AppState] Loading LLM model via LocalLlmService: '
         'id=${model.id}  family=${model.modelFamily}  path=${model.localPath}',
       );
+      DiagnosticLogger.logStart(9, 'Model state becomes loaded');
       await _llmService.loadModel(
         model.localPath!,
         contextWindow: model.contextWindow,
       );
       _modelLoadState = ModelLoadState.loaded;
       _modelStatusMessage = '${model.name} is ready';
-      debugPrint('[AppState] Model loaded: ${model.name}');
-    } catch (e) {
+      print('[AppState] Model loaded: ${model.name}');
+      DiagnosticLogger.logSuccess(9, 'Model state becomes loaded');
+    } catch (e, stack) {
       _setModelFailed('Failed to load ${model.name}: $e');
+      DiagnosticLogger.logFailure(9, 'Model state becomes loaded', e, stack);
     }
 
     notifyListeners();
@@ -424,7 +457,7 @@ class AppState extends ChangeNotifier {
   void _setModelFailed(String reason) {
     _modelLoadState = ModelLoadState.failed;
     _modelStatusMessage = reason;
-    debugPrint('[AppState] Model failed: $reason');
+    print('[AppState] Model failed: $reason');
   }
 
   // Download
@@ -597,13 +630,10 @@ class AppState extends ChangeNotifier {
     }
 
     final allMessages = _activeConversation?.messages ?? [];
-    
+
     // For Pass 1: Send only the current user message verbatim.
     final agentMessages = <Map<String, dynamic>>[
-      {
-        'role': 'user',
-        'content': text,
-      }
+      {'role': 'user', 'content': text},
     ];
 
     // Retrieve derived context from history
@@ -625,7 +655,7 @@ class AppState extends ChangeNotifier {
       }
     }
 
-    debugPrint(
+    print(
       '===== USER MESSAGE =====\n'
       '$text\n\n'
       'Selected Trek: ${_selectedtrek_name ?? 'none'}\n'
@@ -643,16 +673,24 @@ class AppState extends ChangeNotifier {
       _streamingToken = 'Thinking locally...\n';
       notifyListeners();
 
-      final routerPrompt = _llmService.buildRouterPrompt(
-        messages: agentMessages,
-        hasSelectedTrek: hasSelectedTrek,
-        lastResolvedTrek: lastResolvedTrek,
-        lastResolvedTool: lastResolvedTool,
-      );
-      _logToolSchemaAudit(
-        toolSchemas: _toolRegistryService.toolSchemas,
-        routerPrompt: routerPrompt,
-      );
+      DiagnosticLogger.logStart(10, 'Router inference starts');
+      final String routerPrompt;
+      try {
+        routerPrompt = _llmService.buildRouterPrompt(
+          messages: agentMessages,
+          hasSelectedTrek: hasSelectedTrek,
+          lastResolvedTrek: lastResolvedTrek,
+          lastResolvedTool: lastResolvedTool,
+        );
+        _logToolSchemaAudit(
+          toolSchemas: _toolRegistryService.toolSchemas,
+          routerPrompt: routerPrompt,
+        );
+        DiagnosticLogger.logSuccess(10, 'Router inference starts');
+      } catch (e, stack) {
+        DiagnosticLogger.logFailure(10, 'Router inference starts', e, stack);
+        rethrow;
+      }
 
       const routerMaxTokens = 120;
       _logPromptStage(
@@ -660,13 +698,22 @@ class AppState extends ChangeNotifier {
         prompt: routerPrompt,
         maxTokens: routerMaxTokens,
       );
-      final routerResponse = await _llmService.generateText(
-        routerPrompt,
-        maxTokens: routerMaxTokens,
-        label: 'Pass 1 (Router)',
-      );
 
-      debugPrint('===== PASS 1 OUTPUT =====\n$routerResponse');
+      DiagnosticLogger.logStart(11, 'Router inference completes successfully');
+      final String routerResponse;
+      try {
+        routerResponse = await _llmService.generateText(
+          routerPrompt,
+          maxTokens: routerMaxTokens,
+          label: 'Pass 1 (Router)',
+        );
+        DiagnosticLogger.logSuccess(11, 'Router inference completes successfully');
+      } catch (e, stack) {
+        DiagnosticLogger.logFailure(11, 'Router inference completes successfully', e, stack);
+        rethrow;
+      }
+
+      print('===== PASS 1 OUTPUT =====\n$routerResponse');
 
       final classification = _parseRouterOutput(routerResponse);
       var type = classification['type'] ?? 'chat';
@@ -683,7 +730,7 @@ class AppState extends ChangeNotifier {
           classification['tool_name'] = expected['tool'] ?? 'get_trek_details';
           classification['category'] = expected['category'] ?? 'none';
           type = 'tool';
-          debugPrint(
+          print(
             '===== ROUTER RESULT AFTER GUARDS =====\n'
             'reason=expected_tool_but_router_returned_chat\n'
             'type=${classification['type'] ?? 'none'}\n'
@@ -693,10 +740,12 @@ class AppState extends ChangeNotifier {
         }
       }
 
-      if (type == 'tool' && classification['tool_name'] == 'list_available_treks') {
+      if (type == 'tool' &&
+          classification['tool_name'] == 'list_available_treks') {
         final hasTrek = hasSelectedTrek;
         final queryLower = text.toLowerCase();
-        final hasListingKeywords = queryLower.contains('list') ||
+        final hasListingKeywords =
+            queryLower.contains('list') ||
             queryLower.contains('compare') ||
             queryLower.contains('other') ||
             queryLower.contains('options') ||
@@ -706,7 +755,7 @@ class AppState extends ChangeNotifier {
         if (hasTrek && !hasListingKeywords) {
           classification['tool_name'] = 'get_trek_details';
           classification['category'] = 'info';
-          debugPrint(
+          print(
             '===== ROUTER RESULT AFTER GUARDS =====\n'
             'reason=override_list_available_treks_when_trek_selected\n'
             'type=${classification['type'] ?? 'none'}\n'
@@ -734,11 +783,17 @@ class AppState extends ChangeNotifier {
           _flushSentenceBuffer();
         }
 
-        _finishStreamingWithMessage(
-          _streamingToken,
-          modelName: model.name,
-          reasoningTrace: null,
-        );
+        DiagnosticLogger.logStart(16, 'Final response is displayed in the UI');
+        try {
+          _finishStreamingWithMessage(
+            _streamingToken,
+            modelName: model.name,
+            reasoningTrace: null,
+          );
+          DiagnosticLogger.logSuccess(16, 'Final response is displayed in the UI');
+        } catch (e, stack) {
+          DiagnosticLogger.logFailure(16, 'Final response is displayed in the UI', e, stack);
+        }
         return;
       }
       // PASS 2: Tool Execution & Grounded Summarization
@@ -754,36 +809,50 @@ class AppState extends ChangeNotifier {
       }
       final question = text;
 
-      final arguments = <String, dynamic>{};
-      if (_toolRegistryService.requiresTrekName(toolName) &&
-          trekName != 'none') {
-        arguments['trek_name'] = trekName;
+      DiagnosticLogger.logStart(12, 'Tool execution starts');
+      final ToolCall toolCall;
+      try {
+        final arguments = <String, dynamic>{};
+        if (_toolRegistryService.requiresTrekName(toolName) &&
+            trekName != 'none') {
+          arguments['trek_name'] = trekName;
+        }
+        if (category != 'none') {
+          arguments['category'] = category;
+        }
+        if (toolName == 'get_trek_faq' && question.trim().isNotEmpty) {
+          arguments['question'] = question;
+        }
+
+        toolCall = ToolCall(name: toolName, arguments: arguments);
+
+        print(
+          '===== TOOL EXECUTION =====\n'
+          'tool=${toolCall.name}\n'
+          'category=$category\n'
+          'trek=$trekName\n'
+          'question=$question\n'
+          'arguments=${_prettyObject(toolCall.arguments)}',
+        );
+        DiagnosticLogger.logSuccess(12, 'Tool execution starts');
+      } catch (e, stack) {
+        DiagnosticLogger.logFailure(12, 'Tool execution starts', e, stack);
+        rethrow;
       }
-      if (category != 'none') {
-        arguments['category'] = category;
+
+      DiagnosticLogger.logStart(13, 'Tool execution completes successfully');
+      final ToolRegistryResult result;
+      try {
+        result = _toolRegistryService.execute(toolCall);
+        trace = _toolRegistryService.currentTrace;
+        DiagnosticLogger.logSuccess(13, 'Tool execution completes successfully');
+      } catch (e, stack) {
+        DiagnosticLogger.logFailure(13, 'Tool execution completes successfully', e, stack);
+        rethrow;
       }
-      if (toolName == 'get_trek_faq' && question.trim().isNotEmpty) {
-        arguments['question'] = question;
-      }
 
-      final toolCall = ToolCall(name: toolName, arguments: arguments);
-
-      debugPrint(
-        '===== TOOL EXECUTION =====\n'
-        'tool=${toolCall.name}\n'
-        'category=$category\n'
-        'trek=$trekName\n'
-        'question=$question\n'
-        'arguments=${_prettyObject(toolCall.arguments)}',
-      );
-
-      final result = _toolRegistryService.execute(toolCall);
-      trace = _toolRegistryService.currentTrace;
-
-      debugPrint(
-        '===== RAW TOOL RESULT =====\n${_prettyObject(result.payload)}',
-      );
-      debugPrint(
+      print('===== RAW TOOL RESULT =====\n${_prettyObject(result.payload)}');
+      print(
         '===== NORMALIZED TOOL RESULT =====\n'
         'trek=${result.normalizedResult.trekName}\n'
         'category=${result.normalizedResult.category}\n'
@@ -801,19 +870,27 @@ class AppState extends ChangeNotifier {
       final pass2Messages = const <Map<String, dynamic>>[];
       _logPass2History(pass2Messages);
 
-      final contextPayload = ToolResultPromptBuilder.build(
-        question: question,
-        result: result.normalizedResult,
-      );
+      DiagnosticLogger.logStart(14, 'Rephraser inference starts');
+      final String rephrasePrompt;
+      try {
+        final contextPayload = ToolResultPromptBuilder.build(
+          question: question,
+          result: result.normalizedResult,
+        );
 
-      debugPrint(
-        '[Agent] Local tool execution completed. Normalized data:\n$contextPayload',
-      );
+        print(
+          '[Agent] Local tool execution completed. Normalized data:\n$contextPayload',
+        );
 
-      final rephrasePrompt = _llmService.buildRephrasePrompt(
-        context: contextPayload,
-        messages: pass2Messages,
-      );
+        rephrasePrompt = _llmService.buildRephrasePrompt(
+          context: contextPayload,
+          messages: pass2Messages,
+        );
+        DiagnosticLogger.logSuccess(14, 'Rephraser inference starts');
+      } catch (e, stack) {
+        DiagnosticLogger.logFailure(14, 'Rephraser inference starts', e, stack);
+        rethrow;
+      }
 
       final maxTokens = model.maxOutputTokens > 0
           ? model.maxOutputTokens.clamp(700, 2048)
@@ -824,12 +901,21 @@ class AppState extends ChangeNotifier {
         maxTokens: maxTokens,
         tokenHeader: 'PASS 2 TOKENS',
       );
-      final finalResponse = await _streamResponse(
-        rephrasePrompt,
-        maxTokens,
-        currentSessionId,
-      );
-      debugPrint('===== PASS 2 OUTPUT =====\n$finalResponse');
+
+      DiagnosticLogger.logStart(15, 'Rephrasher inference completes successfully');
+      final String finalResponse;
+      try {
+        finalResponse = await _streamResponse(
+          rephrasePrompt,
+          maxTokens,
+          currentSessionId,
+        );
+        DiagnosticLogger.logSuccess(15, 'Rephrasher inference completes successfully');
+      } catch (e, stack) {
+        DiagnosticLogger.logFailure(15, 'Rephrasher inference completes successfully', e, stack);
+        rethrow;
+      }
+      print('===== PASS 2 OUTPUT =====\n$finalResponse');
 
       _sentenceQueue.clear();
       _sentenceBuffer = '';
@@ -846,11 +932,17 @@ class AppState extends ChangeNotifier {
         _flushSentenceBuffer();
       }
 
-      _finishStreamingWithMessage(
-        _streamingToken,
-        modelName: model.name,
-        reasoningTrace: trace,
-      );
+      DiagnosticLogger.logStart(16, 'Final response is displayed in the UI');
+      try {
+        _finishStreamingWithMessage(
+          _streamingToken,
+          modelName: model.name,
+          reasoningTrace: trace,
+        );
+        DiagnosticLogger.logSuccess(16, 'Final response is displayed in the UI');
+      } catch (e, stack) {
+        DiagnosticLogger.logFailure(16, 'Final response is displayed in the UI', e, stack);
+      }
     } catch (e) {
       _finishStreamingWithMessage(
         '*(Inference Error)*\n\n${e.toString()}',
@@ -868,7 +960,8 @@ class AppState extends ChangeNotifier {
       if (message.sender == 'ai' && message.reasoningTrace != null) {
         final trace = message.reasoningTrace!;
         final trek = trace.matchedTrek;
-        final isValidTrek = trek.isNotEmpty &&
+        final isValidTrek =
+            trek.isNotEmpty &&
             trek != 'all' &&
             trek != 'session' &&
             trek != 'response' &&
@@ -882,10 +975,7 @@ class AppState extends ChangeNotifier {
         }
       }
     }
-    return {
-      'trekId': lastResolvedTrekId,
-      'tool': lastResolvedTool,
-    };
+    return {'trekId': lastResolvedTrekId, 'tool': lastResolvedTool};
   }
 
   void _logPromptStage({
@@ -894,9 +984,9 @@ class AppState extends ChangeNotifier {
     required int maxTokens,
     String? tokenHeader,
   }) {
-    debugPrint('===== $header =====\n$prompt');
+    print('===== $header =====\n$prompt');
     final budgetHeader = tokenHeader ?? '$header TOKEN BUDGET';
-    debugPrint(
+    print(
       '===== $budgetHeader =====\n'
       'Prompt Length: ${prompt.length}\n'
       'Estimated Tokens: ${_estimateTokenCount(prompt)}\n'
@@ -905,7 +995,7 @@ class AppState extends ChangeNotifier {
   }
 
   void _logPass2History(List<Map<String, dynamic>> messages) {
-    debugPrint(
+    print(
       '===== PASS 2 HISTORY =====\n'
       'History Count: ${messages.length}\n'
       'History Messages:\n'
@@ -929,7 +1019,7 @@ class AppState extends ChangeNotifier {
           description.isNotEmpty && routerPrompt.contains(description);
       final schemaIncluded = routerPrompt.contains(serializedSchema);
 
-      debugPrint(
+      print(
         '===== TOOL SCHEMA AUDIT =====\n'
         'Tool Name: $toolName\n'
         'Description:\n${description.isEmpty ? 'none' : description}\n'
@@ -941,7 +1031,7 @@ class AppState extends ChangeNotifier {
   }
 
   void _logParsedRouterResult(Map<String, String> classification) {
-    debugPrint(
+    print(
       '===== PARSED ROUTER RESULT =====\n'
       'type=${classification['type'] ?? 'none'}\n'
       'category=${classification['category'] ?? 'none'}\n'
@@ -965,7 +1055,7 @@ class AppState extends ChangeNotifier {
         (expected['category'] != 'none' &&
             expected['category'] != actualCategory);
 
-    debugPrint(
+    print(
       '===== ROUTER AUDIT =====\n'
       'User Query:\n$userQuery\n\n'
       'Router Output:\n$routerOutput\n\n'
@@ -1129,7 +1219,7 @@ class AppState extends ChangeNotifier {
         if (!completer.isCompleted) completer.complete();
       },
       onError: (e) {
-        debugPrint('[Agent] Stream error: $e');
+        print('[Agent] Stream error: $e');
         if (!completer.isCompleted) completer.completeError(e);
       },
       cancelOnError: true,
@@ -1138,7 +1228,7 @@ class AppState extends ChangeNotifier {
     try {
       await completer.future;
     } catch (e) {
-      debugPrint('[Agent] _streamResponse caught error: $e');
+      print('[Agent] _streamResponse caught error: $e');
     }
     _llmStreamSub = null;
     return buffer.toString().trim();
@@ -1220,20 +1310,18 @@ class AppState extends ChangeNotifier {
   void _enqueueSentenceTts(String sentence, int sessionId) {
     // Guard: check if TTS is enabled before enqueueing
     if (!_isTtsEnabled) {
-      debugPrint('[TTS] Blocked enqueue - TTS disabled: "$sentence"');
+      print('[TTS] Blocked enqueue - TTS disabled: "$sentence"');
       return;
     }
     // Guard: check if session is still active
     if (sessionId != _ttsSessionId) {
-      debugPrint(
+      print(
         '[TTS] Blocked enqueue - stale session $sessionId (current: $_ttsSessionId): "$sentence"',
       );
       return;
     }
 
-    debugPrint(
-      '[Sentence Queue TTS] Enqueuing: "$sentence" (session $sessionId)',
-    );
+    print('[Sentence Queue TTS] Enqueuing: "$sentence" (session $sessionId)');
     _sentenceQueue.add(_TtsQueueItem(sentence, sessionId));
     _speakNextSentenceSegment();
   }
@@ -1241,7 +1329,7 @@ class AppState extends ChangeNotifier {
   Future<void> _speakNextSentenceSegment() async {
     // Guard: check if TTS is enabled before speaking
     if (!_isTtsEnabled) {
-      debugPrint('[TTS] Blocked speak - TTS disabled');
+      print('[TTS] Blocked speak - TTS disabled');
       _isSentenceTtsSpeaking = false;
       return;
     }
@@ -1261,7 +1349,7 @@ class AppState extends ChangeNotifier {
 
     // Verify session ID before calling speak()
     if (item.sessionId != _ttsSessionId) {
-      debugPrint(
+      print(
         '[TTS] Skipping speak() for stale item from session ${item.sessionId} (current: $_ttsSessionId)',
       );
       _isSentenceTtsSpeaking = false;
@@ -1272,14 +1360,14 @@ class AppState extends ChangeNotifier {
     _activeUtteranceSessionId = _ttsSessionId;
 
     try {
-      debugPrint(
+      print(
         '[Sentence Queue TTS] Speaking: "${item.sentence}" (session ${item.sessionId})',
       );
       _voiceState = VoiceState.speaking;
       notifyListeners();
       await _ttsService.speak(item.sentence);
     } catch (e) {
-      debugPrint('[Sentence Queue TTS] Error speaking: $e');
+      print('[Sentence Queue TTS] Error speaking: $e');
       _isSentenceTtsSpeaking = false;
       notifyListeners();
       _speakNextSentenceSegment();
@@ -1305,7 +1393,7 @@ class AppState extends ChangeNotifier {
     try {
       await _conversationRepository.saveConversations(_conversations);
     } catch (e) {
-      debugPrint('[AppState] Failed to persist conversations: $e');
+      print('[AppState] Failed to persist conversations: $e');
     }
   }
 
@@ -1471,7 +1559,7 @@ class AppState extends ChangeNotifier {
   /// Called when user presses "Stop Speaking", "Mute", or closes microphone dialog
   /// This method ensures ALL speech activity stops immediately with no race conditions
   Future<void> muteTts({String reason = 'User action'}) async {
-    debugPrint('[TTS] Muting TTS: $reason');
+    print('[TTS] Muting TTS: $reason');
 
     _ttsSessionId++; // Invalidate active operations & callbacks
     _isTtsEnabled = false;
@@ -1490,9 +1578,9 @@ class AppState extends ChangeNotifier {
 
     try {
       await _ttsService.stop();
-      debugPrint('[TTS] Native TTS stop completed');
+      print('[TTS] Native TTS stop completed');
     } catch (e) {
-      debugPrint('[TTS] Error calling native stop: $e');
+      print('[TTS] Error calling native stop: $e');
     }
 
     notifyListeners();
@@ -1503,7 +1591,7 @@ class AppState extends ChangeNotifier {
   void enableTts({String reason = 'User action'}) {
     if (_isTtsEnabled) return; // Already enabled
 
-    debugPrint('[TTS] Enabling TTS: $reason');
+    print('[TTS] Enabling TTS: $reason');
     _isTtsEnabled = true;
     _ttsState = TtsState.idle;
     _voiceState = VoiceState.idle;
@@ -1543,7 +1631,7 @@ class AppState extends ChangeNotifier {
     _sentenceBuffer = '';
     _isSentenceTtsSpeaking = false;
 
-    debugPrint('[LiveStreamingTts] User enabled live streaming TTS');
+    print('[LiveStreamingTts] User enabled live streaming TTS');
     notifyListeners();
   }
 
@@ -1565,7 +1653,7 @@ class AppState extends ChangeNotifier {
     _voiceState = VoiceState.idle;
 
     await _ttsService.stop();
-    debugPrint('[LiveStreamingTts] User stopped live streaming TTS');
+    print('[LiveStreamingTts] User stopped live streaming TTS');
     notifyListeners();
   }
 

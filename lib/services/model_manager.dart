@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import '../models/model_item.dart';
 import '../repositories/model_repository.dart';
 import '../services/model_catalog_service.dart';
-import '../services/diagnostic_logger.dart';
 
 class ModelManager {
   final ModelRepository _repository = ModelRepository();
@@ -48,17 +47,9 @@ class ModelManager {
   }
 
   Future<void> loadMetadata() async {
-    DiagnosticLogger.logStart(5, 'ModelRepository loads installed model metadata');
-    final List<ModelItem>? loadedModels;
-    try {
-      loadedModels = await _repository.loadModels();
-      _activeModelId = await _repository.loadActiveModelId();
-      _activeWhisperModelId = await _repository.loadActiveWhisperModelId();
-      DiagnosticLogger.logSuccess(5, 'ModelRepository loads installed model metadata');
-    } catch (e, stack) {
-      DiagnosticLogger.logFailure(5, 'ModelRepository loads installed model metadata', e, stack);
-      rethrow;
-    }
+    final loadedModels = await _repository.loadModels();
+    _activeModelId = await _repository.loadActiveModelId();
+    _activeWhisperModelId = await _repository.loadActiveWhisperModelId();
 
     final defaultModels = await _catalogService.getAvailableModels();
     debugPrint(

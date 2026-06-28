@@ -5,7 +5,6 @@ import 'dart:math';
 import 'package:llama_cpp_dart/llama_cpp_dart.dart';
 import 'package:flutter/foundation.dart';
 import '../models/trek_data.dart';
-import '../services/diagnostic_logger.dart';
 
 abstract class LlmService {
   Future<void> loadModel(
@@ -65,17 +64,13 @@ class LocalLlmService implements LlmService {
         );
       }
 
-      DiagnosticLogger.logStart(6, 'GGUF model file exists and is accessible');
       final file = File(modelPath);
       if (!await file.exists() || await file.length() == 0) {
-        final ex = FileSystemException(
+        throw FileSystemException(
           'GGUF model file not found or corrupted.',
           modelPath,
         );
-        DiagnosticLogger.logFailure(6, 'GGUF model file exists and is accessible', ex);
-        throw ex;
       }
-      DiagnosticLogger.logSuccess(6, 'GGUF model file exists and is accessible');
 
       if (_isLoadCancelled) {
         throw Exception('Model loading was cancelled.');
@@ -111,34 +106,27 @@ class LocalLlmService implements LlmService {
         'Spawning LlamaEngine with model path: $modelPath (contextWindow: $contextWindow)...',
       );
 
-      DiagnosticLogger.logStart(7, 'LlamaEngine.spawn() succeeds');
       final LlamaEngine engine;
-      try {
-        if (Platform.isIOS) {
-          engine = await LlamaEngine.spawnFromProcess(
-            modelParams: ModelParams(path: modelPath),
-            contextParams: contextParams,
-          );
-        } else {
-          final libPath = Platform.isAndroid
-              ? 'libllama.so'
-              : Platform.isWindows
-              ? 'llama.dll'
-              : Platform.isMacOS
-              ? 'libllama.dylib'
-              : Platform.isLinux
-              ? 'libllama.so'
-              : '';
-          engine = await LlamaEngine.spawn(
-            libraryPath: libPath,
-            modelParams: ModelParams(path: modelPath),
-            contextParams: contextParams,
-          );
-        }
-        DiagnosticLogger.logSuccess(7, 'LlamaEngine.spawn() succeeds');
-      } catch (e, stack) {
-        DiagnosticLogger.logFailure(7, 'LlamaEngine.spawn() succeeds', e, stack);
-        rethrow;
+      if (Platform.isIOS) {
+        engine = await LlamaEngine.spawnFromProcess(
+          modelParams: ModelParams(path: modelPath),
+          contextParams: contextParams,
+        );
+      } else {
+        final libPath = Platform.isAndroid
+            ? 'libllama.so'
+            : Platform.isWindows
+            ? 'llama.dll'
+            : Platform.isMacOS
+            ? 'libllama.dylib'
+            : Platform.isLinux
+            ? 'libllama.so'
+            : '';
+        engine = await LlamaEngine.spawn(
+          libraryPath: libPath,
+          modelParams: ModelParams(path: modelPath),
+          contextParams: contextParams,
+        );
       }
 
       if (_isLoadCancelled) {
@@ -150,15 +138,8 @@ class LocalLlmService implements LlmService {
 
       // 3. Create the off-thread session
       debugPrint('Creating session for engine...');
-      DiagnosticLogger.logStart(8, 'createSession() succeeds');
-      try {
-        _session = await engine.createSession();
-        _logSessionCreated(engine);
-        DiagnosticLogger.logSuccess(8, 'createSession() succeeds');
-      } catch (e, stack) {
-        DiagnosticLogger.logFailure(8, 'createSession() succeeds', e, stack);
-        rethrow;
-      }
+      _session = await engine.createSession();
+      _logSessionCreated(engine);
 
       if (_isLoadCancelled) {
         await unloadModel();

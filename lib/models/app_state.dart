@@ -14,7 +14,6 @@ import '../services/tts_service.dart';
 import '../services/trek_knowledge_service.dart';
 import '../services/tool_registry_service.dart';
 import '../services/tool_result_prompt_builder.dart';
-import '../services/diagnostic_logger.dart';
 import 'dart:convert';
 
 enum AppScreen { chat, history, models }
@@ -187,21 +186,15 @@ class AppState extends ChangeNotifier {
   Timer? _voiceTimer;
 
   AppState({SttService? sttService, TtsService? ttsService}) {
-    DiagnosticLogger.logStart(2, 'AppState created successfully');
-    try {
-      _sttService =
-          sttService ??
-          WhisperSttService(
-            activeModelPathProvider: () =>
-                modelManager.activeWhisperModel?.localPath,
-            activeModelIdProvider: () => modelManager.activeWhisperModelId,
-          );
-      if (ttsService != null) {
-        _ttsService = ttsService;
-      }
-      DiagnosticLogger.logSuccess(2, 'AppState created successfully');
-    } catch (e, stack) {
-      DiagnosticLogger.logFailure(2, 'AppState created successfully', e, stack);
+    _sttService =
+        sttService ??
+        WhisperSttService(
+          activeModelPathProvider: () =>
+              modelManager.activeWhisperModel?.localPath,
+          activeModelIdProvider: () => modelManager.activeWhisperModelId,
+        );
+    if (ttsService != null) {
+      _ttsService = ttsService;
     }
     _initData();
     _initVoiceServices();
@@ -292,47 +285,25 @@ class AppState extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    DiagnosticLogger.logStart(3, 'All repositories initialize successfully');
     try {
       // 1. Initialize model metadata (lazy — GGUF binary not loaded yet).
       await modelManager.init();
 
-      // 3. Load persisted conversations.
-      await _loadPersistedConversations();
-      DiagnosticLogger.logSuccess(3, 'All repositories initialize successfully');
-    } catch (e, stack) {
-      DiagnosticLogger.logFailure(3, 'All repositories initialize successfully', e, stack);
-    }
-
-    try {
       // 2. Detect device hardware.
       await _detectDeviceHardware();
-    } catch (e) {
-      print('[AppState] Hardware detection warning: $e');
-    }
 
-    DiagnosticLogger.logStart(4, 'TrekKnowledgeService initializes and loads all trek data');
-    try {
+      // 3. Load persisted conversations.
+      await _loadPersistedConversations();
+
       // 4. Initialize trek knowledge service.
       await _trekKnowledgeService.initialize();
       print('[TrekKnowledgeService] Load complete...');
-      DiagnosticLogger.logSuccess(4, 'TrekKnowledgeService initializes and loads all trek data');
-    } catch (e, stack) {
-      DiagnosticLogger.logFailure(4, 'TrekKnowledgeService initializes and loads all trek data', e, stack);
+    } catch (e) {
+      print('[AppState] Init error: $e');
     }
 
     _isLoading = false;
     notifyListeners();
-
-    // 5. Auto-load the previously active model into the LLM engine.
-    //    On every fresh process start, _modelLoadState resets to `unloaded` even
-    //    though the GGUF file and activeModelId are still persisted on disk.
-    //    Without this, the user has to manually tap "Set Active" on every launch.
-    final autoLoadModel = modelManager.activeModel;
-    if (autoLoadModel != null && autoLoadModel.localPath != null) {
-      print('[AppState] Auto-loading persisted active model: ${autoLoadModel.id}');
-      unawaited(selectModel(autoLoadModel));
-    }
   }
 
   void selectTrek(String trekName) {
@@ -437,7 +408,6 @@ class AppState extends ChangeNotifier {
         '[AppState] Loading LLM model via LocalLlmService: '
         'id=${model.id}  family=${model.modelFamily}  path=${model.localPath}',
       );
-      DiagnosticLogger.logStart(9, 'Model state becomes loaded');
       await _llmService.loadModel(
         model.localPath!,
         contextWindow: model.contextWindow,
@@ -445,10 +415,8 @@ class AppState extends ChangeNotifier {
       _modelLoadState = ModelLoadState.loaded;
       _modelStatusMessage = '${model.name} is ready';
       print('[AppState] Model loaded: ${model.name}');
-      DiagnosticLogger.logSuccess(9, 'Model state becomes loaded');
-    } catch (e, stack) {
+    } catch (e) {
       _setModelFailed('Failed to load ${model.name}: $e');
-      DiagnosticLogger.logFailure(9, 'Model state becomes loaded', e, stack);
     }
 
     notifyListeners();
@@ -673,24 +641,16 @@ class AppState extends ChangeNotifier {
       _streamingToken = 'Thinking locally...\n';
       notifyListeners();
 
-      DiagnosticLogger.logStart(10, 'Router inference starts');
-      final String routerPrompt;
-      try {
-        routerPrompt = _llmService.buildRouterPrompt(
-          messages: agentMessages,
-          hasSelectedTrek: hasSelectedTrek,
-          lastResolvedTrek: lastResolvedTrek,
-          lastResolvedTool: lastResolvedTool,
-        );
-        _logToolSchemaAudit(
-          toolSchemas: _toolRegistryService.toolSchemas,
-          routerPrompt: routerPrompt,
-        );
-        DiagnosticLogger.logSuccess(10, 'Router inference starts');
-      } catch (e, stack) {
-        DiagnosticLogger.logFailure(10, 'Router inference starts', e, stack);
-        rethrow;
-      }
+      final routerPrompt = _llmService.buildRouterPrompt(
+        messages: agentMessages,
+        hasSelectedTrek: hasSelectedTrek,
+        lastResolvedTrek: lastResolvedTrek,
+        lastResolvedTool: lastResolvedTool,
+      );
+      _logToolSchemaAudit(
+        toolSchemas: _toolRegistryService.toolSchemas,
+        routerPrompt: routerPrompt,
+      );
 
       const routerMaxTokens = 120;
       _logPromptStage(
@@ -698,20 +658,11 @@ class AppState extends ChangeNotifier {
         prompt: routerPrompt,
         maxTokens: routerMaxTokens,
       );
-
-      DiagnosticLogger.logStart(11, 'Router inference completes successfully');
-      final String routerResponse;
-      try {
-        routerResponse = await _llmService.generateText(
-          routerPrompt,
-          maxTokens: routerMaxTokens,
-          label: 'Pass 1 (Router)',
-        );
-        DiagnosticLogger.logSuccess(11, 'Router inference completes successfully');
-      } catch (e, stack) {
-        DiagnosticLogger.logFailure(11, 'Router inference completes successfully', e, stack);
-        rethrow;
-      }
+      final routerResponse = await _llmService.generateText(
+        routerPrompt,
+        maxTokens: routerMaxTokens,
+        label: 'Pass 1 (Router)',
+      );
 
       print('===== PASS 1 OUTPUT =====\n$routerResponse');
 
@@ -783,17 +734,11 @@ class AppState extends ChangeNotifier {
           _flushSentenceBuffer();
         }
 
-        DiagnosticLogger.logStart(16, 'Final response is displayed in the UI');
-        try {
-          _finishStreamingWithMessage(
-            _streamingToken,
-            modelName: model.name,
-            reasoningTrace: null,
-          );
-          DiagnosticLogger.logSuccess(16, 'Final response is displayed in the UI');
-        } catch (e, stack) {
-          DiagnosticLogger.logFailure(16, 'Final response is displayed in the UI', e, stack);
-        }
+        _finishStreamingWithMessage(
+          _streamingToken,
+          modelName: model.name,
+          reasoningTrace: null,
+        );
         return;
       }
       // PASS 2: Tool Execution & Grounded Summarization
@@ -809,47 +754,31 @@ class AppState extends ChangeNotifier {
       }
       final question = text;
 
-      DiagnosticLogger.logStart(12, 'Tool execution starts');
-      final ToolCall toolCall;
-      try {
-        final arguments = <String, dynamic>{};
-        if (_toolRegistryService.requiresTrekName(toolName) &&
-            trekName != 'none') {
-          arguments['trek_name'] = trekName;
-        }
-        if (category != 'none') {
-          arguments['category'] = category;
-        }
-        if (toolName == 'get_trek_faq' && question.trim().isNotEmpty) {
-          arguments['question'] = question;
-        }
-
-        toolCall = ToolCall(name: toolName, arguments: arguments);
-
-        print(
-          '===== TOOL EXECUTION =====\n'
-          'tool=${toolCall.name}\n'
-          'category=$category\n'
-          'trek=$trekName\n'
-          'question=$question\n'
-          'arguments=${_prettyObject(toolCall.arguments)}',
-        );
-        DiagnosticLogger.logSuccess(12, 'Tool execution starts');
-      } catch (e, stack) {
-        DiagnosticLogger.logFailure(12, 'Tool execution starts', e, stack);
-        rethrow;
+      final arguments = <String, dynamic>{};
+      if (_toolRegistryService.requiresTrekName(toolName) &&
+          trekName != 'none') {
+        arguments['trek_name'] = trekName;
+      }
+      if (category != 'none') {
+        arguments['category'] = category;
+      }
+      if (toolName == 'get_trek_faq' && question.trim().isNotEmpty) {
+        arguments['question'] = question;
       }
 
-      DiagnosticLogger.logStart(13, 'Tool execution completes successfully');
-      final ToolRegistryResult result;
-      try {
-        result = _toolRegistryService.execute(toolCall);
-        trace = _toolRegistryService.currentTrace;
-        DiagnosticLogger.logSuccess(13, 'Tool execution completes successfully');
-      } catch (e, stack) {
-        DiagnosticLogger.logFailure(13, 'Tool execution completes successfully', e, stack);
-        rethrow;
-      }
+      final toolCall = ToolCall(name: toolName, arguments: arguments);
+
+      print(
+        '===== TOOL EXECUTION =====\n'
+        'tool=${toolCall.name}\n'
+        'category=$category\n'
+        'trek=$trekName\n'
+        'question=$question\n'
+        'arguments=${_prettyObject(toolCall.arguments)}',
+      );
+
+      final result = _toolRegistryService.execute(toolCall);
+      trace = _toolRegistryService.currentTrace;
 
       print('===== RAW TOOL RESULT =====\n${_prettyObject(result.payload)}');
       print(
@@ -870,27 +799,19 @@ class AppState extends ChangeNotifier {
       final pass2Messages = const <Map<String, dynamic>>[];
       _logPass2History(pass2Messages);
 
-      DiagnosticLogger.logStart(14, 'Rephraser inference starts');
-      final String rephrasePrompt;
-      try {
-        final contextPayload = ToolResultPromptBuilder.build(
-          question: question,
-          result: result.normalizedResult,
-        );
+      final contextPayload = ToolResultPromptBuilder.build(
+        question: question,
+        result: result.normalizedResult,
+      );
 
-        print(
-          '[Agent] Local tool execution completed. Normalized data:\n$contextPayload',
-        );
+      print(
+        '[Agent] Local tool execution completed. Normalized data:\n$contextPayload',
+      );
 
-        rephrasePrompt = _llmService.buildRephrasePrompt(
-          context: contextPayload,
-          messages: pass2Messages,
-        );
-        DiagnosticLogger.logSuccess(14, 'Rephraser inference starts');
-      } catch (e, stack) {
-        DiagnosticLogger.logFailure(14, 'Rephraser inference starts', e, stack);
-        rethrow;
-      }
+      final rephrasePrompt = _llmService.buildRephrasePrompt(
+        context: contextPayload,
+        messages: pass2Messages,
+      );
 
       final maxTokens = model.maxOutputTokens > 0
           ? model.maxOutputTokens.clamp(700, 2048)
@@ -901,20 +822,11 @@ class AppState extends ChangeNotifier {
         maxTokens: maxTokens,
         tokenHeader: 'PASS 2 TOKENS',
       );
-
-      DiagnosticLogger.logStart(15, 'Rephrasher inference completes successfully');
-      final String finalResponse;
-      try {
-        finalResponse = await _streamResponse(
-          rephrasePrompt,
-          maxTokens,
-          currentSessionId,
-        );
-        DiagnosticLogger.logSuccess(15, 'Rephrasher inference completes successfully');
-      } catch (e, stack) {
-        DiagnosticLogger.logFailure(15, 'Rephrasher inference completes successfully', e, stack);
-        rethrow;
-      }
+      final finalResponse = await _streamResponse(
+        rephrasePrompt,
+        maxTokens,
+        currentSessionId,
+      );
       print('===== PASS 2 OUTPUT =====\n$finalResponse');
 
       _sentenceQueue.clear();
@@ -932,17 +844,11 @@ class AppState extends ChangeNotifier {
         _flushSentenceBuffer();
       }
 
-      DiagnosticLogger.logStart(16, 'Final response is displayed in the UI');
-      try {
-        _finishStreamingWithMessage(
-          _streamingToken,
-          modelName: model.name,
-          reasoningTrace: trace,
-        );
-        DiagnosticLogger.logSuccess(16, 'Final response is displayed in the UI');
-      } catch (e, stack) {
-        DiagnosticLogger.logFailure(16, 'Final response is displayed in the UI', e, stack);
-      }
+      _finishStreamingWithMessage(
+        _streamingToken,
+        modelName: model.name,
+        reasoningTrace: trace,
+      );
     } catch (e) {
       _finishStreamingWithMessage(
         '*(Inference Error)*\n\n${e.toString()}',

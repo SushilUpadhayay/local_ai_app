@@ -14,7 +14,7 @@ class ModelRepository {
     if (!await _modelsDir.exists()) {
       await _modelsDir.create(recursive: true);
     }
-    debugPrint(
+    print(
       '[ModelRepository] Initialized models directory: ${_modelsDir.path}',
     );
     _metadataFile = File('${_modelsDir.path}/metadata_v2.json');
@@ -35,7 +35,7 @@ class ModelRepository {
       final oldModelsDir = Directory('${oldBase.path}/models');
       if (!await oldModelsDir.exists()) return;
 
-      debugPrint(
+      print(
         '[ModelRepository] Legacy models dir found at ${oldModelsDir.path}, migrating…',
       );
 
@@ -49,7 +49,7 @@ class ModelRepository {
         if (!await newFile.exists()) {
           await newFile.parent.create(recursive: true);
           await entity.copy(newFile.path);
-          debugPrint(
+          print(
             '[ModelRepository] Migrated: ${entity.path} → ${newFile.path}',
           );
         }
@@ -61,9 +61,9 @@ class ModelRepository {
         await oldModelsDir.delete(recursive: true);
       } catch (_) {}
 
-      debugPrint('[ModelRepository] Migration complete.');
+      print('[ModelRepository] Migration complete.');
     } catch (e) {
-      debugPrint('[ModelRepository] Migration warning (non-fatal): $e');
+      print('[ModelRepository] Migration warning (non-fatal): $e');
     }
   }
 
@@ -71,7 +71,7 @@ class ModelRepository {
     final path = id.startsWith('whisper-')
         ? '${_modelsDir.path}/whisper/ggml-${id.substring('whisper-'.length)}.bin'
         : '${_modelsDir.path}/$id.gguf';
-    debugPrint('[ModelRepository] Model path for $id: $path');
+    print('[ModelRepository] Model path for $id: $path');
     return path;
   }
 

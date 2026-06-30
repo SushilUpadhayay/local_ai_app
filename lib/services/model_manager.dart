@@ -52,11 +52,11 @@ class ModelManager {
     _activeWhisperModelId = await _repository.loadActiveWhisperModelId();
 
     final defaultModels = await _catalogService.getAvailableModels();
-    debugPrint(
+    print(
       '[ModelManager] Catalog loaded: ${defaultModels.length} models.',
     );
     for (final model in defaultModels) {
-      debugPrint(
+      print(
         '[ModelManager] Catalog context: '
         'id=${model.id} contextWindow=${model.contextWindow} '
         'maxOutputTokens=${model.maxOutputTokens}',
@@ -66,7 +66,7 @@ class ModelManager {
     final catalogMap = {for (final m in defaultModels) m.id: m};
 
     if (loadedModels != null && loadedModels.isNotEmpty) {
-      debugPrint(
+      print(
         '[ModelManager] Cached metadata loaded: ${loadedModels.length} models, '
         'activeModelId=$_activeModelId, '
         'activeWhisperModelId=$_activeWhisperModelId',
@@ -80,7 +80,7 @@ class ModelManager {
       final refreshedModels = loadedModels.map((cached) {
         final catalog = catalogMap[cached.id];
         if (catalog == null) {
-          debugPrint(
+          print(
             '[ModelManager] Context source: id=${cached.id} '
             'custom metadata contextWindow=${cached.contextWindow} '
             '(no catalog entry)',
@@ -103,7 +103,7 @@ class ModelManager {
             updated.ram != cached.ram) {
           dirty = true;
         }
-        debugPrint(
+        print(
           '[ModelManager] Context source: id=${cached.id} '
           'cached=${cached.contextWindow} catalog=${catalog.contextWindow} '
           'effective=${updated.contextWindow}',
@@ -114,7 +114,7 @@ class ModelManager {
       // 2. Append any brand-new catalog models not yet in the cache
       for (final catalogModel in defaultModels) {
         if (!loadedModelIds.contains(catalogModel.id)) {
-          debugPrint(
+          print(
             '[ModelManager] Added catalog model to metadata: '
             'id=${catalogModel.id} contextWindow=${catalogModel.contextWindow}',
           );
@@ -133,7 +133,7 @@ class ModelManager {
       _activeModelId = null;
       _activeWhisperModelId = null;
       _models = defaultModels;
-      debugPrint(
+      print(
         '[ModelManager] No cached metadata found; using catalog context windows.',
       );
       await saveMetadata();

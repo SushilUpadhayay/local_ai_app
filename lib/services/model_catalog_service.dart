@@ -22,7 +22,7 @@ class ModelCatalogService {
         url:
             'https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf',
         quantization: 'Q4_K_M',
-        contextWindow: 4096, // maxOutputTokens: 4096/4 i.e 25% of contextWindow
+        contextWindow: 2048, // Reduced from 4096: halves KV cache so it loads on 6GB phones
         modelFamily: 'Qwen',
       ),
       ModelItem(

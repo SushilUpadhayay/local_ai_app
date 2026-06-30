@@ -9,7 +9,7 @@ import '../models/trek_data.dart';
 abstract class LlmService {
   Future<void> loadModel(
     String modelPath, {
-    int contextWindow = 4096,
+    int contextWindow = 2048,
     String? modelLabel,
     int? batchSize,
     int? threads,
@@ -31,8 +31,10 @@ abstract class LlmService {
 
 class LocalLlmService implements LlmService {
   static int defaultThreads = max(1, Platform.numberOfProcessors - 1);
-  static int? defaultBatchSize;
-  static int? defaultUbatchSize;
+  static int? defaultBatchSize =
+      512; // Reduced from 2048: smaller batch allocation for 6GB phones
+  static int? defaultUbatchSize =
+      256; // Reduced from 512: matches nBatch reduction
 
   LlamaEngine? _engine;
   EngineSession? _session;
@@ -91,13 +93,15 @@ class LocalLlmService implements LlmService {
         nUbatch: defaultUbatchSize ?? const ContextParams().nUbatch,
         nThreads: resolvedThreads,
         nThreadsBatch: resolvedThreads,
+        typeK: KvCacheType.q8_0,
+        typeV: KvCacheType.q8_0,
       );
       _modelLabel = modelLabel ?? file.uri.pathSegments.last;
       _requestedContextWindow = contextParams.nCtx;
       _requestedBatchSize = contextParams.nBatch;
       _requestedThreads = contextParams.nThreads;
 
-      debugPrint(
+      print(
         '===== MODEL LOAD =====\n'
         'Model: $_modelLabel\n'
         'Model Path: $modelPath\n'
@@ -110,7 +114,7 @@ class LocalLlmService implements LlmService {
       );
 
       // 2. Initialize the LlamaEngine worker isolate
-      debugPrint(
+      print(
         'Spawning LlamaEngine with model path: $modelPath (contextWindow: $contextWindow)...',
       );
 
@@ -145,7 +149,7 @@ class LocalLlmService implements LlmService {
       _engine = engine;
 
       // 3. Create the off-thread session
-      debugPrint('Creating session for engine...');
+      print('Creating session for engine...');
       _session = await engine.createSession();
       _logSessionCreated(engine);
 
@@ -158,11 +162,11 @@ class LocalLlmService implements LlmService {
       _isLoading = false;
 
       // 4. Perform a model warmup to reduce first-response latency
-      debugPrint('Performing model warmup prompt...');
+      print('Performing model warmup prompt...');
       await _warmup();
 
       loadStopwatch.stop();
-      debugPrint(
+      print(
         'Model loaded and warmed up successfully in ${loadStopwatch.elapsedMilliseconds}ms.',
       );
     } catch (e) {
@@ -183,13 +187,13 @@ class LocalLlmService implements LlmService {
       try {
         await _session!.dispose();
       } catch (e) {
-        debugPrint('Error disposing session: $e');
+        print('Error disposing session: $e');
       }
       _session = null;
     }
 
     if (_engine != null) {
-      debugPrint('Disposing engine...');
+      print('Disposing engine...');
       await _engine!.dispose();
       _engine = null;
     }
@@ -216,7 +220,7 @@ class LocalLlmService implements LlmService {
     final estimatedRemaining = _remainingContextAfterPrompt(
       estimatedPromptTokens,
     );
-    debugPrint(
+    print(
       '===== GENERATION REQUEST ($label) =====\n'
       'Model: $_modelLabel\n'
       'Prompt Length: ${prompt.length}\n'
@@ -282,11 +286,14 @@ class LocalLlmService implements LlmService {
         await _session!.clear();
         if (isCancelled) return;
 
-        debugPrint('Starting llama generation...');
+        print('Starting llama generation...');
 
         final eventStream = _session!.generate(
           prompt: prompt,
           maxTokens: maxTokens,
+          shiftPolicy: _engine?.canShift == true
+              ? ContextShiftPolicy.auto
+              : ContextShiftPolicy.off,
         );
 
         localSub = eventStream.listen(
@@ -304,7 +311,7 @@ class LocalLlmService implements LlmService {
               generatedTokens++;
               controller.add(event.text);
             } else if (event is DoneEvent) {
-              debugPrint(
+              print(
                 '[LLM] Generation done: reason=${event.reason}, '
                 'generatedTokens=${event.generatedCount}, '
                 'committedPosition=${event.committedPosition}',
@@ -334,7 +341,7 @@ class LocalLlmService implements LlmService {
             }
           },
           onDone: () {
-            debugPrint('GENERATION DONE');
+            print('GENERATION DONE');
             logTiming('SUCCESS');
             if (!controller.isClosed) {
               controller.close();
@@ -389,7 +396,7 @@ class LocalLlmService implements LlmService {
   }) {
     final decodeSec = decodeMs / 1000.0;
     final tokensPerSec = decodeSec > 0 ? tokenCount / decodeSec : 0.0;
-    debugPrint(
+    print(
       '===== GENERATION TIMING ($label) =====\n'
       'Status: $status\n'
       'Prefill Latency: ${prefillMs}ms\n'
@@ -584,7 +591,7 @@ class LocalLlmService implements LlmService {
       final warmupStream = _session!.generate(prompt: '\n', maxTokens: 1);
       await for (final _ in warmupStream) {}
     } catch (e) {
-      debugPrint('Warmup warning: $e');
+      print('Warmup warning: $e');
     }
   }
 
@@ -595,7 +602,7 @@ class LocalLlmService implements LlmService {
         : engine.devices
               .map((device) => '${device.registryName}:${device.name}')
               .join(', ');
-    debugPrint(
+    print(
       '===== SESSION CREATED =====\n'
       'Actual Context: unavailable via LlamaEngine API '
       '(requested ${_requestedContextWindow ?? 'unknown'})\n'
@@ -617,7 +624,7 @@ class LocalLlmService implements LlmService {
     required int maxTokens,
   }) {
     final remaining = _remainingContextAfterPrompt(promptTokens);
-    debugPrint(
+    print(
       '===== GENERATION =====\n'
       'Prompt Tokens: $promptTokens\n'
       'Max Tokens: $maxTokens\n'
@@ -638,7 +645,7 @@ class LocalLlmService implements LlmService {
     final estimatedRemaining = _remainingContextAfterPrompt(
       estimatedPromptTokens,
     );
-    debugPrint(
+    print(
       '===== GENERATION FAILED =====\n'
       'Model: $_modelLabel\n'
       'Configured Context: ${_requestedContextWindow ?? 'unknown'}\n'
@@ -650,7 +657,7 @@ class LocalLlmService implements LlmService {
       'Error: $error',
     );
     if (stackTrace != null) {
-      debugPrint(stackTrace.toString());
+      print(stackTrace.toString());
     }
   }
 

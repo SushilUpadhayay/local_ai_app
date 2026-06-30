@@ -1,10 +1,11 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import '../models/model_item.dart';
 import '../repositories/model_repository.dart';
 import '../services/model_catalog_service.dart';
 
 class ModelManager {
+  static const double _minimumFileSizeRatio = 0.85;
+
   final ModelRepository _repository = ModelRepository();
   final ModelCatalogService _catalogService = ModelCatalogService();
 
@@ -20,7 +21,9 @@ class ModelManager {
   ModelItem? get activeModel {
     if (_activeModelId == null) return null;
     try {
-      return _models.firstWhere((m) => m.id == _activeModelId && m.status == 'installed');
+      return _models.firstWhere(
+        (m) => m.id == _activeModelId && m.status == 'installed',
+      );
     } catch (_) {
       return null;
     }
@@ -29,7 +32,9 @@ class ModelManager {
   ModelItem? get activeWhisperModel {
     if (_activeWhisperModelId == null) return null;
     try {
-      return _models.firstWhere((m) => m.id == _activeWhisperModelId && m.status == 'installed');
+      return _models.firstWhere(
+        (m) => m.id == _activeWhisperModelId && m.status == 'installed',
+      );
     } catch (_) {
       return null;
     }
@@ -52,9 +57,7 @@ class ModelManager {
     _activeWhisperModelId = await _repository.loadActiveWhisperModelId();
 
     final defaultModels = await _catalogService.getAvailableModels();
-    print(
-      '[ModelManager] Catalog loaded: ${defaultModels.length} models.',
-    );
+    print('[ModelManager] Catalog loaded: ${defaultModels.length} models.');
     for (final model in defaultModels) {
       print(
         '[ModelManager] Catalog context: '
@@ -162,11 +165,15 @@ class ModelManager {
     for (int i = 0; i < _models.length; i++) {
       final model = _models[i];
       final expectedPath = getLocalPathForModel(model.id);
-      final fileExists = await File(expectedPath).exists();
+      final file = File(expectedPath);
+      final fileExists = await file.exists();
+      final fileIsUsable = fileExists
+          ? await _hasExpectedModelFileSize(model, file)
+          : false;
 
       if (model.status == 'installed') {
-        if (!fileExists) {
-          // File was deleted manually, heal state
+        if (!fileIsUsable) {
+          // File was deleted manually or is an incomplete download; heal state.
           _models[i] = model.copyWith(
             status: 'available',
             localPath: null,
@@ -188,8 +195,8 @@ class ModelManager {
           }
         }
       } else {
-        // If file exists but marked as available/downloading, mark it as installed
-        if (fileExists && model.status != 'downloading') {
+        // If a complete file exists but metadata says available, mark it installed.
+        if (fileIsUsable && model.status != 'downloading') {
           _models[i] = model.copyWith(
             status: 'installed',
             localPath: expectedPath,
@@ -204,8 +211,11 @@ class ModelManager {
     for (int i = 0; i < _models.length; i++) {
       final model = _models[i];
       final isWhisper = model.id.startsWith('whisper-');
-      final currentActiveId = isWhisper ? _activeWhisperModelId : _activeModelId;
-      final shouldBeActive = model.id == currentActiveId && model.status == 'installed';
+      final currentActiveId = isWhisper
+          ? _activeWhisperModelId
+          : _activeModelId;
+      final shouldBeActive =
+          model.id == currentActiveId && model.status == 'installed';
       if (model.active != shouldBeActive) {
         _models[i] = model.copyWith(active: shouldBeActive);
         dirty = true;
@@ -215,6 +225,47 @@ class ModelManager {
     if (dirty) {
       await saveMetadata();
     }
+  }
+
+  Future<bool> _hasExpectedModelFileSize(ModelItem model, File file) async {
+    final actualBytes = await file.length();
+    final minimumBytes = _minimumExpectedModelBytes(model);
+
+    if (actualBytes >= minimumBytes) return true;
+
+    print(
+      '[ModelManager] Ignoring incomplete model file: '
+      'id=${model.id} path=${file.path} '
+      'actual=$actualBytes minimum=$minimumBytes',
+    );
+    return false;
+  }
+
+  int _minimumExpectedModelBytes(ModelItem model) {
+    final expectedBytes = _parseCatalogSizeBytes(model.size);
+    if (expectedBytes <= 0) return 1;
+    return (expectedBytes * _minimumFileSizeRatio).floor();
+  }
+
+  int _parseCatalogSizeBytes(String size) {
+    final match = RegExp(
+      r'^\s*([0-9]+(?:\.[0-9]+)?)\s*([kmgt]?b)\s*$',
+      caseSensitive: false,
+    ).firstMatch(size);
+    if (match == null) return 0;
+
+    final value = double.tryParse(match.group(1) ?? '');
+    if (value == null) return 0;
+
+    final unit = (match.group(2) ?? '').toLowerCase();
+    final multiplier = switch (unit) {
+      'kb' => 1024,
+      'mb' => 1024 * 1024,
+      'gb' => 1024 * 1024 * 1024,
+      'tb' => 1024 * 1024 * 1024 * 1024,
+      _ => 1,
+    };
+    return (value * multiplier).round();
   }
 
   // Switch/Set active model
@@ -307,7 +358,9 @@ class ModelManager {
     } else if (model.id == 'qwen-1.5b') {
       if (deviceRamGb >= 6) return 'recommended';
       return 'slow';
-    } else if (model.id == 'gemma-2b' || model.id == 'gemma-4-e4b' || model.id == 'qwen-3b') {
+    } else if (model.id == 'gemma-2b' ||
+        model.id == 'gemma-4-e4b' ||
+        model.id == 'qwen-3b') {
       if (deviceRamGb >= 8) return 'recommended';
       if (deviceRamGb >= 6) return 'slow';
       return 'not_recommended';

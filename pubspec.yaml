@@ -15,7 +15,7 @@ dependencies:
   google_fonts: ^6.2.1
   http: ^1.2.0
   path_provider: ^2.1.2
-  llama_cpp_dart: ^0.9.0-dev.6
+  llama_cpp_dart: ^0.9.0-dev.8
   whisper_flutter_new: ^1.0.1
   record: ^6.0.0
   flutter_tts: ^4.0.2

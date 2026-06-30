@@ -1,0 +1,25 @@
+[33mcommit f882df9bb022b198d2c97df82d81018863f19e92[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: SushilUpadhayay <paudels926@gmail.com>
+Date:   Tue Jun 30 11:41:13 2026 +0545
+
+    feat: implement model management infrastructure, including persistent storage repository, model manager, and service layer updates.
+
+[33mcommit 7c8ac3d395f814e09e4360452aef186db3103347[m
+Author: SushilUpadhayay <paudels926@gmail.com>
+Date:   Thu Jun 4 11:48:22 2026 +0545
+
+    feat: implement voice interaction services with enhanced Whisper model loading and diagnostics
+
+[33mcommit d982abf60672ae4f04dd62a11667861ca1256561[m[33m ([m[1;31morigin/master[m[33m)[m
+Author: SushilUpadhayay <paudels926@gmail.com>
+Date:   Tue Jun 2 17:32:44 2026 +0545
+
+    feat: Add Windows support for local AI application
+    
+    - Created a new CMakeLists.txt for Windows build configuration.
+    - Added Flutter-specific files for Windows including generated plugin registrant and Flutter window management.
+    - Implemented the main application entry point and window handling logic.
+    - Included resource files for application icon and version information.
+    - Added a manifest file for application settings and DPI awareness.
+    - Established a project-level manifest for web deployment.
+    - Configured .gitignore for Windows-specific build files.

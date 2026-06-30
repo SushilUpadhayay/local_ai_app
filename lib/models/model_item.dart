@@ -103,13 +103,8 @@ class ModelItem {
   }
 
   factory ModelItem.fromMap(Map<String, dynamic> map) {
-    final id = map['id'] ?? '';
-    final isWhisper = id.startsWith('whisper-');
-    final parsedContext = (map['contextWindow'] as num?)?.toInt() ?? (isWhisper ? 0 : 2048);
-    final contextWindow = (parsedContext <= 0 && !isWhisper) ? 2048 : parsedContext;
-
     return ModelItem(
-      id: id,
+      id: map['id'] ?? '',
       name: map['name'] ?? '',
       fullName: map['fullName'] ?? '',
       size: map['size'] ?? '',
@@ -121,7 +116,7 @@ class ModelItem {
       localPath: map['localPath'],
       url: map['url'],
       quantization: map['quantization'] ?? 'Q4_K_M',
-      contextWindow: contextWindow,
+      contextWindow: (map['contextWindow'] as num?)?.toInt() ?? 2048,
       // maxOutputTokens is computed from contextWindow — not read from map
       modelFamily: map['modelFamily'] ?? 'Unknown',
     );

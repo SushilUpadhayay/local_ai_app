@@ -816,8 +816,8 @@ class AppState extends ChangeNotifier {
       );
 
       final maxTokens = model.maxOutputTokens > 0
-          ? model.maxOutputTokens.clamp(512, 2048)
-          : 512;
+          ? model.maxOutputTokens.clamp(700, 2048)
+          : 700;
       _logPromptStage(
         header: 'PASS 2 INPUT',
         prompt: rephrasePrompt,

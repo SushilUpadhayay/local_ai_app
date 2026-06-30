@@ -84,6 +84,13 @@ class ModelDownloadService {
       final client = http.Client();
       final request = http.Request('GET', Uri.parse(url));
       final response = await client.send(request);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        client.close();
+        throw HttpException(
+          'Model download failed with HTTP ${response.statusCode}',
+          uri: Uri.parse(url),
+        );
+      }
 
       final contentLength = response.contentLength ?? 0;
       int downloadedBytes = 0;
@@ -107,6 +114,9 @@ class ModelDownloadService {
         onError: (err) async {
           await sink.close();
           client.close();
+          if (file.existsSync()) {
+            await file.delete();
+          }
           debugPrint('[ModelDownloadService] Stream error for $modelId: $err');
           onError(err);
         },
@@ -136,14 +146,21 @@ class ModelDownloadService {
               '[ModelDownloadService] File exists: ${file.existsSync()}',
             );
 
-            if (file.existsSync() && fileSize > 0) {
+            final hasExpectedSize =
+                contentLength <= 0 || fileSize == contentLength;
+
+            if (file.existsSync() && fileSize > 0 && hasExpectedSize) {
               debugPrint(
                 '[ModelDownloadService] ✓ Download successful for $modelId',
               );
               onComplete(localPath);
             } else {
               final errorMsg =
-                  'Downloaded file is empty or corrupted. Size: $fileSize bytes';
+                  'Downloaded file is incomplete or corrupted. '
+                  'Size: $fileSize bytes, expected: $contentLength bytes';
+              if (file.existsSync()) {
+                await file.delete();
+              }
               debugPrint('[ModelDownloadService] ✗ ERROR: $errorMsg');
               onError(errorMsg);
             }
@@ -154,6 +171,12 @@ class ModelDownloadService {
 
       _activeDownloads[modelId] = streamSubscription;
     } catch (e) {
+      final file = File(localPath);
+      if (file.existsSync()) {
+        try {
+          await file.delete();
+        } catch (_) {}
+      }
       debugPrint('[ModelDownloadService] Download error for $modelId: $e');
       onError(e);
     }

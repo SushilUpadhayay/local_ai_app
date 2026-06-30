@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/model_item.dart';
 
@@ -14,9 +13,7 @@ class ModelRepository {
     if (!await _modelsDir.exists()) {
       await _modelsDir.create(recursive: true);
     }
-    print(
-      '[ModelRepository] Initialized models directory: ${_modelsDir.path}',
-    );
+    print('[ModelRepository] Initialized models directory: ${_modelsDir.path}');
     _metadataFile = File('${_modelsDir.path}/metadata_v2.json');
 
     // One-time migration: move any files downloaded into the old
@@ -49,9 +46,7 @@ class ModelRepository {
         if (!await newFile.exists()) {
           await newFile.parent.create(recursive: true);
           await entity.copy(newFile.path);
-          print(
-            '[ModelRepository] Migrated: ${entity.path} → ${newFile.path}',
-          );
+          print('[ModelRepository] Migrated: ${entity.path} → ${newFile.path}');
         }
         await entity.delete();
       }

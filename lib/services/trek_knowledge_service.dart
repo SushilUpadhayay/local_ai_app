@@ -49,9 +49,7 @@ class TrekKnowledgeService {
       final aliases = data['aliases'] as List<dynamic>?;
       final details = data['details'];
 
-      if (id == null ||
-          aliases == null ||
-          details == null) {
+      if (id == null || aliases == null || details == null) {
         debugPrint(
           '[TrekKnowledgeService] WARNING: Skipping $filename — missing required fields (id, aliases, details).',
         );
@@ -68,114 +66,6 @@ class TrekKnowledgeService {
         '[TrekKnowledgeService] Failed to load asset "$assetPath": $e',
       );
     }
-  }
-
-  // 2. Query Preprocessing & Synonym Mapping
-  String preprocessQuery(String query) {
-    var q = query.toLowerCase().trim();
-    // Map synonyms
-    q = q.replaceAll(RegExp(r'\bhospitals?\b'), 'health post');
-    q = q.replaceAll(RegExp(r'\bstays?\b'), 'lodge');
-    q = q.replaceAll(RegExp(r'\bhotels?\b'), 'tea house');
-    q = q.replaceAll(RegExp(r'\bmountains?\b'), 'peak');
-    q = q.replaceAll(RegExp(r'\bdangers?\b'), 'risk');
-    return q;
-  }
-
-  Map<String, String>? _findMatchingFaq(
-    String trekName,
-    String preprocessedQuery,
-  ) {
-    final trek = _trekData[trekName];
-    if (trek == null) return null;
-    final faqs = trek.faq;
-    if (faqs.isEmpty) return null;
-
-    final queryWords = _tokenize(preprocessedQuery);
-    if (queryWords.isEmpty) return null;
-
-    Map<String, String>? bestFaq;
-    double bestScore = 0.0;
-
-    for (final faq in faqs) {
-      final q = (faq['question'] ?? '').toLowerCase();
-      final qWords = _tokenize(q);
-      int intersection = 0;
-      for (final qw in queryWords) {
-        if (qWords.contains(qw)) intersection++;
-      }
-      final union = (queryWords.length + qWords.length - intersection);
-      final score = union > 0 ? intersection / union : 0.0;
-      if (score > bestScore) {
-        bestScore = score;
-        bestFaq = faq;
-      }
-    }
-
-    if (bestScore < 0.1) {
-      int bestOverlapLength = 0;
-      for (final faq in faqs) {
-        final q = (faq['question'] ?? '').toLowerCase();
-        final words1 = preprocessedQuery.split(RegExp(r'\s+'));
-        final words2 = q.split(RegExp(r'\s+'));
-        int common = 0;
-        for (final w in words1) {
-          if (w.length > 2 && words2.contains(w)) common++;
-        }
-        if (common > bestOverlapLength) {
-          bestOverlapLength = common;
-          bestFaq = faq;
-          bestScore = common > 0 ? 0.5 : 0.0;
-        }
-      }
-    }
-
-    if (bestFaq != null && bestScore > 0.15) {
-      return {
-        'question': bestFaq['question'] ?? '',
-        'answer': bestFaq['answer'] ?? '',
-      };
-    }
-    return null;
-  }
-
-  List<String> _tokenize(String text) {
-    final stopWords = {
-      'is',
-      'the',
-      'a',
-      'of',
-      'to',
-      'on',
-      'in',
-      'for',
-      'do',
-      'i',
-      'can',
-      'what',
-      'how',
-      'are',
-      'about',
-      'with',
-      'at',
-      'from',
-      'trek',
-      'abcs',
-      'ebcs',
-      'it',
-      'its',
-      'you',
-      'your',
-      'me',
-      'my',
-      'we',
-    };
-    return text
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^\w\s]'), '')
-        .split(RegExp(r'\s+'))
-        .where((w) => w.isNotEmpty && !stopWords.contains(w))
-        .toList();
   }
 
   Map<String, dynamic> _executeWithCache(
@@ -253,30 +143,11 @@ class TrekKnowledgeService {
         data: {
           'category': category.name,
           'information': detailData['information'] ?? const <String>[],
-          'additional_information': detailData['additional_information'] ?? const <String>[],
+          'additional_information':
+              detailData['additional_information'] ?? const <String>[],
         },
       );
     });
-  }
-
-  Map<String, dynamic> get_trek_faq(String trekName, String question) {
-    final cleanQuery = preprocessQuery(question);
-    final faqResult = _findMatchingFaq(trekName, cleanQuery);
-    if (faqResult == null) {
-      return _standardResponse(
-        success: false,
-        tool: 'get_trek_faq',
-        trekName: trekName,
-        error: 'No matching FAQ answer found.',
-        data: {},
-      );
-    }
-    return _standardResponse(
-      success: true,
-      tool: 'get_trek_faq',
-      trekName: trekName,
-      data: faqResult,
-    );
   }
 
   Map<String, dynamic> list_available_treks() {
@@ -284,32 +155,51 @@ class TrekKnowledgeService {
       final List<Map<String, dynamic>> treks = [];
       _trekData.forEach((id, trek) {
         final infoDetails = trek.details[TrekCategory.info] ?? const {};
-        final infoList = List<String>.from(infoDetails['information'] as List? ?? const []);
-        
+        final infoList = List<String>.from(
+          infoDetails['information'] as List? ?? const [],
+        );
+
         String name = id
             .split('_')
-            .map((word) => word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1))
+            .map(
+              (word) =>
+                  word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1),
+            )
             .join(' ');
-            
+
         String difficulty = 'Unknown';
         String durationDays = 'Unknown';
         String maxAltitude = 'Unknown';
 
         for (final sentence in infoList) {
           if (sentence.contains('maximum altitude')) {
-            final match = RegExp(r'is ([0-9,m\s\(\)ft\x22\x27\u201d\u201c]+)', caseSensitive: false).firstMatch(sentence);
+            final match = RegExp(
+              r'is ([0-9,m\s\(\)ft\x22\x27\u201d\u201c]+)',
+              caseSensitive: false,
+            ).firstMatch(sentence);
             if (match != null) {
               maxAltitude = match.group(1)!.trim();
             }
           } else if (sentence.contains('standard duration')) {
-            final match = RegExp(r'is ([^,]+)', caseSensitive: false).firstMatch(sentence);
+            final match = RegExp(
+              r'is ([^,]+)',
+              caseSensitive: false,
+            ).firstMatch(sentence);
             if (match != null) {
               durationDays = match.group(1)!.replaceAll('days', '').trim();
             }
-          } else if (sentence.contains('is a') && (sentence.contains('trek') || sentence.contains('adventure'))) {
-            final match = RegExp(r'is a ([^in]+)', caseSensitive: false).firstMatch(sentence);
+          } else if (sentence.contains('is a') &&
+              (sentence.contains('trek') || sentence.contains('adventure'))) {
+            final match = RegExp(
+              r'is a ([^in]+)',
+              caseSensitive: false,
+            ).firstMatch(sentence);
             if (match != null) {
-              var diff = match.group(1)!.replaceAll('trek', '').replaceAll('adventure', '').trim();
+              var diff = match
+                  .group(1)!
+                  .replaceAll('trek', '')
+                  .replaceAll('adventure', '')
+                  .trim();
               if (diff.isNotEmpty) {
                 difficulty = diff[0].toUpperCase() + diff.substring(1);
               }

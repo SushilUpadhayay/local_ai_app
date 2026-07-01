@@ -420,29 +420,6 @@ class ToolRegistryService {
         ),
       ),
       ToolDefinition(
-        name: 'get_trek_faq',
-        description:
-            'Use this when the user asks a specific question about the trek that is not a simple request for route/village/medical/transport details (e.g. food, water, Wi-Fi, electricity charging, SIM card, gear, packing, clothing, offline mapping, guides/porters, costs, payments, ATM). Requires the exact question.',
-        parametersSchema: _objectSchema(
-          {
-            'question': {
-              'type': 'string',
-              'description':
-                  'The user question or topic to search within offline FAQs.',
-            },
-            'trek_name': {
-              'type': 'string',
-              'description': 'The name of the trek.',
-            },
-          },
-          const ['question', 'trek_name'],
-        ),
-        executor: (args) => _trekKnowledgeService.get_trek_faq(
-          _stringArg(args, 'trek_name'),
-          _stringArg(args, 'question'),
-        ),
-      ),
-      ToolDefinition(
         name: 'list_available_treks',
         description:
             'Lists all treks currently available in the offline database.',
@@ -530,25 +507,6 @@ class ToolRegistryService {
       );
     }
 
-    if (call.name == 'get_trek_faq') {
-      final answer = data['answer']?.toString().trim() ?? '';
-      final matchedQuestion = data['question']?.toString().trim() ?? '';
-      return _withFallback(
-        ToolResult(
-          trekName: trekName,
-          trekDisplayName: trekDisplayName,
-          aliases: aliases,
-          category: category,
-          information: answer.isEmpty ? const [] : [answer],
-          additionalInformation: [
-            if (matchedQuestion.isNotEmpty)
-              'Matched FAQ question: $matchedQuestion',
-            ..._sourceNotes(payload),
-          ],
-        ),
-      );
-    }
-
     if (call.name == 'list_available_treks') {
       final treks = data['treks'];
       return _withFallback(
@@ -623,7 +581,6 @@ class ToolRegistryService {
 
     return switch (call.name) {
       'get_trek_details' => 'info',
-      'get_trek_faq' => 'faq',
       'list_available_treks' => 'available_treks',
       _ => call.name,
     };

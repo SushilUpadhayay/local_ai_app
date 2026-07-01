@@ -755,10 +755,6 @@ class AppState extends ChangeNotifier {
       if (category != 'none') {
         arguments['category'] = category;
       }
-      if (toolName == 'get_trek_faq' && question.trim().isNotEmpty) {
-        arguments['question'] = question;
-      }
-
       final toolCall = ToolCall(name: toolName, arguments: arguments);
 
       print(
@@ -979,9 +975,6 @@ class AppState extends ChangeNotifier {
         'category': 'none',
       };
     }
-    if (category == 'faq') {
-      return const {'type': 'tool', 'tool': 'get_trek_faq', 'category': 'none'};
-    }
     if (category != 'none') {
       return {'type': 'tool', 'tool': 'get_trek_details', 'category': category};
     }
@@ -999,8 +992,8 @@ class AppState extends ChangeNotifier {
       'tea house': 'accommodation',
       'drinking water': 'food_water',
       'mobile network': 'connectivity',
-      'sim card': 'faq',
-      'offline map': 'faq',
+      'sim card': 'connectivity',
+      'offline map': 'info',
     };
     for (final entry in phraseCategories.entries) {
       if (lower.contains(entry.key)) return entry.value;
@@ -1018,18 +1011,6 @@ class AppState extends ChangeNotifier {
       'connectivity': {'connectivity', 'network', 'internet', 'wifi', 'signal'},
       'landmarks': {'landmark', 'peak', 'viewpoint', 'mountain', 'river'},
       'villages': {'village', 'villages', 'settlement', 'town'},
-      'faq': {
-        'gear',
-        'packing',
-        'cost',
-        'costs',
-        'atm',
-        'porter',
-        'guide',
-        'map',
-        'charging',
-        'electricity',
-      },
       'info': {'difficulty', 'duration', 'overview', 'description', 'trek'},
     };
 
@@ -1086,13 +1067,10 @@ class AppState extends ChangeNotifier {
   String? _normalizeToolName(String raw) {
     final lower = raw.trim().toLowerCase();
     // Already canonical — return as-is.
-    if (lower == 'get_trek_details' ||
-        lower == 'get_trek_faq' ||
-        lower == 'list_available_treks') {
+    if (lower == 'get_trek_details' || lower == 'list_available_treks') {
       return lower;
     }
     // Fuzzy matches — same priority order as before.
-    if (lower.contains('faq')) return 'get_trek_faq';
     if (lower.contains('list') || lower.contains('available')) {
       return 'list_available_treks';
     }

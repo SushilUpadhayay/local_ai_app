@@ -186,22 +186,43 @@ void main() {
       expect(derived['tool'], isNull);
     });
 
-    test('should return null (No Prior Tool Execution) when there are only chat-only responses', () {
-      final messages = [
-        Message(sender: 'user', text: 'Hello', timestamp: DateTime.now()),
-        Message(sender: 'ai', text: 'Hi, how can I help you?', timestamp: DateTime.now(), reasoningTrace: null),
-        Message(sender: 'user', text: 'How are you?', timestamp: DateTime.now()),
-        Message(sender: 'ai', text: 'I am an AI assistant.', timestamp: DateTime.now(), reasoningTrace: null),
-      ];
+    test(
+      'should return null (No Prior Tool Execution) when there are only chat-only responses',
+      () {
+        final messages = [
+          Message(sender: 'user', text: 'Hello', timestamp: DateTime.now()),
+          Message(
+            sender: 'ai',
+            text: 'Hi, how can I help you?',
+            timestamp: DateTime.now(),
+            reasoningTrace: null,
+          ),
+          Message(
+            sender: 'user',
+            text: 'How are you?',
+            timestamp: DateTime.now(),
+          ),
+          Message(
+            sender: 'ai',
+            text: 'I am an AI assistant.',
+            timestamp: DateTime.now(),
+            reasoningTrace: null,
+          ),
+        ];
 
-      final derived = appState.getDerivedContextFromHistory(messages);
-      expect(derived['trekId'], isNull);
-      expect(derived['tool'], isNull);
-    });
+        final derived = appState.getDerivedContextFromHistory(messages);
+        expect(derived['trekId'], isNull);
+        expect(derived['tool'], isNull);
+      },
+    );
 
     test('should return last valid resolved trek and tool', () {
       final messages = [
-        Message(sender: 'user', text: 'Tell me about EBC', timestamp: DateTime.now()),
+        Message(
+          sender: 'user',
+          text: 'Tell me about EBC',
+          timestamp: DateTime.now(),
+        ),
         Message(
           sender: 'ai',
           text: 'Here is info.',
@@ -222,41 +243,48 @@ void main() {
       expect(derived['tool'], 'get_trek_details');
     });
 
-    test('should filter out sentinel matchedTreks (Sentinel Filtering Check)', () {
-      final messages = [
-        Message(
-          sender: 'ai',
-          text: 'First details EBC',
-          timestamp: DateTime.now(),
-          reasoningTrace: const ReasoningTrace(
-            matchedTrek: 'everest_base_camp',
-            toolsUsed: ['get_trek_details'],
-            toolCalls: [],
-            toolResults: [],
-            sourceFiles: [],
-            executionTimeMs: 10,
+    test(
+      'should filter out sentinel matchedTreks (Sentinel Filtering Check)',
+      () {
+        final messages = [
+          Message(
+            sender: 'ai',
+            text: 'First details EBC',
+            timestamp: DateTime.now(),
+            reasoningTrace: const ReasoningTrace(
+              matchedTrek: 'everest_base_camp',
+              toolsUsed: ['get_trek_details'],
+              toolCalls: [],
+              toolResults: [],
+              sourceFiles: [],
+              executionTimeMs: 10,
+            ),
           ),
-        ),
-        Message(sender: 'user', text: 'show all treks', timestamp: DateTime.now()),
-        Message(
-          sender: 'ai',
-          text: 'Here are all treks.',
-          timestamp: DateTime.now(),
-          reasoningTrace: const ReasoningTrace(
-            matchedTrek: 'all', // sentinel!
-            toolsUsed: ['list_available_treks'],
-            toolCalls: [],
-            toolResults: [],
-            sourceFiles: [],
-            executionTimeMs: 15,
+          Message(
+            sender: 'user',
+            text: 'show all treks',
+            timestamp: DateTime.now(),
           ),
-        ),
-      ];
+          Message(
+            sender: 'ai',
+            text: 'Here are all treks.',
+            timestamp: DateTime.now(),
+            reasoningTrace: const ReasoningTrace(
+              matchedTrek: 'all', // sentinel!
+              toolsUsed: ['list_available_treks'],
+              toolCalls: [],
+              toolResults: [],
+              sourceFiles: [],
+              executionTimeMs: 15,
+            ),
+          ),
+        ];
 
-      final derived = appState.getDerivedContextFromHistory(messages);
-      expect(derived['trekId'], 'everest_base_camp');
-      expect(derived['tool'], 'get_trek_details');
-    });
+        final derived = appState.getDerivedContextFromHistory(messages);
+        expect(derived['trekId'], 'everest_base_camp');
+        expect(derived['tool'], 'get_trek_details');
+      },
+    );
   });
 
   group('AppState router output parsing and normalization tests', () {
@@ -270,50 +298,75 @@ void main() {
     });
 
     test('valid tool names are left untouched', () {
-      final res1 = appState.parseRouterOutputForTesting('Type: tool\nTool: get_trek_details\nCategory: route');
+      final res1 = appState.parseRouterOutputForTesting(
+        'Type: tool\nTool: get_trek_details\nCategory: route',
+      );
       expect(res1['tool_name'], 'get_trek_details');
 
-      final res2 = appState.parseRouterOutputForTesting('Type: tool\nTool: get_trek_faq');
-      expect(res2['tool_name'], 'get_trek_faq');
-
-      final res3 = appState.parseRouterOutputForTesting('Type: tool\nTool: list_available_treks');
-      expect(res3['tool_name'], 'list_available_treks');
-    });
-
-    test('invalid tool names containing faq map to get_trek_faq', () {
-      final res1 = appState.parseRouterOutputForTesting('Type: tool\nTool: get_faq');
-      expect(res1['tool_name'], 'get_trek_faq');
-
-      final res2 = appState.parseRouterOutputForTesting('Type: tool\nTool: trek_faq');
-      expect(res2['tool_name'], 'get_trek_faq');
-    });
-
-    test('invalid tool names containing list/available map to list_available_treks', () {
-      final res1 = appState.parseRouterOutputForTesting('Type: tool\nTool: list_treks');
-      expect(res1['tool_name'], 'list_available_treks');
-
-      final res2 = appState.parseRouterOutputForTesting('Type: tool\nTool: available_treks');
+      final res2 = appState.parseRouterOutputForTesting(
+        'Type: tool\nTool: list_available_treks',
+      );
       expect(res2['tool_name'], 'list_available_treks');
     });
 
-    test('invalid tool names starting with get_trek or containing detail map to get_trek_details', () {
-      final res1 = appState.parseRouterOutputForTesting('Type: tool\nTool: get_treks\nCategory: villages');
+    test('invalid tool names containing faq map to get_trek_details', () {
+      final res1 = appState.parseRouterOutputForTesting(
+        'Type: tool\nTool: get_faq',
+      );
       expect(res1['tool_name'], 'get_trek_details');
 
-      final res2 = appState.parseRouterOutputForTesting('Type: tool\nTool: get_trek\nCategory: route');
+      final res2 = appState.parseRouterOutputForTesting(
+        'Type: tool\nTool: trek_faq',
+      );
       expect(res2['tool_name'], 'get_trek_details');
-
-      final res3 = appState.parseRouterOutputForTesting('Type: tool\nTool: trek_details\nCategory: accommodation');
-      expect(res3['tool_name'], 'get_trek_details');
     });
 
+    test(
+      'invalid tool names containing list/available map to list_available_treks',
+      () {
+        final res1 = appState.parseRouterOutputForTesting(
+          'Type: tool\nTool: list_treks',
+        );
+        expect(res1['tool_name'], 'list_available_treks');
+
+        final res2 = appState.parseRouterOutputForTesting(
+          'Type: tool\nTool: available_treks',
+        );
+        expect(res2['tool_name'], 'list_available_treks');
+      },
+    );
+
+    test(
+      'invalid tool names starting with get_trek or containing detail map to get_trek_details',
+      () {
+        final res1 = appState.parseRouterOutputForTesting(
+          'Type: tool\nTool: get_treks\nCategory: villages',
+        );
+        expect(res1['tool_name'], 'get_trek_details');
+
+        final res2 = appState.parseRouterOutputForTesting(
+          'Type: tool\nTool: get_trek\nCategory: route',
+        );
+        expect(res2['tool_name'], 'get_trek_details');
+
+        final res3 = appState.parseRouterOutputForTesting(
+          'Type: tool\nTool: trek_details\nCategory: accommodation',
+        );
+        expect(res3['tool_name'], 'get_trek_details');
+      },
+    );
+
     test('unrecognized tool with active category maps to get_trek_details', () {
-      final res = appState.parseRouterOutputForTesting('Type: tool\nTool: query\nCategory: route');
+      final res = appState.parseRouterOutputForTesting(
+        'Type: tool\nTool: query\nCategory: route',
+      );
       expect(res['tool_name'], 'get_trek_details');
     });
 
     test('unrecognized tool with no category defaults to get_trek_details', () {
-      final res = appState.parseRouterOutputForTesting('Type: tool\nTool: query\nCategory: none');
+      final res = appState.parseRouterOutputForTesting(
+        'Type: tool\nTool: query\nCategory: none',
+      );
       expect(res['tool_name'], 'get_trek_details');
     });
 
@@ -330,25 +383,23 @@ void main() {
       expect(res['tool_name'], 'list_available_treks');
     });
 
-    test('bare "get_trek_faq" with no Type label resolves to tool', () {
-      final res = appState.parseRouterOutputForTesting('get_trek_faq');
-      expect(res['type'], 'tool');
-      expect(res['tool_name'], 'get_trek_faq');
-    });
-
     test('well-formed chat response is unchanged by Fix 2', () {
       final res = appState.parseRouterOutputForTesting(
-          'Type: chat\nResponse: Hello!');
+        'Type: chat\nResponse: Hello!',
+      );
       expect(res['type'], 'chat');
       expect(res['chat_response'], 'Hello!');
     });
 
-    test('garbage output falls back to chat (ROUTER PARSE FALLBACK logged)', () {
-      // We cannot assert on print() output in unit tests, but we can confirm
-      // the result is still a safe chat default (not a crash or tool call).
-      final res = appState.parseRouterOutputForTesting('garbage output xyz');
-      expect(res['type'], 'chat');
-    });
+    test(
+      'garbage output falls back to chat (ROUTER PARSE FALLBACK logged)',
+      () {
+        // We cannot assert on print() output in unit tests, but we can confirm
+        // the result is still a safe chat default (not a crash or tool call).
+        final res = appState.parseRouterOutputForTesting('garbage output xyz');
+        expect(res['type'], 'chat');
+      },
+    );
   });
 
   group('_isListingQuery helper tests (via isListingQueryForTesting)', () {
@@ -363,19 +414,31 @@ void main() {
 
     // Positive cases — must return true
     test('"which treks do you have?" -> true', () {
-      expect(appState.isListingQueryForTesting('which treks do you have?'), isTrue);
+      expect(
+        appState.isListingQueryForTesting('which treks do you have?'),
+        isTrue,
+      );
     });
 
     test('"what treks do you have" -> true', () {
-      expect(appState.isListingQueryForTesting('what treks do you have'), isTrue);
+      expect(
+        appState.isListingQueryForTesting('what treks do you have'),
+        isTrue,
+      );
     });
 
     test('"what treks are available" -> true', () {
-      expect(appState.isListingQueryForTesting('what treks are available'), isTrue);
+      expect(
+        appState.isListingQueryForTesting('what treks are available'),
+        isTrue,
+      );
     });
 
     test('"show me other trek options" -> true', () {
-      expect(appState.isListingQueryForTesting('show me other trek options'), isTrue);
+      expect(
+        appState.isListingQueryForTesting('show me other trek options'),
+        isTrue,
+      );
     });
 
     test('"list all treks" -> true', () {
@@ -386,7 +449,8 @@ void main() {
     test('"what is the itinerary for annapurna base camp" -> false', () {
       expect(
         appState.isListingQueryForTesting(
-            'what is the itinerary for annapurna base camp'),
+          'what is the itinerary for annapurna base camp',
+        ),
         isFalse,
       );
     });

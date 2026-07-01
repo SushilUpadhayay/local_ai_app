@@ -30,14 +30,8 @@ class TrekData {
   final String id;
   final List<String> aliases;
   final Map<TrekCategory, Map<String, dynamic>> details;
-  final List<Map<String, String>> faq;
 
-  TrekData({
-    required this.id,
-    required this.aliases,
-    required this.details,
-    required this.faq,
-  });
+  TrekData({required this.id, required this.aliases, required this.details});
 
   factory TrekData.fromJson(Map<String, dynamic> json) {
     final detailsMap = <TrekCategory, Map<String, dynamic>>{};
@@ -62,20 +56,10 @@ class TrekData {
       }
     }
 
-    final rawFaq = json['faq'] as List? ?? const [];
-    final faqList = rawFaq.map((item) {
-      final m = Map<String, dynamic>.from(item as Map);
-      return {
-        'question': m['question']?.toString() ?? '',
-        'answer': m['answer']?.toString() ?? '',
-      };
-    }).toList();
-
     return TrekData(
       id: json['id'] as String? ?? '',
       aliases: List<String>.from(json['aliases'] ?? const []),
       details: detailsMap,
-      faq: faqList,
     );
   }
 
@@ -83,6 +67,5 @@ class TrekData {
     'id': id,
     'aliases': aliases,
     'details': details.map((k, v) => MapEntry(k.name, v)),
-    'faq': faq,
   };
 }

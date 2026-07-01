@@ -442,18 +442,15 @@ class LocalLlmService implements LlmService {
     buf.writeln('Type: chat');
     buf.writeln('Response: <short response>');
     buf.writeln('');
-
     buf.writeln('For trekking information:');
     buf.writeln('Type: tool');
     buf.writeln(
-      'Use only one of these tools: get_trek_details, get_trek_faq, list_available_treks',
+      'Use only one of these tools: get_trek_details, list_available_treks',
     );
     buf.writeln(
-      '- Category is required only for get_trek_details. Never create a new category from the trek name or user query. Category must be one of the following:',
+      '- Category is required only for get_trek_details. Never create a new category from the trek name or user query. Category must be one of the following: ${TrekCategory.values.map((c) => c.name).join(',')}',
     );
-    buf.writeln(' ${TrekCategory.values.map((c) => c.name).join(' | ')}');
-    buf.writeln('');
-
+    buf.writeln();
     buf.writeln('Rules:');
     buf.writeln('- Never answer trekking questions.');
     buf.writeln('- Never provide trekking facts.');
@@ -477,14 +474,8 @@ class LocalLlmService implements LlmService {
       'get_trek_details, NOT list_available_treks.',
     );
     buf.writeln(
-      '- Use get_trek_faq for gear, packing, costs, guides, porters, maps, '
-      'SIM, ATM, charging, permits, food, water, and other common trek '
-      'questions.',
-    );
-    buf.writeln(
       '- Use get_trek_details for route, itinerary, villages, accommodation, '
-      'landmarks, hospitals, emergency, transport, weather, connectivity and '
-      'other trek facts about the selected trek.',
+      'landmarks, hospitals, emergency, transport, weather, connectivity, and other trek facts about the selected trek.',
     );
 
     buf.writeln('');
@@ -506,11 +497,6 @@ class LocalLlmService implements LlmService {
     buf.writeln('Type: tool');
     buf.writeln('Tool: get_trek_details');
     buf.writeln('Category: hospitals');
-    buf.writeln('');
-
-    buf.writeln('User: Do I need trekking poles?');
-    buf.writeln('Type: tool');
-    buf.writeln('Tool: get_trek_faq');
     buf.writeln('');
 
     buf.writeln('User: tell me about everest base camp');
@@ -539,10 +525,6 @@ class LocalLlmService implements LlmService {
     buf.writeln('Type: tool');
     buf.writeln('Tool: list_available_treks');
     buf.writeln('');
-
-    buf.writeln('User: what other questions can I ask');
-    buf.writeln('Type: tool');
-    buf.writeln('Tool: get_trek_faq');
     buf.writeln('');
 
     buf.writeln('<|im_end|>');
@@ -563,8 +545,6 @@ class LocalLlmService implements LlmService {
     switch (lastResolvedTool) {
       case 'get_trek_details':
         return 'trek details';
-      case 'get_trek_faq':
-        return 'a specific question';
       case 'list_available_treks':
         return 'the list of treks';
       default:
@@ -590,7 +570,7 @@ class LocalLlmService implements LlmService {
       'in the facts below.',
     );
     buf.writeln(
-      '3. Natural phrasing of the facts is encouraged. This is about how you present the facts, never about adding NEW facts.',
+      '3. Natural phrasing (only pharsing, not invent facts) of the facts is encouraged. This is about how you present the facts, never about adding NEW facts.',
     );
     buf.writeln('');
     buf.writeln('=== FACTS ===');

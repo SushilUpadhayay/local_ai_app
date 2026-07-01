@@ -696,16 +696,7 @@ class AppState extends ChangeNotifier {
       if (type == 'tool' &&
           classification['tool_name'] == 'list_available_treks') {
         final hasTrek = hasSelectedTrek;
-        final queryLower = text.toLowerCase();
-        final hasListingKeywords =
-            queryLower.contains('list') ||
-            queryLower.contains('compare') ||
-            queryLower.contains('other') ||
-            queryLower.contains('options') ||
-            queryLower.contains('alternative') ||
-            queryLower.contains('which treks') ||
-            queryLower.contains('what treks');
-        if (hasTrek && !hasListingKeywords) {
+        if (hasTrek && !_isListingQuery(text)) {
           classification['tool_name'] = 'get_trek_details';
           classification['category'] = 'info';
           print(
@@ -797,8 +788,10 @@ class AppState extends ChangeNotifier {
         _lastSelectedTrekNames[convId] = matchedTrek;
       }
 
-      // For Pass 2: Send zero prior conversation history turns to avoid context blending.
-      final pass2Messages = const <Map<String, dynamic>>[];
+      // For Pass 2: Keep only the current user query, not the entire history.
+      final pass2Messages = <Map<String, dynamic>>[
+        {'role': 'user', 'content': question},
+      ];
       _logPass2History(pass2Messages);
 
       final contextPayload = ToolResultPromptBuilder.build(
@@ -979,7 +972,7 @@ class AppState extends ChangeNotifier {
 
   Map<String, String> _expectedRouterClassification(String query) {
     final category = _inferExpectedCategory(query);
-    if (_looksLikeAvailableTreksQuery(query)) {
+    if (_isListingQuery(query)) {
       return const {
         'type': 'tool',
         'tool': 'list_available_treks',
@@ -1046,11 +1039,33 @@ class AppState extends ChangeNotifier {
     return 'none';
   }
 
-  bool _looksLikeAvailableTreksQuery(String query) {
+  /// Returns `true` if [query] looks like a "list / browse available treks"
+  /// request (e.g. "which treks do you have?", "show me other trek options").
+  ///
+  /// **Single source of truth** for listing-intent detection — used by both
+  /// [_expectedRouterClassification] (heuristic guard that overrides a router
+  /// chat classification) and the inline guard that prevents
+  /// `list_available_treks` from firing when a specific trek is already
+  /// selected.
+  bool _isListingQuery(String query) {
     final lower = query.toLowerCase();
-    return (lower.contains('available') || lower.contains('list')) &&
+    const listingPhrases = [
+      'available',
+      'list',
+      'compare',
+      'other',
+      'options',
+      'alternative',
+      'which treks',
+      'what treks',
+    ];
+    final hasListingSignal = listingPhrases.any(lower.contains);
+    return hasListingSignal &&
         (lower.contains('trek') || lower.contains('treks'));
   }
+
+  @visibleForTesting
+  bool isListingQueryForTesting(String query) => _isListingQuery(query);
 
   int _estimateTokenCount(String text) => (text.length / 4.0).ceil();
 
@@ -1062,16 +1077,62 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// Normalises [raw] to one of the three canonical tool names, or returns
+  /// `null` if [raw] does not resemble any known tool.
+  ///
+  /// This is the **single source of truth** for tool-name normalisation —
+  /// used by both the `Tool:` label path and the bare-tool-name recovery path
+  /// in [_parseRouterOutput].
+  String? _normalizeToolName(String raw) {
+    final lower = raw.trim().toLowerCase();
+    // Already canonical — return as-is.
+    if (lower == 'get_trek_details' ||
+        lower == 'get_trek_faq' ||
+        lower == 'list_available_treks') {
+      return lower;
+    }
+    // Fuzzy matches — same priority order as before.
+    if (lower.contains('faq')) return 'get_trek_faq';
+    if (lower.contains('list') || lower.contains('available')) {
+      return 'list_available_treks';
+    }
+    if (lower.startsWith('get_trek') || lower.contains('detail')) {
+      return 'get_trek_details';
+    }
+    return null; // Does not resemble any known tool.
+  }
+
   Map<String, String> _parseRouterOutput(String response) {
     final result = <String, String>{};
-
     final typeMatch = RegExp(
       r'Type:\s*(\w+)',
       caseSensitive: false,
     ).firstMatch(response);
     result['type'] = typeMatch?.group(1)?.trim().toLowerCase() ?? 'chat';
-
     if (result['type'] == 'chat') {
+      if (typeMatch == null) {
+        final recovered = _normalizeToolName(response.trim());
+        if (recovered != null) {
+          result['type'] = 'tool';
+          result['tool_name'] = recovered;
+          // Also capture any Category: line that may be present.
+          final categoryMatch = RegExp(
+            r'Category:\s*([^\n]+)',
+            caseSensitive: false,
+          ).firstMatch(response);
+          if (categoryMatch != null) {
+            result['category'] = categoryMatch.group(1)!.trim();
+          }
+          return result;
+        }
+        print(
+          '===== ROUTER PARSE FALLBACK =====\n'
+          'reason=no_type_label_and_no_tool_match\n'
+          'raw_response=$response',
+        );
+        result['chat_response'] = response.trim();
+        return result;
+      }
       final responseMatch = RegExp(
         r'Response:\s*([\s\S]+)',
         caseSensitive: false,
@@ -1079,7 +1140,6 @@ class AppState extends ChangeNotifier {
       result['chat_response'] = responseMatch?.group(1)?.trim() ?? '';
       return result;
     }
-
     final toolMatch = RegExp(
       r'Tool:\s*([^\n]+)',
       caseSensitive: false,
@@ -1087,7 +1147,6 @@ class AppState extends ChangeNotifier {
     if (toolMatch != null) {
       result['tool_name'] = toolMatch.group(1)!.trim();
     }
-
     final categoryMatch = RegExp(
       r'Category:\s*([^\n]+)',
       caseSensitive: false,
@@ -1095,8 +1154,18 @@ class AppState extends ChangeNotifier {
     if (categoryMatch != null) {
       result['category'] = categoryMatch.group(1)!.trim();
     }
-
+    if (result['tool_name'] != null) {
+      // Reuse _normalizeToolName — fall back to get_trek_details if the tool
+      // name is present but does not match any known pattern.
+      result['tool_name'] =
+          _normalizeToolName(result['tool_name']!) ?? 'get_trek_details';
+    }
     return result;
+  }
+
+  @visibleForTesting
+  Map<String, String> parseRouterOutputForTesting(String response) {
+    return _parseRouterOutput(response);
   }
 
   Future<String> _streamResponse(

@@ -133,16 +133,13 @@ void main() {
         prompt,
         startsWith(
           'Trek:\n'
-          'annapurna_base_camp\n\n'
-          'Question:\n'
-          'What is the route?\n\n'
-          'Category:\n'
-          'route\n\n'
-          'Information:\n'
-          '- ',
+          'Annapurna Base Camp',
         ),
       );
+      expect(prompt, contains('Category:\nroute'));
+      expect(prompt, contains('\n\nInformation:\n- '));
       expect(prompt, contains('\n\nAdditional Information:\n- '));
+      expect(prompt, isNot(contains('Question:\n')));
       expect(prompt, isNot(contains('{')));
       expect(prompt, isNot(contains('"information"')));
       expect(prompt, isNot(contains('additional_information')));

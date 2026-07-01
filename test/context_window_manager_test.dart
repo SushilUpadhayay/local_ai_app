@@ -21,7 +21,7 @@ void main() {
         message('user', 'recent user 4'),
         message('ai', 'recent assistant 4'),
         message('user', 'current question'),
-      ]);
+      ], turnLimit: 3);
 
       expect(context, isNot(contains('old user 1')));
       expect(context, isNot(contains('old assistant 1')));
@@ -55,7 +55,7 @@ void main() {
         message('user', 'recent user 4'),
         message('ai', 'recent assistant 4'),
         message('user', 'current question'),
-      ]);
+      ], turnLimit: 3);
 
       expect(messages.map((message) => message.text), [
         'recent user 2',

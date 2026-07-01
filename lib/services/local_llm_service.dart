@@ -3,7 +3,6 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'package:llama_cpp_dart/llama_cpp_dart.dart';
-import 'package:flutter/foundation.dart';
 import '../models/trek_data.dart';
 
 abstract class LlmService {
@@ -428,21 +427,11 @@ class LocalLlmService implements LlmService {
           ? 'Context: A trek IS currently selected.'
           : 'Context: No trek is currently selected.',
     );
-
-    if (lastResolvedTrek != null &&
-        lastResolvedTrek.isNotEmpty &&
-        lastResolvedTool != null &&
-        lastResolvedTool.isNotEmpty) {
+    if (lastResolvedTrek != null && lastResolvedTrek.isNotEmpty) {
+      final topicLabel = _describeLastTopic(lastResolvedTool);
       buf.writeln(
-        'Context: Last topic was $lastResolvedTrek ($lastResolvedTool).',
+        'Context: Previously discussing $topicLabel for $lastResolvedTrek.',
       );
-    } else {
-      if (lastResolvedTrek != null && lastResolvedTrek.isNotEmpty) {
-        buf.writeln('Context: Last topic was $lastResolvedTrek.');
-      }
-      if (lastResolvedTool != null && lastResolvedTool.isNotEmpty) {
-        buf.writeln('Context: Last resolved tool was $lastResolvedTool.');
-      }
     }
     buf.writeln('');
 
@@ -456,37 +445,52 @@ class LocalLlmService implements LlmService {
 
     buf.writeln('For trekking information:');
     buf.writeln('Type: tool');
-    buf.writeln('Tool: get_trek_details | get_trek_faq | list_available_treks');
-    buf.writeln('- Category is required only for get_trek_details.');
     buf.writeln(
-      'The categories are: ${TrekCategory.values.map((c) => c.name).join(' | ')}',
+      'Use only one of these tools: get_trek_details, get_trek_faq, list_available_treks',
     );
+    buf.writeln(
+      '- Category is required only for get_trek_details. Never create a new category from the trek name or user query. Category must be one of the following:',
+    );
+    buf.writeln(' ${TrekCategory.values.map((c) => c.name).join(' | ')}');
     buf.writeln('');
 
     buf.writeln('Rules:');
     buf.writeln('- Never answer trekking questions.');
     buf.writeln('- Never provide trekking facts.');
-    buf.writeln('- Never explain your reasoning.');
-    buf.writeln('- Never output JSON.');
     buf.writeln('- Output ONLY one of the supported formats.');
     buf.writeln('- Greetings, thanks, jokes, casual conversation -> chat.');
     buf.writeln('- Trek information requests -> tool.');
     buf.writeln(
-      '- If a trek is selected and the user asks about that trek specifically (details, itinerary, info, "tell me about it"), use get_trek_details, NOT list_available_treks.',
+      '- The "Previously discussing" context is only a tiebreaker for vague '
+      'follow-ups (e.g. "what about food?"). It never overrides an explicit '
+      'request in the current message.',
     );
     buf.writeln(
-      '- Use list_available_treks ONLY when the user asks to see multiple treks, browse options, or compare treks — not when asking about the one already selected.',
+      '- If the CURRENT message asks to see, list, browse, or compare treks '
+      '("which treks", "what treks do you have", "show me other treks", '
+      '"what options"), ALWAYS use list_available_treks — even if a trek is '
+      'already selected and even if the previous topic was trek details.',
     );
     buf.writeln(
-      '- Use get_trek_faq for gear, packing, costs, guides, porters, maps, SIM, ATM, charging, permits, food, water, and other common trek questions.',
+      '- If a trek is selected and the CURRENT message asks about that one '
+      'trek specifically (details, itinerary, info, "tell me about it"), use '
+      'get_trek_details, NOT list_available_treks.',
     );
     buf.writeln(
-      '- Use get_trek_details for route, itinerary, villages, accommodation, landmarks, hospitals, emergency, transport, weather, connectivity and other trek facts.',
+      '- Use get_trek_faq for gear, packing, costs, guides, porters, maps, '
+      'SIM, ATM, charging, permits, food, water, and other common trek '
+      'questions.',
+    );
+    buf.writeln(
+      '- Use get_trek_details for route, itinerary, villages, accommodation, '
+      'landmarks, hospitals, emergency, transport, weather, connectivity and '
+      'other trek facts about the selected trek.',
     );
 
     buf.writeln('');
     buf.writeln('Examples:');
     buf.writeln('');
+
     buf.writeln('User: Hello');
     buf.writeln('Type: chat');
     buf.writeln('Response: Hello! How can I help you?');
@@ -502,12 +506,6 @@ class LocalLlmService implements LlmService {
     buf.writeln('Type: tool');
     buf.writeln('Tool: get_trek_details');
     buf.writeln('Category: hospitals');
-    buf.writeln('');
-
-    buf.writeln('User: What permits are required?');
-    buf.writeln('Type: tool');
-    buf.writeln('Tool: get_trek_details');
-    buf.writeln('Category: permits');
     buf.writeln('');
 
     buf.writeln('User: Do I need trekking poles?');
@@ -526,6 +524,27 @@ class LocalLlmService implements LlmService {
     buf.writeln('Tool: list_available_treks');
     buf.writeln('');
 
+    buf.writeln('User: which treks do you have?');
+    buf.writeln('Type: tool');
+    buf.writeln('Tool: list_available_treks');
+    buf.writeln('');
+
+    buf.writeln('User: show me other trek options');
+    buf.writeln('Type: tool');
+    buf.writeln('Tool: list_available_treks');
+    buf.writeln('');
+    buf.writeln(
+      'User: (a trek is selected, previous topic was trek details) what treks are available',
+    );
+    buf.writeln('Type: tool');
+    buf.writeln('Tool: list_available_treks');
+    buf.writeln('');
+
+    buf.writeln('User: what other questions can I ask');
+    buf.writeln('Type: tool');
+    buf.writeln('Tool: get_trek_faq');
+    buf.writeln('');
+
     buf.writeln('<|im_end|>');
 
     for (final msg in messages) {
@@ -538,6 +557,19 @@ class LocalLlmService implements LlmService {
 
     buf.writeln('<|im_start|>assistant');
     return buf.toString();
+  }
+
+  String _describeLastTopic(String? lastResolvedTool) {
+    switch (lastResolvedTool) {
+      case 'get_trek_details':
+        return 'trek details';
+      case 'get_trek_faq':
+        return 'a specific question';
+      case 'list_available_treks':
+        return 'the list of treks';
+      default:
+        return 'trekking information';
+    }
   }
 
   String buildRephrasePrompt({
@@ -553,13 +585,12 @@ class LocalLlmService implements LlmService {
     buf.writeln('');
     buf.writeln('Rules:');
     buf.writeln(
-      '1. Do not assume, extrapolate, or mention external knowledge.',
+      '1. Do not invent, assume, or extrapolate any fact, name, number, '
+      'distance, altitude, price, or detail that is not explicitly present '
+      'in the facts below.',
     );
     buf.writeln(
-      '2. If the provided facts do not contain the answer, reply: "I do not have that information in my offline database."',
-    );
-    buf.writeln(
-      '3. Be thorough and complete. For itinerary or route questions, list all days. Do not mention "facts", "JSON", or "database".',
+      '3. Natural phrasing of the facts is encouraged. This is about how you present the facts, never about adding NEW facts.',
     );
     buf.writeln('');
     buf.writeln('=== FACTS ===');

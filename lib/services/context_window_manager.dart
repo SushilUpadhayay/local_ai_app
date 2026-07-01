@@ -1,7 +1,7 @@
 import '../models/conversation.dart';
 
 class ContextWindowManager {
-  static const int defaultTurnLimit = 2; // Three previous chats
+  static const int defaultTurnLimit = 2; // Two previous chats
   static const int pass2TurnLimit = 2; // Two previous chats
 
   // Approximate token count based on typical character length (~4 chars per token).

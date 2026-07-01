@@ -193,7 +193,6 @@ class ToolRegistryService {
 
     final category = _stringArg(call.arguments, 'category');
     if (category.isNotEmpty) {
-      // 'itinerary' is a valid alias that maps to 'route' in TrekKnowledgeService.
       final isAlias = category == 'itinerary';
       final isValidEnum = TrekCategory.fromString(category) != null;
       if (!isAlias && !isValidEnum) {
@@ -495,6 +494,12 @@ class ToolRegistryService {
     final category = _normalizedCategory(call, payload);
     final trekName = _normalizedTrekName(call, payload);
     final success = payload['success'] == true;
+
+    // Resolve human-readable name and aliases from the knowledge service.
+    final trekData = _trekKnowledgeService.trekData[trekName];
+    final aliases = trekData?.aliases ?? const <String>[];
+    final trekDisplayName = trekData != null ? _trekDisplayName(trekName) : '';
+
     if (!success) {
       final error = payload['error']?.toString().trim();
       return ToolResult.error(
@@ -516,6 +521,8 @@ class ToolRegistryService {
       return _withFallback(
         ToolResult(
           trekName: trekName,
+          trekDisplayName: trekDisplayName,
+          aliases: aliases,
           category: category,
           information: _stringList(data['information']),
           additionalInformation: additionalInformation,
@@ -529,6 +536,8 @@ class ToolRegistryService {
       return _withFallback(
         ToolResult(
           trekName: trekName,
+          trekDisplayName: trekDisplayName,
+          aliases: aliases,
           category: category,
           information: answer.isEmpty ? const [] : [answer],
           additionalInformation: [
@@ -545,6 +554,8 @@ class ToolRegistryService {
       return _withFallback(
         ToolResult(
           trekName: trekName,
+          trekDisplayName: trekDisplayName,
+          aliases: aliases,
           category: category,
           information: treks is List
               ? treks
@@ -563,6 +574,8 @@ class ToolRegistryService {
       return _withFallback(
         ToolResult(
           trekName: trekName,
+          trekDisplayName: trekDisplayName,
+          aliases: aliases,
           category: category,
           information: directInformation,
           additionalInformation: additionalInformation,
@@ -573,11 +586,21 @@ class ToolRegistryService {
     return _withFallback(
       ToolResult(
         trekName: trekName,
+        trekDisplayName: trekDisplayName,
+        aliases: aliases,
         category: category,
         information: _flattenDataLines(data),
         additionalInformation: _sourceNotes(payload),
       ),
     );
+  }
+
+  /// Converts a snake_case trek ID to a Title Case display name.
+  String _trekDisplayName(String trekId) {
+    return trekId
+        .split('_')
+        .map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1)}')
+        .join(' ');
   }
 
   ToolResult _withFallback(ToolResult result) {

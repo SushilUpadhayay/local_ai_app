@@ -29,6 +29,11 @@ class DeviceTtsService implements TtsService {
   @override
   Future<void> initialize() async {
     try {
+      await _flutterTts.awaitSpeakCompletion(true);
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        await _flutterTts.setQueueMode(0); // Android QUEUE_FLUSH
+      }
+
       _flutterTts.setStartHandler(() {
         _isSpeaking = true;
         _isStopping = false;

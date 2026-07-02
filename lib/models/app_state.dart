@@ -59,6 +59,7 @@ class AppState extends ChangeNotifier {
       _ttsState == TtsState.speaking || _ttsState == TtsState.buffering;
 
   int _ttsSessionId = 0;
+  int _generationSessionId = 0;
   int? _activeUtteranceSessionId;
   bool _isVoiceSessionActive = false;
 
@@ -552,8 +553,9 @@ class AppState extends ChangeNotifier {
     final shouldSpeak = _isVoiceSessionActive || _isLiveStreamingTtsEnabled;
     _isVoiceSessionActive = false; // Reset for next message
 
+    _generationSessionId++; // Invalidate stale generation streams
+    final currentGenerationSessionId = _generationSessionId;
     _ttsSessionId++; // Invalidate old session and start a new one
-    final currentSessionId = _ttsSessionId;
 
     _isStreaming = true;
     _streamingToken = '';
@@ -722,7 +724,7 @@ class AppState extends ChangeNotifier {
         _currentStreamingMessage = null;
         _streamingToken = finalResponse;
 
-        if (_ttsSessionId == currentSessionId && _isTtsEnabled) {
+        if (_generationSessionId == currentGenerationSessionId && _isTtsEnabled) {
           _processSentenceBuffer(_streamingToken);
           _flushSentenceBuffer();
         }
@@ -816,24 +818,42 @@ class AppState extends ChangeNotifier {
       final finalResponse = await _streamResponse(
         rephrasePrompt,
         maxTokens,
-        currentSessionId,
+        currentGenerationSessionId,
       );
       print('===== PASS 2 OUTPUT =====\n$finalResponse');
 
-      _sentenceQueue.clear();
-      _sentenceBuffer = '';
-      _isSentenceTtsSpeaking = false;
-      _isLiveStreamingTtsEnabled = false;
-      _currentStreamingMessage = null;
-
-      _streamingToken = finalResponse.isEmpty
+      final completedResponse = finalResponse.isEmpty
           ? '*(No response generated)*'
           : finalResponse;
 
-      if (_ttsSessionId == currentSessionId && _isTtsEnabled) {
-        _processSentenceBuffer(_streamingToken);
+      final canContinueStreamingTts =
+          _generationSessionId == currentGenerationSessionId && _isTtsEnabled;
+
+      if (canContinueStreamingTts) {
+        // Generation is still current and TTS is still live — don't wipe the
+        // queue. The streaming sentences are already queued and may be actively
+        // playing. Just flush any trailing partial sentence that wasn't yet
+        // enqueued, then let the queue drain naturally.
+        if (finalResponse.isEmpty &&
+            _sentenceQueue.isEmpty &&
+            _sentenceBuffer.trim().isEmpty &&
+            !_isSentenceTtsSpeaking) {
+          // Edge case: absolutely nothing was produced or queued — synthesise
+          // the placeholder so the user hears *something*.
+          _processSentenceBuffer(completedResponse);
+        }
         _flushSentenceBuffer();
+      } else {
+        // Stale generation (was cancelled / superseded) or TTS was disabled
+        // mid-stream — discard everything.
+        _sentenceQueue.clear();
+        _sentenceBuffer = '';
+        _isSentenceTtsSpeaking = false;
       }
+      _isLiveStreamingTtsEnabled = false;
+      _currentStreamingMessage = null;
+
+      _streamingToken = completedResponse;
 
       _finishStreamingWithMessage(
         _streamingToken,
@@ -1149,7 +1169,7 @@ class AppState extends ChangeNotifier {
   Future<String> _streamResponse(
     String prompt,
     int maxTokens,
-    int currentSessionId,
+    int currentGenerationSessionId,
   ) async {
     final stream = _llmService.generate(
       prompt,
@@ -1166,7 +1186,7 @@ class AppState extends ChangeNotifier {
         buffer.write(token);
         _streamingToken = buffer.toString();
         notifyListeners();
-        if (_isTtsEnabled && _ttsSessionId == currentSessionId) {
+        if (_isTtsEnabled && _generationSessionId == currentGenerationSessionId) {
           _processSentenceBuffer(token);
         }
       },
@@ -1228,6 +1248,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> _cancelGeneration() async {
+    _generationSessionId++;
     _llmStreamSub?.cancel();
     _llmStreamSub = null;
     _llmService.cancelGeneration();
@@ -1381,6 +1402,13 @@ class AppState extends ChangeNotifier {
   Future<void> startVoiceSession(TextEditingController inputController) async {
     _voiceErrorMessage = '';
     _isVoiceSessionActive = true; // Mark voice session as active
+    // Pre-arm TTS so the per-token guard in _streamResponse fires as soon as
+    // the LLM starts streaming. sendMessage() will bump _ttsSessionId and set
+    // _isTtsEnabled again via shouldSpeak, but pre-arming here ensures the
+    // flag is true even before generation begins (avoids a race where the first
+    // token arrives before shouldSpeak is evaluated).
+    _isTtsEnabled = true;
+    _ttsState = TtsState.buffering;
 
     // Validate Whisper model is available
     if (modelManager.activeWhisperModelId == null ||

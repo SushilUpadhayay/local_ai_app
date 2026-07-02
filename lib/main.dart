@@ -100,21 +100,25 @@ class _MainScaffoldState extends State<MainScaffold> {
                     letterSpacing: 0.5,
                   ),
                 ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.circle, size: 5, color: Color(0xFF10B981)),
-                    SizedBox(width: 4),
-                    Text(
-                      'OFFLINE MODE',
-                      style: TextStyle(
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF10B981),
-                        letterSpacing: 0.5,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.circle, size: 5, color: Color(0xFF10B981)),
+                      SizedBox(width: 4),
+                      Text(
+                        'OFFLINE MODE',
+                        maxLines: 1,
+                        style: TextStyle(
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF10B981),
+                          letterSpacing: 0.5,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),

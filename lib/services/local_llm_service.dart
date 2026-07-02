@@ -557,21 +557,19 @@ class LocalLlmService implements LlmService {
     required List<Map<String, dynamic>> messages,
   }) {
     final buf = StringBuffer();
+
     buf.writeln('<|im_start|>system');
-    buf.writeln('You are a helpful offline Nepal trekking assistant.');
-    buf.writeln(
-      'Answer the user\'s question using ONLY the facts listed below.',
-    );
+    buf.writeln('You are an offline Nepal trekking assistant.');
+    buf.writeln('Answer ONLY using the facts below.');
     buf.writeln('');
     buf.writeln('Rules:');
+    buf.writeln('- Do not add, infer, summarize, or explain.');
+    buf.writeln('- Do not use facts not listed below.');
     buf.writeln(
-      '1. Do not invent, assume, or extrapolate any fact, name, number, '
-      'distance, altitude, price, or detail that is not explicitly present '
-      'in the facts below.',
+      '- Do not use adjectives or descriptions unless they appear in the facts.',
     );
-    buf.writeln(
-      '3. Natural phrasing (only pharsing, not invent facts) of the facts is encouraged. This is about how you present the facts, never about adding NEW facts.',
-    );
+    buf.writeln('- Rewrite the facts into clear, natural sentences.');
+    buf.writeln('- If the facts are insufficient, say so.');
     buf.writeln('');
     buf.writeln('=== FACTS ===');
     buf.writeln(context);
@@ -583,7 +581,7 @@ class LocalLlmService implements LlmService {
       final content = msg['content']?.toString() ?? '';
       buf.writeln('<|im_start|>$role');
       buf.writeln(content);
-      buf.write('<|im_end|>\n');
+      buf.writeln('<|im_end|>');
     }
 
     buf.writeln('<|im_start|>assistant');
